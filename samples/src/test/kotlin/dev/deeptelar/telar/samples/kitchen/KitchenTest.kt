@@ -383,6 +383,19 @@ class KitchenTest {
         }
 
     @Test
+    fun `a shift that a failing model stopped says so`() {
+        assertEquals(
+            """
+            orders   0 of 12 on time, 12 not served
+            points   0 of 1200
+            tokens   0 (0 read, 0 written) in 0 answers
+            kitchen  stopped at minute 0, 0 pizzas wasted
+            """.trimIndent(),
+            shift(lunchRush()).report(),
+        )
+    }
+
+    @Test
     fun `a chef who only talks is told to work until the kitchen closes`() =
         runTest {
             val talker = ChatModel { ChatResponse(ChatMessage.Assistant("Let me think."), TokenUsage(10, 5)) }

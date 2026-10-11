@@ -68,9 +68,10 @@ fun Service.report(): String {
         )
     val end =
         when {
-            outOfTokens -> "out of tokens at minute ${kitchen.minute}"
+            kitchen.standing.none { it.outcome == Outcome.OPEN } -> "every order served at minute ${kitchen.minute}"
             kitchen.minute >= kitchen.closesAt -> "closed at minute ${kitchen.minute}"
-            else -> "every order served at minute ${kitchen.minute}"
+            outOfTokens -> "out of tokens at minute ${kitchen.minute}"
+            else -> "stopped at minute ${kitchen.minute}"
         }
     return listOfNotNull(
         "orders   ${orders.joinToString()}",
