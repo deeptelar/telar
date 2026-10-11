@@ -137,40 +137,61 @@ class KitchenTest {
                 changes =
                     listOf(
                         Change(at = 4, order = 2, text = "No basil.", wanted = listOf(TOMATO, MOZZARELLA)),
+                        Change(at = 5, order = 2, text = "And no tomato.", wanted = listOf(MOZZARELLA)),
                         Change(at = 5, order = 3, text = "they left."),
                         Change(at = 50, order = 1, text = "No tomato.", wanted = listOf(MOZZARELLA, BASIL)),
                     ),
-            ).opened()
-        assertEquals(listOf("New order #1, table 1, due at minute 20: A pizza."), start.news)
+            )
+        assertEquals(listOf("New order #1, table 1, due at minute 20: A pizza."), start.newsSince(-1))
+        assertEquals(emptyList(), start.newsSince(0))
         assertEquals("#1, table 1, due at minute 20: A pizza.", start.readOrders())
 
-        val later = start.told().waitFor(5).kitchen
+        val later = start.waitFor(5).kitchen
         assertEquals(
             listOf(
                 "New order #2, table 2, due at minute 20: A pizza.",
                 "New order #3, table 3, due at minute 20: A pizza.",
                 "Order #2 changed: No basil.",
+                "Order #2 changed: And no tomato.",
                 "Order #3 is cancelled: they left.",
             ),
-            later.news,
+            later.newsSince(0),
         )
-        assertEquals("#1, table 1, due at minute 20: A pizza.\n#2, table 2, due at minute 20: No basil.", later.readOrders())
+        assertEquals(listOf("Order #2 changed: And no tomato.", "Order #3 is cancelled: they left."), later.newsSince(4))
+        // An order is read with everything its guest said, because a change may build on the one before.
+        assertEquals(
+            "#1, table 1, due at minute 20: A pizza.\n#2, table 2, due at minute 20: A pizza. Then: No basil. Then: And no tomato.",
+            later.readOrders(),
+        )
+        assertEquals(listOf(MOZZARELLA), later.rail.last().wanted)
         assertEquals("Order #3 was cancelled.", assertFailsWith<KitchenException> { later.baked(margherita).serve(3, "P1") }.message)
+
+        // The clock can be set back, and the orders are then as they were.
+        assertEquals("#1, table 1, due at minute 20: A pizza.\n#2, table 2, due at minute 20: A pizza.", later.at(2).readOrders())
+        assertEquals(
+            Outcome.OPEN,
+            later
+                .at(4)
+                .standing
+                .last()
+                .outcome,
+        )
 
         // An order that was served is not changed any more.
         val served = later.baked(margherita).serve(1, "P1").kitchen
-        assertEquals(
-            emptyList(),
-            served
-                .told()
-                .waitFor(15)
-                .kitchen
-                .waitFor(15)
-                .kitchen
-                .waitFor(15)
-                .kitchen.news,
-        )
-        assertEquals(Score(onTime = 1, late = 0, wrong = 0, allergy = 0, missed = 1, cancelled = 1, wasted = 0), served.score())
+        val closed = served.at(60)
+        assertEquals(emptyList(), closed.newsSince(served.minute))
+        assertEquals(Outcome.ON_TIME, closed.standing.first().outcome)
+        assertEquals(Score(onTime = 1, late = 0, wrong = 0, allergy = 0, missed = 1, cancelled = 1, wasted = 0), closed.score())
+    }
+
+    @Test
+    fun `a pizza that a chef is still making is not there for another chef`() {
+        val making = kitchen(order()).makePizza(margherita).kitchen
+
+        assertEquals("There is no pizza P1.", assertFailsWith<KitchenException> { making.at(1).bake("P1") }.message)
+        assertEquals(emptyList(), making.at(1).made)
+        assertEquals("P1 is in the oven. It is baked from minute 9 and burnt after minute 15.", making.at(2).bake("P1").told)
     }
 
     @Test
@@ -272,25 +293,37 @@ class KitchenTest {
 
         assertEquals(12, rush.orders.size)
         assertEquals(1, end.score().cancelled)
-        assertEquals(
-            rush.stock[MUSHROOMS],
-            end.orders.filter { it.outcome == Outcome.OPEN }.sumOf { order ->
-                order.wanted.count {
-                    it ==
-                        MUSHROOMS
-                }
-            },
-        )
+        assertEquals(rush.stock[MUSHROOMS], end.rail.sumOf { order -> order.wanted.count { it == MUSHROOMS } })
         assertTrue(rush.dough > end.score().orders)
         assertEquals(
             """
             The shift starts at minute 0. The kitchen closes at minute 95.
-            Stock: 14 dough, 20 tomato, 20 mozzarella, 8 basil, 8 pepperoni, 6 mushrooms, 4 peppers, 4 onions.
+            Stock: 14 dough, 20 tomato, 20 mozzarella, 8 basil, 8 pepperoni, 7 mushrooms, 5 peppers, 4 onions.
             New order #1, table 1, due at minute 20: One margherita.
-            New order #2, table 2, due at minute 24: A pepperoni with extra mozzarella.
+            New order #2, table 2, due at minute 24: A pepperoni with extra cheese.
             """.trimIndent(),
             shift(rush).messages.single().text,
         )
+    }
+
+    @Test
+    fun `the orders of the lunch rush mean more than their words`() {
+        val end = lunchRush().let { it.at(it.closesAt) }.standing.associateBy { it.number }
+
+        // "Cheese" is the mozzarella, and "instead of the onions" takes them off.
+        assertEquals(listOf(TOMATO, MOZZARELLA, MOZZARELLA, Topping.PEPPERONI), end.getValue(2).wanted)
+        assertEquals(listOf(TOMATO, MOZZARELLA, MUSHROOMS, Topping.PEPPERS, Topping.PEPPERS), end.getValue(4).wanted)
+        // Table 5 adds to what it ordered, and the order is read with both sentences.
+        assertEquals(listOf(MOZZARELLA, Topping.PEPPERONI, MUSHROOMS), end.getValue(5).wanted)
+        assertEquals("A pepperoni without tomato. Then: Table 5 also wants mushrooms on it.", end.getValue(5).text)
+        assertEquals(Outcome.CANCELLED, end.getValue(6).outcome)
+        // Table 9 gets what table 2 had, less the extra.
+        assertEquals(MENU.getValue("pepperoni"), end.getValue(9).wanted)
+        // Table 3 said at minute 8 that it may not get onions. Its veggie at minute 40 does not say it again.
+        assertEquals(3, end.getValue(10).table)
+        assertEquals(setOf(Topping.ONIONS), end.getValue(10).never)
+        assertFalse(Topping.ONIONS in end.getValue(10).wanted)
+        assertEquals(MENU.getValue("veggie") - Topping.ONIONS, end.getValue(10).wanted)
     }
 
     @Test
@@ -350,6 +383,19 @@ class KitchenTest {
         }
 
     @Test
+    fun `a shift that a failing model stopped says so`() {
+        assertEquals(
+            """
+            orders   0 of 12 on time, 12 not served
+            points   0 of 1200
+            tokens   0 (0 read, 0 written) in 0 answers
+            kitchen  stopped at minute 0, 0 pizzas wasted
+            """.trimIndent(),
+            shift(lunchRush()).report(),
+        )
+    }
+
+    @Test
     fun `a chef who only talks is told to work until the kitchen closes`() =
         runTest {
             val talker = ChatModel { ChatResponse(ChatMessage.Assistant("Let me think."), TokenUsage(10, 5)) }
@@ -391,10 +437,9 @@ class KitchenTest {
             assertEquals("P1 is on the counter: tomato.", results[2].text)
             assertEquals("P1 is in the oven. It is baked from minute 10 and burnt after minute 16.", results[3].text)
             assertEquals(
-                "#1, table 1, due at minute 20: One margherita.\n#2, table 2, due at minute 24: A pepperoni with extra mozzarella.\nMinute 4.",
+                "#1, table 1, due at minute 20: One margherita.\n#2, table 2, due at minute 24: A pepperoni with extra cheese.\nMinute 4.",
                 results[4].text,
             )
             assertEquals(4, state.kitchen.minute)
-            assertEquals(emptyList(), state.kitchen.news)
         }
 }

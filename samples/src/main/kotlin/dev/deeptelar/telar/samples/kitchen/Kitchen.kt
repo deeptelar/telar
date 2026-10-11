@@ -31,7 +31,10 @@ enum class Topping {
     val word: String get() = name.lowercase()
 }
 
-/** How an order ended. An order that is still [OPEN] when the kitchen closes was missed. */
+/**
+ * How an order ended. An order that is still [OPEN] when the kitchen closes was missed, and one is
+ * [CANCELLED] from the minute its guests leave, unless it was served before.
+ */
 enum class Outcome { OPEN, ON_TIME, LATE, WRONG, ALLERGY, CANCELLED }
 
 /**
@@ -57,8 +60,9 @@ data class Order(
 }
 
 /**
- * Something a guest decides after ordering, at minute [at]: another pizza ([wanted] and [text]),
- * or no pizza at all when [wanted] is `null`.
+ * Something a guest says after ordering, at minute [at]: what the pizza is to be now ([wanted]), or
+ * that they leave when [wanted] is `null`. [text] is what the chef is told. It may build on what the
+ * guest said before, so the chef needs the order and its changes together.
  */
 data class Change(
     val at: Int,
@@ -70,14 +74,16 @@ data class Change(
 enum class Place { COUNTER, OVEN, PASS, SERVED }
 
 /**
- * A pizza the chef made.
+ * A pizza a chef made.
  *
+ * @property madeAt the minute it was ready on the counter. Nobody can touch it before.
  * @property inOvenSince the minute it went into the oven, while it is there.
  * @property baked the minutes it spent in the oven, once it is out.
  */
 data class Pizza(
     val name: String,
     val toppings: List<Topping>,
+    val madeAt: Int,
     val place: Place = Place.COUNTER,
     val inOvenSince: Int? = null,
     val baked: Int? = null,
@@ -126,9 +132,13 @@ data class Score(
  * Nothing here knows about models or graphs. Time passes only through the actions, each of which
  * costs a fixed number of minutes, so the same actions always give the same shift.
  *
- * @property orders every order of the shift, also the ones that are not placed yet.
- * @property changes what guests will decide later.
- * @property news what happened since the chef was last told: new orders, changes, cancellations.
+ * [minute] is the clock of whoever acts. What the guests do is not stored as it happens: an order is
+ * read as it stands at [minute], from [orders] and [changes]. So [at] can set the clock back to let
+ * a second chef act in the same minutes as the first, and both see the orders as they were then.
+ *
+ * @property orders every order of the shift as it was placed, also the ones that are not placed
+ * yet, with its outcome once it is served.
+ * @property changes what guests say after they ordered.
  */
 data class Kitchen(
     val orders: List<Order>,
@@ -138,52 +148,52 @@ data class Kitchen(
     val closesAt: Int,
     val minute: Int = 0,
     val pizzas: List<Pizza> = emptyList(),
-    val news: List<String> = emptyList(),
 ) {
-    /** The orders the chef can see and has not served. */
-    val rail: List<Order> get() = orders.filter { it.placedAt <= minute && it.outcome == Outcome.OPEN }
+    /** Every order as it stands at this minute: with the changes its guests made so far. */
+    val standing: List<Order> get() = orders.map { it.now() }
 
-    val oven: List<Pizza> get() = pizzas.filter { it.place == Place.OVEN }
+    /** The orders a chef can see and nobody has served. */
+    val rail: List<Order> get() = standing.filter { it.placedAt <= minute && it.outcome == Outcome.OPEN }
+
+    /** The pizzas that exist at this minute. One that a chef is still making is not among them. */
+    val made: List<Pizza> get() = pizzas.filter { it.madeAt <= minute }
+
+    val oven: List<Pizza> get() = made.filter { it.place == Place.OVEN }
 
     /** `true` when the kitchen is closed, or no order is left to serve. */
-    val over: Boolean get() = minute >= closesAt || orders.none { it.outcome == Outcome.OPEN }
+    val over: Boolean get() = minute >= closesAt || standing.none { it.outcome == Outcome.OPEN }
 
     val stockList: String get() = "$dough dough, " + Topping.entries.joinToString { "${stock[it] ?: 0} ${it.word}" }
 
-    /** The kitchen when the shift starts, with the orders that are already there as [news]. */
-    fun opened(): Kitchen = copy(news = orders.filter { it.placedAt <= minute }.map { "New order ${it.ticket}" })
+    /** This kitchen with the clock at [minute]. */
+    fun at(minute: Int): Kitchen = copy(minute = minute)
 
-    /** The kitchen [minutes] later: orders that were placed and changes that were made meanwhile become [news]. */
-    fun after(minutes: Int): Kitchen {
-        val now = minute + minutes
-        val placed = orders.filter { it.placedAt in (minute + 1)..now }.map { "New order ${it.ticket}" }
-        val decided = changes.filter { it.at in (minute + 1)..now && order(it.order)?.outcome == Outcome.OPEN }
-        val changed =
-            orders.map { order ->
-                val change = decided.lastOrNull { it.order == order.number } ?: return@map order
-                if (change.wanted ==
-                    null
-                ) {
-                    order.copy(outcome = Outcome.CANCELLED)
-                } else {
-                    order.copy(text = change.text, wanted = change.wanted)
+    /** This kitchen [minutes] later. */
+    fun after(minutes: Int): Kitchen = at(minute + minutes)
+
+    /**
+     * What the guests did after minute [since] and up to now, in the order it happened: the orders
+     * they placed, changed and cancelled. An order that was served is not changed any more.
+     */
+    fun newsSince(since: Int): List<String> {
+        val placed = orders.filter { it.placedAt in (since + 1)..minute }.map { it.placedAt to "New order ${it.ticket}" }
+        val said =
+            changes
+                .filter { it.at in (since + 1)..minute && orders.first { order -> order.number == it.order }.outcome == Outcome.OPEN }
+                .map {
+                    it.at to
+                        if (it.wanted == null) "Order #${it.order} is cancelled: ${it.text}" else "Order #${it.order} changed: ${it.text}"
                 }
-            }
-        val told =
-            decided.map {
-                if (it.wanted ==
-                    null
-                ) {
-                    "Order #${it.order} is cancelled: ${it.text}"
-                } else {
-                    "Order #${it.order} changed: ${it.text}"
-                }
-            }
-        return copy(minute = now, orders = changed, news = news + placed + told)
+        return (placed + said).sortedBy { it.first }.map { it.second }
     }
 
-    /** The chef has been told the [news]. */
-    fun told(): Kitchen = copy(news = emptyList())
+    private fun Order.now(): Order {
+        if (outcome != Outcome.OPEN) return this
+        val said = changes.filter { it.order == number && it.at <= minute }
+        if (said.any { it.wanted == null }) return copy(outcome = Outcome.CANCELLED)
+        val last = said.lastOrNull() ?: return this
+        return copy(text = (listOf(text) + said.map { it.text }).joinToString(" Then: "), wanted = last.wanted!!)
+    }
 
     fun readOrders(): String = if (rail.isEmpty()) "No open orders." else rail.joinToString("\n") { it.ticket }
 
@@ -203,7 +213,7 @@ data class Kitchen(
             val left = stock[topping] ?: 0
             if (left < count) fail("There is not enough ${topping.word}: $left left.")
         }
-        val pizza = Pizza("P${pizzas.size + 1}", toppings)
+        val pizza = Pizza("P${pizzas.size + 1}", toppings, madeAt = minute + MAKE_MINUTES)
         val used = stock.mapValues { (topping, left) -> left - (needed[topping] ?: 0) }
         return Acted(
             copy(dough = dough - 1, stock = used, pizzas = pizzas + pizza).after(MAKE_MINUTES),
@@ -243,7 +253,7 @@ data class Kitchen(
 
     fun serve(number: Int, name: String): Acted {
         open()
-        val order = order(number)?.takeIf { it.placedAt <= minute } ?: fail("There is no order #$number.")
+        val order = standing.firstOrNull { it.number == number && it.placedAt <= minute } ?: fail("There is no order #$number.")
         if (order.outcome == Outcome.CANCELLED) fail("Order #$number was cancelled.")
         if (order.outcome != Outcome.OPEN) fail("Order #$number was already served.")
         val pizza = pizza(name)
@@ -255,7 +265,7 @@ data class Kitchen(
         }
         val later = after(MOVE_MINUTES)
         // The guest may have changed the order during the walk to the table.
-        val served = later.order(number)!!
+        val served = later.standing.first { it.number == number }
         if (served.outcome == Outcome.CANCELLED) return Acted(later, "Order #$number was cancelled on your way to the table.")
         val outcome =
             when {
@@ -286,7 +296,7 @@ data class Kitchen(
     }
 
     fun score(): Score {
-        fun count(outcome: Outcome) = orders.count { it.outcome == outcome }
+        fun count(outcome: Outcome) = standing.count { it.outcome == outcome }
         val used = count(Outcome.ON_TIME) + count(Outcome.LATE)
         return Score(
             onTime = count(Outcome.ON_TIME),
@@ -299,10 +309,8 @@ data class Kitchen(
         )
     }
 
-    private fun order(number: Int): Order? = orders.firstOrNull { it.number == number }
-
     private fun pizza(name: String): Pizza =
-        pizzas.firstOrNull { it.name.equals(name.trim(), ignoreCase = true) } ?: fail("There is no pizza $name.")
+        made.firstOrNull { it.name.equals(name.trim(), ignoreCase = true) } ?: fail("There is no pizza $name.")
 
     private fun with(pizza: Pizza): Kitchen = copy(pizzas = pizzas.map { if (it.name == pizza.name) pizza else it })
 
