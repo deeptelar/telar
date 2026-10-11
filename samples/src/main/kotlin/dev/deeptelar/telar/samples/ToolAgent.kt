@@ -86,10 +86,11 @@ val scriptedModel: ChatModel =
     }
 
 /**
- * The model that the environment asks for: Claude with ANTHROPIC_API_KEY, OpenAI with OPENAI_API_KEY
- * (OPENAI_MODEL names another model than gpt-5), or the model of a local Ollama that OLLAMA_MODEL
- * names. OPENAI_BASE_URL sends the requests for OpenAI to another server with the same API, such as
- * Gemini or Groq. Without any of them, the scripted model answers.
+ * The model that the environment asks for: Claude with ANTHROPIC_API_KEY (ANTHROPIC_MODEL names
+ * another model than claude-opus-5-5), OpenAI with OPENAI_API_KEY (OPENAI_MODEL names another model
+ * than gpt-5), or the model of a local Ollama that OLLAMA_MODEL names. OPENAI_BASE_URL sends the
+ * requests for OpenAI to another server with the same API, such as Gemini or Groq. Without any of
+ * them, the scripted model answers.
  */
 fun modelFor(client: HttpClient, environment: Map<String, String> = System.getenv()): ChatModel {
     fun setting(name: String): String? = environment[name]?.takeIf { it.isNotBlank() }
@@ -97,7 +98,7 @@ fun modelFor(client: HttpClient, environment: Map<String, String> = System.geten
     val openAiKey = setting("OPENAI_API_KEY")
     val ollamaModel = setting("OLLAMA_MODEL")
     return when {
-        claudeKey != null -> AnthropicChatModel(client, apiKey = claudeKey, model = "claude-opus-5-5")
+        claudeKey != null -> AnthropicChatModel(client, apiKey = claudeKey, model = setting("ANTHROPIC_MODEL") ?: "claude-opus-5-5")
         openAiKey != null ->
             OpenAiChatModel(
                 client,
