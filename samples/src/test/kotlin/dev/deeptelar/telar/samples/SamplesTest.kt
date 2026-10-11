@@ -223,6 +223,7 @@ class SamplesTest {
         assertSame(scriptedModel, modelFor(client, emptyMap()))
         assertSame(scriptedModel, modelFor(client, mapOf("OPENAI_API_KEY" to " ")))
         assertIs<AnthropicChatModel>(modelFor(client, mapOf("ANTHROPIC_API_KEY" to "a", "OPENAI_API_KEY" to "b")))
+        assertIs<AnthropicChatModel>(modelFor(client, mapOf("ANTHROPIC_API_KEY" to "a", "ANTHROPIC_MODEL" to "claude-haiku-5-5")))
         assertIs<OpenAiChatModel>(modelFor(client, mapOf("OPENAI_API_KEY" to "b", "OPENAI_MODEL" to "gpt-5-mini")))
         assertIs<OpenAiChatModel>(modelFor(client, mapOf("OLLAMA_MODEL" to "llama3.2")))
         client.close()
