@@ -4,57 +4,28 @@ import dev.deeptelar.telar.GraphConfig
 import dev.deeptelar.telar.GraphEvent
 import dev.deeptelar.telar.TelarException
 import dev.deeptelar.telar.agent.ChatMessage
+import dev.deeptelar.telar.agent.ChatModel
 import dev.deeptelar.telar.agent.pendingToolCalls
 import dev.deeptelar.telar.samples.modelFor
 import dev.deeptelar.telar.samples.scriptedModel
 import io.ktor.client.HttpClient
 import kotlin.time.TimeSource
 
-/**
- * How a shift went, in the numbers that one chef is compared with another on: first the points,
- * then the tokens.
- */
-fun Shift.report(): String {
-    val score = kitchen.score()
-    val orders =
-        listOfNotNull(
-            "${score.onTime} of ${score.orders} on time",
-            "${score.late} late".takeIf { score.late > 0 },
-            "${score.wrong} wrong".takeIf { score.wrong > 0 },
-            "${score.allergy} with an allergen".takeIf { score.allergy > 0 },
-            "${score.missed} not served".takeIf { score.missed > 0 },
-        )
-    val end =
-        when {
-            outOfTokens -> "out of tokens at minute ${kitchen.minute}"
-            kitchen.minute >= kitchen.closesAt -> "closed at minute ${kitchen.minute}"
-            else -> "every order served at minute ${kitchen.minute}"
-        }
-    return listOf(
-        "orders   ${orders.joinToString()}",
-        "points   ${score.points} of ${score.orders * Score.ON_TIME_POINTS}",
-        "tokens   $spent (${tokens.inputTokens} read, ${tokens.outputTokens} written) in $answers answers",
-        "kitchen  $end, ${score.wasted} ${if (score.wasted == 1) "pizza" else "pizzas"} wasted",
-    ).joinToString("\n")
+/** Runs [shift]. When a model fails, the shift ends there and the result is that of the kitchen as it was. */
+private suspend fun stopsWithTheModel(shift: suspend () -> Unit) {
+    try {
+        shift()
+    } catch (e: TelarException) {
+        println("The shift stopped: ${e.message}")
+    }
 }
 
-/**
- * Runs the lunch rush with one chef and prints what the chef did and how the shift went.
- *
- * The chef is the model that [modelFor] finds a key for in the environment, or [scriptedChef]
- * without one. TOKEN_BUDGET sets another token budget than [DEFAULT_TOKEN_BUDGET].
- */
-suspend fun main() {
-    val client = HttpClient()
-    val found = modelFor(client)
-    val scripted = found === scriptedModel
-    val budget = System.getenv("TOKEN_BUDGET")?.toIntOrNull() ?: DEFAULT_TOKEN_BUDGET
-    var shift = shift(lunchRush(), budget)
-    val started = TimeSource.Monotonic.markNow()
-
+/** Runs the lunch rush with one chef, prints what the chef did, and returns the shift as it ended. */
+suspend fun runSoloChef(chef: ChatModel, tokenBudget: Int): Service {
+    var shift = shift(lunchRush(), tokenBudget)
     println(shift.messages.single().text)
-    try {
-        soloChef(if (scripted) scriptedChef() else found).stream(shift, GraphConfig(maxIterations = SHIFT_STEPS)).collect { event ->
+    stopsWithTheModel {
+        soloChef(chef).stream(shift, GraphConfig(maxIterations = SHIFT_STEPS)).collect { event ->
             if (event !is GraphEvent.NodeCompleted) return@collect
             shift = event.state
             if (event.node == "chef") {
@@ -65,13 +36,74 @@ suspend fun main() {
                 shift.messages.takeLastWhile { it !is ChatMessage.Assistant }.forEach { println(it.text.prependIndent("  ")) }
             }
         }
-    } catch (e: TelarException) {
-        println("The shift stopped: ${e.message}")
     }
+    return shift
+}
+
+/**
+ * Runs the lunch rush in the kitchen with three stations, prints what each station did with the
+ * minute it was done, and returns the shift as it ended.
+ */
+suspend fun runLine(reader: ChatModel, prep: ChatModel?, oven: ChatModel?, tokenBudget: Int): Service {
+    var shift = LineShift(lunchRush(), tokenBudget)
+    var printed = 0
+    stopsWithTheModel {
+        line(reader, prep, oven).stream(shift, GraphConfig(maxIterations = SHIFT_STEPS)).collect { event ->
+            if (event !is GraphEvent.NodeCompleted || event.node != "clock") return@collect
+            shift = event.state
+            // Two stations work in the same minutes, so the lines of one minute are put in order here.
+            shift.log
+                .drop(printed)
+                .sorted()
+                .forEach(::println)
+            printed = shift.log.size
+        }
+    }
+    return shift
+}
+
+/**
+ * Runs the lunch rush and prints how the shift went.
+ *
+ * KITCHEN names the kitchen: `solo` for one chef who does everything (the default), `line` for
+ * three stations where a model reads the orders and rules make and bake the pizzas, and
+ * `line-models` for three stations with a model at each.
+ *
+ * The model is the one that [modelFor] finds a key for in the environment. Without a key, scripted
+ * stand-ins do the work. TOKEN_BUDGET sets another token budget than [DEFAULT_TOKEN_BUDGET].
+ */
+suspend fun main() {
+    val client = HttpClient()
+    val found = modelFor(client)
+    val scripted = found === scriptedModel
+    val budget = System.getenv("TOKEN_BUDGET")?.toIntOrNull() ?: DEFAULT_TOKEN_BUDGET
+    val layout = System.getenv("KITCHEN")?.takeIf { it.isNotBlank() } ?: "solo"
+    val started = TimeSource.Monotonic.markNow()
+
+    val (title, shift) =
+        when (layout) {
+            "solo" -> "solo chef" to runSoloChef(if (scripted) scriptedChef() else found, budget)
+            "line" ->
+                "the line, a model reads the orders and rules do the rest" to
+                    runLine(if (scripted) scriptedReader() else found, null, null, budget)
+            "line-models" ->
+                "the line, a model at every station" to
+                    if (scripted) {
+                        runLine(
+                            scriptedReader(),
+                            scriptedMaker(),
+                            scriptedOven(),
+                            budget,
+                        )
+                    } else {
+                        runLine(found, found, found, budget)
+                    }
+            else -> error("KITCHEN is solo, line or line-models, not $layout.")
+        }
     client.close()
 
     println()
-    println("Lunch rush, solo chef" + if (scripted) " (scripted: no model was asked, and the tokens are a guess)" else "")
+    println("Lunch rush, $title" + if (scripted) " (scripted: no model was asked, and the tokens are a guess)" else "")
     println(shift.report())
     println("time     ${started.elapsedNow().inWholeSeconds} s")
 }
