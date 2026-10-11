@@ -56,6 +56,14 @@ listOf(
     }
 }
 
+// The kitchen: one shift of a pizzeria whose chef is a model, with the points and the tokens it took.
+tasks.register<JavaExec>("runKitchenRush") {
+    group = "samples"
+    description = "Runs the KitchenRush sample."
+    mainClass.set("dev.deeptelar.telar.samples.kitchen.KitchenRushKt")
+    classpath = sourceSets.main.get().runtimeClasspath
+}
+
 // The levels of the tutorial in docs/tutorial/, for example: ./gradlew :samples:runLevel1
 (1..8).forEach { level ->
     tasks.register<JavaExec>("runLevel$level") {
