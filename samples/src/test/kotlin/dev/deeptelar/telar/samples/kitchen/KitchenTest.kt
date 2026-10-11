@@ -298,12 +298,32 @@ class KitchenTest {
         assertEquals(
             """
             The shift starts at minute 0. The kitchen closes at minute 95.
-            Stock: 14 dough, 20 tomato, 20 mozzarella, 8 basil, 8 pepperoni, 6 mushrooms, 4 peppers, 4 onions.
+            Stock: 14 dough, 20 tomato, 20 mozzarella, 8 basil, 8 pepperoni, 7 mushrooms, 5 peppers, 4 onions.
             New order #1, table 1, due at minute 20: One margherita.
-            New order #2, table 2, due at minute 24: A pepperoni with extra mozzarella.
+            New order #2, table 2, due at minute 24: A pepperoni with extra cheese.
             """.trimIndent(),
             shift(rush).messages.single().text,
         )
+    }
+
+    @Test
+    fun `the orders of the lunch rush mean more than their words`() {
+        val end = lunchRush().let { it.at(it.closesAt) }.standing.associateBy { it.number }
+
+        // "Cheese" is the mozzarella, and "instead of the onions" takes them off.
+        assertEquals(listOf(TOMATO, MOZZARELLA, MOZZARELLA, Topping.PEPPERONI), end.getValue(2).wanted)
+        assertEquals(listOf(TOMATO, MOZZARELLA, MUSHROOMS, Topping.PEPPERS, Topping.PEPPERS), end.getValue(4).wanted)
+        // Table 5 adds to what it ordered, and the order is read with both sentences.
+        assertEquals(listOf(MOZZARELLA, Topping.PEPPERONI, MUSHROOMS), end.getValue(5).wanted)
+        assertEquals("A pepperoni without tomato. Then: Table 5 also wants mushrooms on it.", end.getValue(5).text)
+        assertEquals(Outcome.CANCELLED, end.getValue(6).outcome)
+        // Table 9 gets what table 2 had, less the extra.
+        assertEquals(MENU.getValue("pepperoni"), end.getValue(9).wanted)
+        // Table 3 said at minute 8 that it may not get onions. Its veggie at minute 40 does not say it again.
+        assertEquals(3, end.getValue(10).table)
+        assertEquals(setOf(Topping.ONIONS), end.getValue(10).never)
+        assertFalse(Topping.ONIONS in end.getValue(10).wanted)
+        assertEquals(MENU.getValue("veggie") - Topping.ONIONS, end.getValue(10).wanted)
     }
 
     @Test
@@ -404,7 +424,7 @@ class KitchenTest {
             assertEquals("P1 is on the counter: tomato.", results[2].text)
             assertEquals("P1 is in the oven. It is baked from minute 10 and burnt after minute 16.", results[3].text)
             assertEquals(
-                "#1, table 1, due at minute 20: One margherita.\n#2, table 2, due at minute 24: A pepperoni with extra mozzarella.\nMinute 4.",
+                "#1, table 1, due at minute 20: One margherita.\n#2, table 2, due at minute 24: A pepperoni with extra cheese.\nMinute 4.",
                 results[4].text,
             )
             assertEquals(4, state.kitchen.minute)

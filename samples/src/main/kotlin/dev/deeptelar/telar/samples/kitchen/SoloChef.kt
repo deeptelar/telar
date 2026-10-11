@@ -131,7 +131,7 @@ val SOLO_CHEF: String =
     - Each of your answers costs ${Kitchen.THINK_MINUTES} minute. make_pizza costs ${Kitchen.MAKE_MINUTES} minutes. bake, take_out and serve cost ${Kitchen.MOVE_MINUTES} minute each. read_orders and check_oven cost no time.
     - You may call several tools in one answer. They run one after the other, in your order.
     - The oven holds ${Kitchen.OVEN_SLOTS} pizzas. A pizza is baked after ${Kitchen.BAKED_AFTER} minutes in the oven and burnt after ${Kitchen.BURNT_AFTER}. A pizza that is out cannot go back in.
-    - "Extra" of a topping means that topping twice. The stock is not refilled.
+    - "Extra" of a topping means that topping twice. A guest who is allergic to a topping gets the pizza without it. The stock is not refilled.
     - A served pizza cannot be taken back. An order is worth ${Score.ON_TIME_POINTS} points on time and ${Score.LATE_POINTS} late. A pizza with a topping the guest is allergic to costs ${Score.ALLERGY_PENALTY} points.
     - New orders and changes are announced after the result of your last tool, with the time.
     - Work until every order is served or the kitchen closes. Do not explain what you do.
