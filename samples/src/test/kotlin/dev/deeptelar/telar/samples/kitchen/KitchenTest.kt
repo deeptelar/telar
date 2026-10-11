@@ -137,40 +137,61 @@ class KitchenTest {
                 changes =
                     listOf(
                         Change(at = 4, order = 2, text = "No basil.", wanted = listOf(TOMATO, MOZZARELLA)),
+                        Change(at = 5, order = 2, text = "And no tomato.", wanted = listOf(MOZZARELLA)),
                         Change(at = 5, order = 3, text = "they left."),
                         Change(at = 50, order = 1, text = "No tomato.", wanted = listOf(MOZZARELLA, BASIL)),
                     ),
-            ).opened()
-        assertEquals(listOf("New order #1, table 1, due at minute 20: A pizza."), start.news)
+            )
+        assertEquals(listOf("New order #1, table 1, due at minute 20: A pizza."), start.newsSince(-1))
+        assertEquals(emptyList(), start.newsSince(0))
         assertEquals("#1, table 1, due at minute 20: A pizza.", start.readOrders())
 
-        val later = start.told().waitFor(5).kitchen
+        val later = start.waitFor(5).kitchen
         assertEquals(
             listOf(
                 "New order #2, table 2, due at minute 20: A pizza.",
                 "New order #3, table 3, due at minute 20: A pizza.",
                 "Order #2 changed: No basil.",
+                "Order #2 changed: And no tomato.",
                 "Order #3 is cancelled: they left.",
             ),
-            later.news,
+            later.newsSince(0),
         )
-        assertEquals("#1, table 1, due at minute 20: A pizza.\n#2, table 2, due at minute 20: No basil.", later.readOrders())
+        assertEquals(listOf("Order #2 changed: And no tomato.", "Order #3 is cancelled: they left."), later.newsSince(4))
+        // An order is read with everything its guest said, because a change may build on the one before.
+        assertEquals(
+            "#1, table 1, due at minute 20: A pizza.\n#2, table 2, due at minute 20: A pizza. Then: No basil. Then: And no tomato.",
+            later.readOrders(),
+        )
+        assertEquals(listOf(MOZZARELLA), later.rail.last().wanted)
         assertEquals("Order #3 was cancelled.", assertFailsWith<KitchenException> { later.baked(margherita).serve(3, "P1") }.message)
+
+        // The clock can be set back, and the orders are then as they were.
+        assertEquals("#1, table 1, due at minute 20: A pizza.\n#2, table 2, due at minute 20: A pizza.", later.at(2).readOrders())
+        assertEquals(
+            Outcome.OPEN,
+            later
+                .at(4)
+                .standing
+                .last()
+                .outcome,
+        )
 
         // An order that was served is not changed any more.
         val served = later.baked(margherita).serve(1, "P1").kitchen
-        assertEquals(
-            emptyList(),
-            served
-                .told()
-                .waitFor(15)
-                .kitchen
-                .waitFor(15)
-                .kitchen
-                .waitFor(15)
-                .kitchen.news,
-        )
-        assertEquals(Score(onTime = 1, late = 0, wrong = 0, allergy = 0, missed = 1, cancelled = 1, wasted = 0), served.score())
+        val closed = served.at(60)
+        assertEquals(emptyList(), closed.newsSince(served.minute))
+        assertEquals(Outcome.ON_TIME, closed.standing.first().outcome)
+        assertEquals(Score(onTime = 1, late = 0, wrong = 0, allergy = 0, missed = 1, cancelled = 1, wasted = 0), closed.score())
+    }
+
+    @Test
+    fun `a pizza that a chef is still making is not there for another chef`() {
+        val making = kitchen(order()).makePizza(margherita).kitchen
+
+        assertEquals("There is no pizza P1.", assertFailsWith<KitchenException> { making.at(1).bake("P1") }.message)
+        assertEquals(emptyList(), making.at(1).made)
+        assertEquals("P1 is in the oven. It is baked from minute 9 and burnt after minute 15.", making.at(2).bake("P1").told)
     }
 
     @Test
@@ -272,15 +293,7 @@ class KitchenTest {
 
         assertEquals(12, rush.orders.size)
         assertEquals(1, end.score().cancelled)
-        assertEquals(
-            rush.stock[MUSHROOMS],
-            end.orders.filter { it.outcome == Outcome.OPEN }.sumOf { order ->
-                order.wanted.count {
-                    it ==
-                        MUSHROOMS
-                }
-            },
-        )
+        assertEquals(rush.stock[MUSHROOMS], end.rail.sumOf { order -> order.wanted.count { it == MUSHROOMS } })
         assertTrue(rush.dough > end.score().orders)
         assertEquals(
             """
@@ -395,6 +408,5 @@ class KitchenTest {
                 results[4].text,
             )
             assertEquals(4, state.kitchen.minute)
-            assertEquals(emptyList(), state.kitchen.news)
         }
 }

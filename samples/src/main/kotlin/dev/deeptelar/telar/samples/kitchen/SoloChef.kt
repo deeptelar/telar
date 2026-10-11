@@ -103,14 +103,13 @@ data class Shift(
 
 /** The start of a shift in [kitchen]: the chef is told the time, the stock and the first orders. */
 fun shift(kitchen: Kitchen, tokenBudget: Int = DEFAULT_TOKEN_BUDGET): Shift {
-    val opened = kitchen.opened()
     val start =
         listOf(
-            "The shift starts at minute ${opened.minute}. The kitchen closes at minute ${opened.closesAt}.",
-            "Stock: ${opened.stockList}.",
+            "The shift starts at minute ${kitchen.minute}. The kitchen closes at minute ${kitchen.closesAt}.",
+            "Stock: ${kitchen.stockList}.",
         ) +
-            opened.news
-    return Shift(opened.told(), tokenBudget, listOf(ChatMessage.User(start.joinToString("\n"))))
+            kitchen.newsSince(kitchen.minute - 1)
+    return Shift(kitchen, tokenBudget, listOf(ChatMessage.User(start.joinToString("\n"))))
 }
 
 const val DEFAULT_TOKEN_BUDGET: Int = 300_000
@@ -177,12 +176,12 @@ suspend fun Shift.afterAnswer(): Shift {
     val counter = Counter(kitchen.after(Kitchen.THINK_MINUTES))
     val results = messages.pendingToolCalls().map { counter.run(it) }
     val now = counter.kitchen
-    val report = (listOf("Minute ${now.minute}.") + now.news).joinToString("\n")
+    val report = (listOf("Minute ${now.minute}.") + now.newsSince(kitchen.minute)).joinToString("\n")
     val told =
         if (results.isEmpty()) {
             listOf(ChatMessage.User("$report\nThe shift is not over. Use the tools, or wait."))
         } else {
             results.dropLast(1) + results.last().let { it.copy(text = "${it.text}\n$report") }
         }
-    return copy(kitchen = now.told(), messages = messages + told)
+    return copy(kitchen = now, messages = messages + told)
 }

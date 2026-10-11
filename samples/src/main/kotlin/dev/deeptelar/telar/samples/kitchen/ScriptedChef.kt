@@ -35,7 +35,7 @@ fun scriptedChef(kitchen: Kitchen = lunchRush(), patience: Int = 2): ChatModel {
 
 /** The answers of the scripted chef for a whole shift in [start], one list of tool calls for each answer. */
 suspend fun rehearse(start: Kitchen, patience: Int = 2): List<List<ToolCall>> {
-    var kitchen = start.opened().told()
+    var kitchen = start
     val turns = mutableListOf<List<ToolCall>>()
     while (!kitchen.over) {
         val counter = Counter(kitchen.after(Kitchen.THINK_MINUTES))
@@ -56,7 +56,7 @@ suspend fun rehearse(start: Kitchen, patience: Int = 2): List<List<ToolCall>> {
             if (gap >= 1 || calls.isEmpty()) call("wait", buildJsonObject { put("minutes", gap.coerceIn(1, patience)) })
         }
         turns += calls
-        kitchen = counter.kitchen.told()
+        kitchen = counter.kitchen
     }
     return turns
 }
@@ -68,9 +68,9 @@ suspend fun rehearse(start: Kitchen, patience: Int = 2): List<List<ToolCall>> {
  * changed since then is news it has not heard. It does see a table leave.
  */
 private fun Kitchen.nextMove(known: Kitchen): Pair<String, JsonObject>? {
-    val open = orders.filter { it.outcome == Outcome.OPEN }.map { it.number }
+    val open = standing.filter { it.outcome == Outcome.OPEN }.map { it.number }
     // Give each open order, the one due first before the others, a pizza that is already made.
-    val free = pizzas.filter { it.place != Place.SERVED && (it.baked == null || it.good) }.toMutableList()
+    val free = made.filter { it.place != Place.SERVED && (it.baked == null || it.good) }.toMutableList()
     val plan =
         known.rail.filter { it.number in open }.sortedBy { it.dueAt }.map { order ->
             val pizza = free.filter { it.has(order.wanted) }.minByOrNull { STAGE.indexOf(it.place) }
