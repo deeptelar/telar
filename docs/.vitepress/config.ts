@@ -86,6 +86,7 @@ export default withMermaid(
             { text: 'Decision models', link: '/guides/decision-models' },
             { text: 'Agents with tools', link: '/guides/agents-with-tools' },
             { text: 'Inspecting a graph', link: '/guides/inspecting-a-graph' },
+            { text: 'Retries and time limits', link: '/guides/retries' },
             { text: 'Errors', link: '/guides/errors' },
           ],
         },

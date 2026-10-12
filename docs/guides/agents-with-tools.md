@@ -216,6 +216,23 @@ What to know:
 - **A node of your own counts with `+`.** `chat(ChatRequest)` and `ask(ChatRequest)` return the
   usage of their calls: `order.copy(tokens = order.tokens + response.usage)`.
 
+A call to the model that fails ends the run: the provider is overloaded, or the connection breaks.
+With a `retry`, the agent asks the model again first:
+
+```kotlin
+val agent = toolAgent(model, tools = listOf(menuPrice, orderStatus), retry = Retry(attempts = 3))
+```
+
+- **A call that failed leaves nothing behind.** It adds no message to the conversation and no
+  tokens to the count.
+- **The tools are not tried again.** A tool that fails returns an error to the model, which can
+  call it again.
+- **In a streamed run the text starts again.** The pieces of a try that failed have already
+  arrived. The stream then has a `GraphEvent.NodeRetry` for the model node, so a screen clears the
+  text it showed.
+- `toolLoop` takes the same `retry`. [Retries and time limits](retries.md) explains the pauses
+  and how to pick the failures that are tried again.
+
 Runnable version: [`ToolAgent`](https://github.com/deeptelar/telar/blob/main/samples/src/main/kotlin/dev/deeptelar/telar/samples/ToolAgent.kt). It
 runs without an API key, with Claude when `ANTHROPIC_API_KEY` is set, with OpenAI when
 `OPENAI_API_KEY` is set, and with a model of Ollama when `OLLAMA_MODEL` names one.

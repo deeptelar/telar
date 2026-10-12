@@ -57,6 +57,8 @@ val graph = StateGraph<Ticket> {
 | A loop | A conditional edge whose router can return an earlier node, with a limit |
 | Parallel nodes | Several arrows from one place, to nodes written as `node("a", work = { ... }) { state, result -> ... }` |
 | An arrow by name | `edge("a", "b")` |
+| A node that is tried again when it fails | `node("a", retry = Retry(attempts = 3)) { ... }` |
+| A node with a time limit | `node("a", timeout = 30.seconds) { ... }` |
 | A choice by name | `conditionalEdge("a", targets = setOf("b", END)) { state -> "b" }` |
 
 ## A graph inside a graph
@@ -131,6 +133,7 @@ val pay = node("pay") { ticket ->
 | `GraphEvent.NodeStarted` | A node is about to run |
 | `GraphEvent.NodeProgress` | A running node called `reportProgress(value)` |
 | `GraphEvent.SubgraphEvent` | Something happened in the subgraph a node runs: `event.event` is the event of that graph |
+| `GraphEvent.NodeRetry` | A node with a `retry` failed and will run again after `event.pause` |
 | `GraphEvent.NodeCompleted` | A node finished |
 | `GraphEvent.StepCompleted` | All nodes of a step finished |
 | `GraphEvent.Interrupted` | The run paused. Last event. |
@@ -186,6 +189,7 @@ agent.invoke(state.withUserMessage("And two?"))  // the next turn of the convers
 | Tool calls of one answer in order | `toolLoop(..., inOrder = true)`; always with `stateTools` |
 | What an agent cost | `state.tokens` of an `AgentState`; in `toolLoop`, `countTokens = { state, used -> state.copy(tokens = state.tokens + used) }` |
 | A limit on what an agent may use | `toolAgent(model, tools, tokenBudget = 50_000)`; in `toolLoop`, `stopWhen = { it.tokens.total >= 50_000 }` |
+| An agent that asks the model again after a failed call | `toolAgent(model, tools, retry = Retry(attempts = 3))`; the same in `toolLoop` |
 | A conversation that starts from other fields of the state | `toolLoop(..., firstMessage = { state -> "..." })` |
 | The answer while the model writes it | `agent.stream(input).collect { event -> event.textDelta?.let(::print) }` |
 | The same in a node of your own | `model.chatWithProgress("...")` in place of `model.chat("...")` |

@@ -154,6 +154,10 @@ workflow, that means the three model calls that already succeeded are not paid f
 
 Without a checkpointer there is no save, and the only way to try again is `invoke`, from the start.
 
+A node can also try again by itself, without a failed run in between:
+`node("kitchen", retry = Retry(attempts = 3)) { ... }`. The guide
+[Retries and time limits](../guides/retries.md) shows it.
+
 ## All the game over screens
 
 Every exception the library throws is a `TelarException`, so one `catch` can handle them all.
@@ -161,7 +165,7 @@ Every exception the library throws is a `TelarException`, so one `catch` can han
 | Exception | Meaning | What to do |
 |---|---|---|
 | `GraphValidationException` | The map or the run's settings are wrong. Thrown by `compile()` or when a run starts. | Read the message and fix the graph or the `GraphConfig`. |
-| `NodeExecutionException` | A node threw an exception. | Look at `nodeName` and `cause`. Retry with `resume` if the cause was temporary. |
+| `NodeExecutionException` | A node threw an exception. | Look at `nodeName` and `cause`. Retry with `resume` if the cause was temporary, or give the node a `retry`. |
 | `EdgeConditionException` | A router threw an exception. | Look at `from` (the node the arrow starts at) and `cause`. |
 | `ReducerException` | The reducer threw an exception. | Look at `nodes` (the nodes it was merging) and `cause`. |
 | `InvalidRouteException` | A router returned a name that is not a node, or not in its `targets`. | Fix the router or add the name to `targets`. |

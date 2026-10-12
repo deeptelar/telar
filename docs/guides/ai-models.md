@@ -95,6 +95,17 @@ response.message // add it to the conversation to continue it
 `ChatModel` has one function, `chat(ChatRequest): ChatResponse`, so a model of your own is a few
 lines. A failed call throws `ChatModelException`. When the call is made in a node, the run fails
 with a `NodeExecutionException` that names the node and has the `ChatModelException` as its `cause`.
+To ask the model again first, give the node a `retry`:
+
+```kotlin
+val answer = node(
+    "answer",
+    work = { email -> model.chat("Write a short, friendly reply to this support email: ${email.body}") },
+    retry = Retry(attempts = 3),
+) { email, reply -> email.copy(reply = reply) }
+```
+
+[Retries and time limits](retries.md) has the details.
 
 To show an answer while the model writes it, `model.stream(request)` returns a `Flow` with a
 `ChatEvent.TextDelta` for each piece of text and a final `ChatEvent.Completed` with the whole
