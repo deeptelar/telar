@@ -87,6 +87,7 @@ export default withMermaid(
             { text: 'Agents with tools', link: '/guides/agents-with-tools' },
             { text: 'Inspecting a graph', link: '/guides/inspecting-a-graph' },
             { text: 'Retries and time limits', link: '/guides/retries' },
+            { text: 'Testing', link: '/guides/testing' },
             { text: 'Errors', link: '/guides/errors' },
           ],
         },

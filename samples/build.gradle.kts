@@ -27,6 +27,7 @@ dependencies {
     // The Ktor engine that AnthropicChatModel and OpenAiChatModel send their requests with.
     implementation(libs.ktor.client.cio)
 
+    testImplementation(project(":telar-test"))
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.ktor.client.mock)

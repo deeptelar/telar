@@ -31,6 +31,7 @@ dependencies {
 | `telar-openai` | same as core | `OpenAiChatModel`: OpenAI, Ollama and other servers with the Chat Completions API, through Ktor |
 | `telar-langchain4j` | JVM (Java 17+) | `LangChain4jChatModel` and `chatNode` / `chatMessagesNode` for LangChain4j 1.x models |
 | `telar-typesafe` | same as core | `TypeSafeDecisionModel`: Jev, the decision model of TypeSafe AI, through Ktor |
+| `telar-test` | same as core | `ScriptedChatModel`, `ScriptedDecisionModel` and `record()`, for [tests](guides/testing.md) of a graph with an agent. Not released yet: it comes with the version after `0.1.0-alpha09`. |
 
 Requires Kotlin 2.x. JVM artifacts target Java 11, except `telar-langchain4j`, which needs
 Java 17 because LangChain4j does.

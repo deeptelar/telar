@@ -29,6 +29,9 @@ val model: ChatModel = LangChain4jChatModel(GoogleAiGeminiChatModel.builder().ap
 val model = ChatModel { request -> ChatResponse(ChatMessage.Assistant("Thanks for your email!")) }
 ```
 
+For a test of a graph with an agent, `telar-test` has a model that follows a script: see
+[Testing](testing.md).
+
 A call to `AnthropicChatModel` or `OpenAiChatModel` may take five minutes, also with an engine of
 Ktor that has a shorter limit of its own, such as the 15 seconds of CIO. Change the limit with
 `timeout`. `timeout = null` leaves the limits to the client:

@@ -169,6 +169,10 @@ All the levels are tested this way in
 [`TutorialTest.kt`](https://github.com/deeptelar/telar/blob/main/samples/src/test/kotlin/dev/deeptelar/telar/samples/tutorial/TutorialTest.kt).
 For tests that pause and resume, use `MemoryCheckpointer`.
 
+For a graph with an agent, `telar-test` has the pretend model ready: a `ScriptedChatModel` gives
+the answers the test wrote down, in order, and remembers what it was asked. The guide
+[Testing](../guides/testing.md) shows it.
+
 ## Using the library in your own project
 
 So far you worked inside the Telar repository. In your own Gradle project, add the library as a

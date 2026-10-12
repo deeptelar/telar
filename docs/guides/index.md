@@ -14,3 +14,4 @@ Each guide is the short version of one feature. The [tutorial](../tutorial/) exp
 | Let an AI model call my functions | [Agents with tools](agents-with-tools.md) |
 | Draw a graph or test its shape | [Inspecting a graph](inspecting-a-graph.md) |
 | Try a step again when it fails, or stop one that takes too long | [Retries and time limits](retries.md) |
+| Test a graph with an agent, without an API key | [Testing](testing.md) |

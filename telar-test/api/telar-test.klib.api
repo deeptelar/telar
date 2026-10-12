@@ -1,0 +1,76 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, js, linuxArm64, linuxX64, macosArm64, mingwX64, wasmJs]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <telar:telar-test>
+final class <#A: kotlin/Any?> dev.deeptelar.telar.test/RunRecord { // dev.deeptelar.telar.test/RunRecord|null[0]
+    constructor <init>(kotlin.collections/List<dev.deeptelar.telar/GraphEvent<#A>>) // dev.deeptelar.telar.test/RunRecord.<init>|<init>(kotlin.collections.List<dev.deeptelar.telar.GraphEvent<1:0>>){}[0]
+
+    final val events // dev.deeptelar.telar.test/RunRecord.events|{}events[0]
+        final fun <get-events>(): kotlin.collections/List<dev.deeptelar.telar/GraphEvent<#A>> // dev.deeptelar.telar.test/RunRecord.events.<get-events>|<get-events>(){}[0]
+    final val nodes // dev.deeptelar.telar.test/RunRecord.nodes|{}nodes[0]
+        final fun <get-nodes>(): kotlin.collections/List<kotlin/String> // dev.deeptelar.telar.test/RunRecord.nodes.<get-nodes>|<get-nodes>(){}[0]
+    final val result // dev.deeptelar.telar.test/RunRecord.result|{}result[0]
+        final fun <get-result>(): dev.deeptelar.telar/GraphResult<#A> // dev.deeptelar.telar.test/RunRecord.result.<get-result>|<get-result>(){}[0]
+    final val state // dev.deeptelar.telar.test/RunRecord.state|{}state[0]
+        final fun <get-state>(): #A // dev.deeptelar.telar.test/RunRecord.state.<get-state>|<get-state>(){}[0]
+    final val steps // dev.deeptelar.telar.test/RunRecord.steps|{}steps[0]
+        final fun <get-steps>(): kotlin.collections/List<kotlin.collections/List<kotlin/String>> // dev.deeptelar.telar.test/RunRecord.steps.<get-steps>|<get-steps>(){}[0]
+    final val text // dev.deeptelar.telar.test/RunRecord.text|{}text[0]
+        final fun <get-text>(): kotlin/String // dev.deeptelar.telar.test/RunRecord.text.<get-text>|<get-text>(){}[0]
+
+    final fun toString(): kotlin/String // dev.deeptelar.telar.test/RunRecord.toString|toString(){}[0]
+}
+
+final class dev.deeptelar.telar.test/ChatScript { // dev.deeptelar.telar.test/ChatScript|null[0]
+    final fun <#A1: kotlin/Any?> json(kotlinx.serialization/KSerializer<#A1>, #A1): kotlin/String // dev.deeptelar.telar.test/ChatScript.json|json(kotlinx.serialization.KSerializer<0:0>;0:0){0§<kotlin.Any?>}[0]
+    final fun <#A1: kotlin/Any?> jsonObject(kotlinx.serialization/KSerializer<#A1>, #A1): kotlinx.serialization.json/JsonObject // dev.deeptelar.telar.test/ChatScript.jsonObject|jsonObject(kotlinx.serialization.KSerializer<0:0>;0:0){0§<kotlin.Any?>}[0]
+    final fun call(kotlin/String): dev.deeptelar.telar.agent/ToolCall // dev.deeptelar.telar.test/ChatScript.call|call(kotlin.String){}[0]
+    final fun call(kotlin/String, kotlinx.serialization.json/JsonObject): dev.deeptelar.telar.agent/ToolCall // dev.deeptelar.telar.test/ChatScript.call|call(kotlin.String;kotlinx.serialization.json.JsonObject){}[0]
+    final fun calls(kotlin/Array<out dev.deeptelar.telar.agent/ToolCall>..., kotlin/String = ..., dev.deeptelar.telar.agent/TokenUsage? = ...) // dev.deeptelar.telar.test/ChatScript.calls|calls(kotlin.Array<out|dev.deeptelar.telar.agent.ToolCall>...;kotlin.String;dev.deeptelar.telar.agent.TokenUsage?){}[0]
+    final fun fails(kotlin/String, kotlin/String = ...) // dev.deeptelar.telar.test/ChatScript.fails|fails(kotlin.String;kotlin.String){}[0]
+    final fun fails(kotlin/Throwable, kotlin/String = ...) // dev.deeptelar.telar.test/ChatScript.fails|fails(kotlin.Throwable;kotlin.String){}[0]
+    final fun responds(kotlin.coroutines/SuspendFunction1<dev.deeptelar.telar.agent/ChatRequest, dev.deeptelar.telar.agent/ChatResponse>) // dev.deeptelar.telar.test/ChatScript.responds|responds(kotlin.coroutines.SuspendFunction1<dev.deeptelar.telar.agent.ChatRequest,dev.deeptelar.telar.agent.ChatResponse>){}[0]
+    final fun says(kotlin/String, dev.deeptelar.telar.agent/TokenUsage? = ..., kotlin/Boolean = ...) // dev.deeptelar.telar.test/ChatScript.says|says(kotlin.String;dev.deeptelar.telar.agent.TokenUsage?;kotlin.Boolean){}[0]
+    final inline fun <#A1: reified kotlin/Any?> answers(#A1, dev.deeptelar.telar.agent/TokenUsage? = ...) // dev.deeptelar.telar.test/ChatScript.answers|answers(0:0;dev.deeptelar.telar.agent.TokenUsage?){0§<kotlin.Any?>}[0]
+    final inline fun <#A1: reified kotlin/Any?> call(kotlin/String, #A1): dev.deeptelar.telar.agent/ToolCall // dev.deeptelar.telar.test/ChatScript.call|call(kotlin.String;0:0){0§<kotlin.Any?>}[0]
+    final inline fun <#A1: reified kotlin/Any?> calls(kotlin/String, #A1, kotlin/String = ..., dev.deeptelar.telar.agent/TokenUsage? = ...) // dev.deeptelar.telar.test/ChatScript.calls|calls(kotlin.String;0:0;kotlin.String;dev.deeptelar.telar.agent.TokenUsage?){0§<kotlin.Any?>}[0]
+}
+
+final class dev.deeptelar.telar.test/DecisionScript { // dev.deeptelar.telar.test/DecisionScript|null[0]
+    final fun chooses(kotlin/String, kotlin/Double = ..., dev.deeptelar.telar.agent/TokenUsage? = ...) // dev.deeptelar.telar.test/DecisionScript.chooses|chooses(kotlin.String;kotlin.Double;dev.deeptelar.telar.agent.TokenUsage?){}[0]
+    final fun decides(kotlin.coroutines/SuspendFunction1<dev.deeptelar.telar.agent/DecisionRequest, dev.deeptelar.telar.agent/DecisionResponse>) // dev.deeptelar.telar.test/DecisionScript.decides|decides(kotlin.coroutines.SuspendFunction1<dev.deeptelar.telar.agent.DecisionRequest,dev.deeptelar.telar.agent.DecisionResponse>){}[0]
+    final fun fails(kotlin/String) // dev.deeptelar.telar.test/DecisionScript.fails|fails(kotlin.String){}[0]
+    final fun fails(kotlin/Throwable) // dev.deeptelar.telar.test/DecisionScript.fails|fails(kotlin.Throwable){}[0]
+    final fun no(kotlin/Double = ..., dev.deeptelar.telar.agent/TokenUsage? = ...) // dev.deeptelar.telar.test/DecisionScript.no|no(kotlin.Double;dev.deeptelar.telar.agent.TokenUsage?){}[0]
+    final fun scores(kotlin/Double, kotlin/Double = ..., dev.deeptelar.telar.agent/TokenUsage? = ...) // dev.deeptelar.telar.test/DecisionScript.scores|scores(kotlin.Double;kotlin.Double;dev.deeptelar.telar.agent.TokenUsage?){}[0]
+    final fun yes(kotlin/Double = ..., dev.deeptelar.telar.agent/TokenUsage? = ...) // dev.deeptelar.telar.test/DecisionScript.yes|yes(kotlin.Double;dev.deeptelar.telar.agent.TokenUsage?){}[0]
+}
+
+final class dev.deeptelar.telar.test/ScriptedChatModel : dev.deeptelar.telar.agent/ChatModel { // dev.deeptelar.telar.test/ScriptedChatModel|null[0]
+    constructor <init>(kotlin/Function1<dev.deeptelar.telar.test/ChatScript, kotlin/Unit>) // dev.deeptelar.telar.test/ScriptedChatModel.<init>|<init>(kotlin.Function1<dev.deeptelar.telar.test.ChatScript,kotlin.Unit>){}[0]
+
+    final val remaining // dev.deeptelar.telar.test/ScriptedChatModel.remaining|{}remaining[0]
+        final fun <get-remaining>(): kotlin/Int // dev.deeptelar.telar.test/ScriptedChatModel.remaining.<get-remaining>|<get-remaining>(){}[0]
+    final val requests // dev.deeptelar.telar.test/ScriptedChatModel.requests|{}requests[0]
+        final fun <get-requests>(): kotlin.collections/List<dev.deeptelar.telar.agent/ChatRequest> // dev.deeptelar.telar.test/ScriptedChatModel.requests.<get-requests>|<get-requests>(){}[0]
+
+    final fun stream(dev.deeptelar.telar.agent/ChatRequest): kotlinx.coroutines.flow/Flow<dev.deeptelar.telar.agent/ChatEvent> // dev.deeptelar.telar.test/ScriptedChatModel.stream|stream(dev.deeptelar.telar.agent.ChatRequest){}[0]
+    final suspend fun chat(dev.deeptelar.telar.agent/ChatRequest): dev.deeptelar.telar.agent/ChatResponse // dev.deeptelar.telar.test/ScriptedChatModel.chat|chat(dev.deeptelar.telar.agent.ChatRequest){}[0]
+}
+
+final class dev.deeptelar.telar.test/ScriptedDecisionModel : dev.deeptelar.telar.agent/DecisionModel { // dev.deeptelar.telar.test/ScriptedDecisionModel|null[0]
+    constructor <init>(kotlin/Function1<dev.deeptelar.telar.test/DecisionScript, kotlin/Unit>) // dev.deeptelar.telar.test/ScriptedDecisionModel.<init>|<init>(kotlin.Function1<dev.deeptelar.telar.test.DecisionScript,kotlin.Unit>){}[0]
+
+    final val remaining // dev.deeptelar.telar.test/ScriptedDecisionModel.remaining|{}remaining[0]
+        final fun <get-remaining>(): kotlin/Int // dev.deeptelar.telar.test/ScriptedDecisionModel.remaining.<get-remaining>|<get-remaining>(){}[0]
+    final val requests // dev.deeptelar.telar.test/ScriptedDecisionModel.requests|{}requests[0]
+        final fun <get-requests>(): kotlin.collections/List<dev.deeptelar.telar.agent/DecisionRequest> // dev.deeptelar.telar.test/ScriptedDecisionModel.requests.<get-requests>|<get-requests>(){}[0]
+
+    final suspend fun decide(dev.deeptelar.telar.agent/DecisionRequest): dev.deeptelar.telar.agent/DecisionResponse // dev.deeptelar.telar.test/ScriptedDecisionModel.decide|decide(dev.deeptelar.telar.agent.DecisionRequest){}[0]
+}
+
+final suspend fun <#A: kotlin/Any?> (kotlinx.coroutines.flow/Flow<dev.deeptelar.telar/GraphEvent<#A>>).dev.deeptelar.telar.test/record(): dev.deeptelar.telar.test/RunRecord<#A> // dev.deeptelar.telar.test/record|record@kotlinx.coroutines.flow.Flow<dev.deeptelar.telar.GraphEvent<0:0>>(){0§<kotlin.Any?>}[0]

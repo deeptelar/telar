@@ -245,4 +245,5 @@ OPENAI_API_KEY=your-gemini-key OPENAI_MODEL=gemini-3.8-flash \
   OPENAI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai ./gradlew :samples:runToolAgent
 ```
 
-[Level 6 of the tutorial](../tutorial/06-the-agent.md) explains the same agent step by step.
+[Level 6 of the tutorial](../tutorial/06-the-agent.md) explains the same agent step by step, and
+[Testing](testing.md) shows how to test one without an API key.
