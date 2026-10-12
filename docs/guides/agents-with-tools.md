@@ -170,6 +170,52 @@ and the next node reads it. What changes in a loop with state tools:
   [Parallel branches](parallel-branches.md) explains. Next to nodes with a `work` and an `update`
   it needs none.
 
+An agent sends the whole conversation with every request, so a long run costs more with each
+round. The state of a `toolAgent` counts the tokens of the conversation, and `tokenBudget` limits
+them:
+
+```kotlin
+val agent = toolAgent(model, tools = listOf(menuPrice, orderStatus), tokenBudget = 50_000)
+
+val state = agent.invoke(AgentState("Where is my pizza, and how much is a cola?")).state
+println("${state.tokens.total} tokens: ${state.tokens.inputTokens} read, ${state.tokens.outputTokens} written")
+if (state.answer == null) println("The agent used its budget before it had an answer.")
+```
+
+In a `toolLoop`, the count is in your state. `countTokens` adds the tokens of each answer to it,
+and `stopWhen` is asked before each call to the model:
+
+```kotlin
+data class Order(val messages: List<ChatMessage>, val tokens: TokenUsage = TokenUsage())
+
+toolLoop(
+    model = model,
+    tools = listOf(menuPrice, orderStatus),
+    messages = { it.messages },
+    append = { order, new -> order.copy(messages = order.messages + new) },
+    countTokens = { order, used -> order.copy(tokens = order.tokens + used) },
+    stopWhen = { order -> order.tokens.total >= 50_000 },
+    then = send,
+)
+```
+
+What to know:
+
+- **A run that was stopped is complete.** The model is not asked again, the graph continues at
+  `then`, and the result is a `GraphResult.Completed`. The conversation ends with the results of
+  the last tools and has no final answer. To go on, invoke the graph again with that state.
+- **The limit is checked with real numbers.** They are the tokens the provider reported for the
+  calls so far, so a run ends up to one call above its limit. A provider that reports no usage
+  adds nothing.
+- **The count belongs to the conversation.** A chat that continues with `withUserMessage` keeps
+  counting. For a budget per question, start with `state.copy(tokens = TokenUsage())`.
+- **`stopWhen` is not only for tokens.** It reads the state, so it ends a loop after a number of
+  rounds or at a time of day as well.
+- **Parallel branches and subgraphs add up.** Two loops in parallel branches add to the same
+  property, and a subgraph hands its count to the graph around it in the `update` of `subgraph`.
+- **A node of your own counts with `+`.** `chat(ChatRequest)` and `ask(ChatRequest)` return the
+  usage of their calls: `order.copy(tokens = order.tokens + response.usage)`.
+
 Runnable version: [`ToolAgent`](https://github.com/deeptelar/telar/blob/main/samples/src/main/kotlin/dev/deeptelar/telar/samples/ToolAgent.kt). It
 runs without an API key, with Claude when `ANTHROPIC_API_KEY` is set, with OpenAI when
 `OPENAI_API_KEY` is set, and with a model of Ollama when `OLLAMA_MODEL` names one.

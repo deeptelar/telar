@@ -81,10 +81,10 @@ val SOLO_CHEF: String =
  * the chef has used its token budget.
  *
  * This is the loop of `toolLoop`, written by hand, because a shift needs what `toolLoop` does not
- * do: it counts the tokens of every answer, it ends when the kitchen closes or the budget is used
- * and not when the chef stops calling tools, and it tells the chef the news of the kitchen after
- * the last tool. Its tools change the state of the run and run in order, which the `stateTools` of
- * `toolLoop` do as well.
+ * do: it goes on when the chef calls no tool, until the kitchen closes, and it tells the chef the
+ * news of the kitchen after the last tool. What else it does, `toolLoop` does as well: tools that
+ * change the state of the run and run in order (`stateTools`), a count of the tokens
+ * (`countTokens`) and an end when a budget is used (`stopWhen`).
  *
  * The chef gets the whole conversation with every answer, so each answer costs more than the one
  * before. [line] is a kitchen that does not.

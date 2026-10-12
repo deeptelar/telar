@@ -6,6 +6,7 @@ import dev.deeptelar.telar.isProgressCollected
 import dev.deeptelar.telar.reportProgress
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.serialization.Serializable
 
 /**
  * A language model that continues a conversation. It is the only thing the rest of this module
@@ -173,11 +174,33 @@ public data class ChatResponse(
     val usage: TokenUsage? = null,
 )
 
-/** The tokens one call to a [ChatModel] read ([inputTokens]) and wrote ([outputTokens]). */
+/**
+ * The tokens a call to a [ChatModel] read ([inputTokens]) and wrote ([outputTokens]), or those of
+ * several calls added up. `TokenUsage()` is no tokens, the start of a count:
+ *
+ * ```kotlin
+ * data class Order(val messages: List<ChatMessage>, val tokens: TokenUsage = TokenUsage())
+ *
+ * node("summarize", work = { order -> model.chat(ChatRequest(order.messages)) }) { order, response ->
+ *     order.copy(messages = order.messages + response.message, tokens = order.tokens + response.usage)
+ * }
+ * ```
+ *
+ * It is `@Serializable`, so a state that holds one can be saved by a checkpointer that uses
+ * kotlinx.serialization.
+ */
+@Serializable
 public data class TokenUsage(
-    val inputTokens: Int,
-    val outputTokens: Int,
-)
+    val inputTokens: Int = 0,
+    val outputTokens: Int = 0,
+) {
+    /** The tokens read and written together. */
+    public val total: Int get() = inputTokens + outputTokens
+
+    /** Returns these tokens and those of [other] added up. A call whose provider reports no usage has `null`, which adds nothing. */
+    public operator fun plus(other: TokenUsage?): TokenUsage =
+        if (other == null) this else TokenUsage(inputTokens + other.inputTokens, outputTokens + other.outputTokens)
+}
 
 /**
  * A call to a [ChatModel] failed: the provider could not be reached, it returned an error, or the
