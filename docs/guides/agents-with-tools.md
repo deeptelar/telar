@@ -245,5 +245,8 @@ OPENAI_API_KEY=your-gemini-key OPENAI_MODEL=gemini-3.8-flash \
   OPENAI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai ./gradlew :samples:runToolAgent
 ```
 
+The tools of an agent can also come from a server someone else wrote: see
+[Tools from MCP servers](mcp.md).
+
 [Level 6 of the tutorial](../tutorial/06-the-agent.md) explains the same agent step by step, and
 [Testing](testing.md) shows how to test one without an API key.

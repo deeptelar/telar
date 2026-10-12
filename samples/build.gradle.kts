@@ -24,6 +24,10 @@ dependencies {
     implementation(project(":telar-agent"))
     implementation(project(":telar-anthropic"))
     implementation(project(":telar-openai"))
+    implementation(project(":telar-mcp"))
+    // The server side of the MCP SDK and its transport over channels, for the server that McpTools runs in its own process.
+    implementation(libs.mcp.server)
+    implementation(libs.mcp.testing)
     // The Ktor engine that AnthropicChatModel and OpenAiChatModel send their requests with.
     implementation(libs.ktor.client.cio)
 
@@ -47,6 +51,7 @@ listOf(
     "ParallelResearch",
     "ChatAgent",
     "ToolAgent",
+    "McpTools",
 ).forEach { sample ->
     tasks.register<JavaExec>("run$sample") {
         group = "samples"

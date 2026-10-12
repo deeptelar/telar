@@ -38,6 +38,13 @@ breaking changes.
   `NodeExecutionException` has `attempts`. `toolLoop` and `toolAgent` take a `retry` for the node
   that asks the model. The guide
   [Retries and time limits](https://deeptelar.github.io/telar/guides/retries) shows it.
+- `telar-mcp`, a new module for every platform: `mcpTools(server)` returns the tools of a
+  [Model Context Protocol](https://modelcontextprotocol.io) server as tools of an agent, so
+  `toolAgent(model, tools = mcpTools(server) + ownTools)` uses them next to the tools of the app.
+  It is built on the official Kotlin SDK of MCP: the app connects with the SDK, over HTTP on every
+  platform or to a process, and closes the connection. A `filter` picks tools, a `prefix` keeps
+  the names of two servers apart, and an error of the server reaches the model as an error result.
+  The guide [Tools from MCP servers](https://deeptelar.github.io/telar/guides/mcp) shows it.
 - `telar-test`, a new module with helpers for the tests of an app, for every platform and without a
   test framework. `ScriptedChatModel { calls("order_status", OrderLookup("Ana")); says("5 minutes.") }`
   is a `ChatModel` that gives the answers of its script in order and keeps the requests it

@@ -63,6 +63,11 @@ made under that name keep it. The repository is `deeptelar/telar` and the demo i
   (System One API) on Ktor client core. It implements `DecisionModel` of `telar-agent`, the
   interface for models that pick an option, answer yes or no, or rate, instead of writing;
   `decisionEdge` routes a graph with one
+- **`telar-mcp`** (KMP): `mcpTools(client)` reads the tools of a Model Context Protocol server
+  and returns them as `Tool`s. It is built on the official MCP Kotlin SDK
+  (`io.modelcontextprotocol:kotlin-sdk-client`, an `api` dependency): the app connects and closes
+  the SDK's `Client`. Its tests talk to `FakeMcpServer`, a server over channels in `commonTest`,
+  because the server side of the SDK has no iOS targets
 - **`telar-test`** (KMP, no test framework): helpers for the tests of an app. `ScriptedChatModel`
   and `ScriptedDecisionModel` give the answers of a script in order and keep their requests; a
   script that is too short throws an `AssertionError`, which the engine passes on. `record()`

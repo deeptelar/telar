@@ -5,6 +5,7 @@ serialization = "1.11.0"
 kotlinx-io = "0.9.1"
 ktor = "3.6.0"
 langchain4j = "1.21.0"
+mcp = "0.15.0"
 dokka = "2.2.0"
 kover = "0.9.11"
 ktlint-gradle = "14.2.0"
@@ -20,6 +21,9 @@ ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 langchain4j = { module = "dev.langchain4j:langchain4j", version.ref = "langchain4j" }
+mcp-client = { module = "io.modelcontextprotocol:kotlin-sdk-client", version.ref = "mcp" }
+mcp-server = { module = "io.modelcontextprotocol:kotlin-sdk-server", version.ref = "mcp" }
+mcp-testing = { module = "io.modelcontextprotocol:kotlin-sdk-testing", version.ref = "mcp" }
 
 # Gradle plugins consumed by build-logic convention plugins
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }

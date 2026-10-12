@@ -1,0 +1,13 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, js, linuxArm64, linuxX64, macosArm64, mingwX64, wasmJs]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <telar:telar-mcp>
+final class dev.deeptelar.telar.mcp/McpServerException : dev.deeptelar.telar/TelarException { // dev.deeptelar.telar.mcp/McpServerException|null[0]
+    constructor <init>(kotlin/String, kotlin/Throwable? = ...) // dev.deeptelar.telar.mcp/McpServerException.<init>|<init>(kotlin.String;kotlin.Throwable?){}[0]
+}
+
+final suspend fun dev.deeptelar.telar.mcp/mcpTools(io.modelcontextprotocol.kotlin.sdk.client/Client, kotlin/String = ..., kotlin.time/Duration? = ..., kotlin/Function1<io.modelcontextprotocol.kotlin.sdk.types/Tool, kotlin/Boolean> = ...): kotlin.collections/List<dev.deeptelar.telar.agent/Tool> // dev.deeptelar.telar.mcp/mcpTools|mcpTools(io.modelcontextprotocol.kotlin.sdk.client.Client;kotlin.String;kotlin.time.Duration?;kotlin.Function1<io.modelcontextprotocol.kotlin.sdk.types.Tool,kotlin.Boolean>){}[0]
