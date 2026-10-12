@@ -376,6 +376,16 @@ public final class dev/deeptelar/telar/agent/Question$YesNo : dev/deeptelar/tela
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class dev/deeptelar/telar/agent/StateTool {
+	public fun <init> (Ldev/deeptelar/telar/agent/ToolSpec;Lkotlin/jvm/functions/Function3;)V
+	public final fun getExecute ()Lkotlin/jvm/functions/Function3;
+	public final fun getSpec ()Ldev/deeptelar/telar/agent/ToolSpec;
+}
+
+public final class dev/deeptelar/telar/agent/StateToolKt {
+	public static final fun StateTool (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/KSerializer;Lkotlin/jvm/functions/Function3;)Ldev/deeptelar/telar/agent/StateTool;
+}
+
 public final class dev/deeptelar/telar/agent/TokenUsage {
 	public fun <init> (II)V
 	public final fun component1 ()I
@@ -432,10 +442,23 @@ public final class dev/deeptelar/telar/agent/ToolKt {
 }
 
 public final class dev/deeptelar/telar/agent/ToolLoopKt {
-	public static final fun toolAgent (Ldev/deeptelar/telar/agent/ChatModel;Ljava/util/List;Ljava/lang/String;)Ldev/deeptelar/telar/CompiledGraph;
-	public static synthetic fun toolAgent$default (Ldev/deeptelar/telar/agent/ChatModel;Ljava/util/List;Ljava/lang/String;ILjava/lang/Object;)Ldev/deeptelar/telar/CompiledGraph;
-	public static final fun toolLoop (Ldev/deeptelar/telar/StateGraph;Ldev/deeptelar/telar/agent/ChatModel;Ljava/util/List;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function1;Ljava/lang/String;Ldev/deeptelar/telar/NodeRef;Ljava/lang/String;Ljava/lang/String;)Ldev/deeptelar/telar/NodeRef;
-	public static synthetic fun toolLoop$default (Ldev/deeptelar/telar/StateGraph;Ldev/deeptelar/telar/agent/ChatModel;Ljava/util/List;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function1;Ljava/lang/String;Ldev/deeptelar/telar/NodeRef;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ldev/deeptelar/telar/NodeRef;
+	public static final fun toolAgent (Ldev/deeptelar/telar/agent/ChatModel;Ljava/util/List;Ljava/lang/String;Z)Ldev/deeptelar/telar/CompiledGraph;
+	public static synthetic fun toolAgent$default (Ldev/deeptelar/telar/agent/ChatModel;Ljava/util/List;Ljava/lang/String;ZILjava/lang/Object;)Ldev/deeptelar/telar/CompiledGraph;
+	public static final fun toolLoop (Ldev/deeptelar/telar/StateGraph;Ldev/deeptelar/telar/agent/ChatModel;Ljava/util/List;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function1;Ljava/lang/String;Ldev/deeptelar/telar/NodeRef;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Z)Ldev/deeptelar/telar/NodeRef;
+	public static synthetic fun toolLoop$default (Ldev/deeptelar/telar/StateGraph;Ldev/deeptelar/telar/agent/ChatModel;Ljava/util/List;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function1;Ljava/lang/String;Ldev/deeptelar/telar/NodeRef;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ZILjava/lang/Object;)Ldev/deeptelar/telar/NodeRef;
+}
+
+public final class dev/deeptelar/telar/agent/ToolOutcome {
+	public fun <init> (Ljava/lang/Object;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/Object;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/Object;Ljava/lang/String;)Ldev/deeptelar/telar/agent/ToolOutcome;
+	public static synthetic fun copy$default (Ldev/deeptelar/telar/agent/ToolOutcome;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/Object;)Ldev/deeptelar/telar/agent/ToolOutcome;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getState ()Ljava/lang/Object;
+	public final fun getText ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class dev/deeptelar/telar/agent/ToolSpec {

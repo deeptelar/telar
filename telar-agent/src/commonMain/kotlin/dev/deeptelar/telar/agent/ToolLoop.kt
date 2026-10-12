@@ -11,8 +11,9 @@ import kotlinx.serialization.Serializable
  * Adds the loop of a tool-calling agent to this graph and returns its first node.
  *
  * The loop has two nodes. The model node sends the conversation to [model]. When the answer asks
- * for tools, the tools node runs them in parallel and the model is asked again with their results.
- * When the answer asks for none, the graph continues at [then].
+ * for tools, the tools node runs them, at the same time unless [inOrder] or [stateTools] say
+ * otherwise, and the model is asked again with their results. When the answer asks for none, the
+ * graph continues at [then].
  *
  * ```kotlin
  * data class Ticket(val messages: List<ChatMessage>, val reply: String = "")
@@ -34,7 +35,7 @@ import kotlinx.serialization.Serializable
  * ```
  *
  * Both nodes have a `work` and an `update`, so the loop can run next to other branches without a
- * `Reducer`. Every round of tools takes two steps of the run, so raise `GraphConfig.maxIterations`
+ * `Reducer`; a loop with [stateTools] is the exception, see below. Every round of tools takes two steps of the run, so raise `GraphConfig.maxIterations`
  * for an agent that needs many rounds.
  *
  * [messages] and [append] read and write the same list: [messages] must return what [append] stored.
@@ -68,8 +69,34 @@ import kotlinx.serialization.Serializable
  * a state that has a [ChatMessage.ToolResult] for each call you reject: a call that already has a
  * result is not run.
  *
+ * A tool that acts on the state of the run is a [StateTool], and goes into [stateTools]:
+ *
+ * ```kotlin
+ * val addLine = StateTool<Order, NewLine>("add_line", "Adds a line to the order.") { order, line ->
+ *     ToolOutcome(order.copy(lines = order.lines + line.item), "Added ${line.item}.")
+ * }
+ *
+ * toolLoop(
+ *     model = model,
+ *     tools = listOf(menuPrice),
+ *     stateTools = listOf(addLine),
+ *     messages = { it.messages },
+ *     append = { order, new -> order.copy(messages = order.messages + new) },
+ * )
+ * ```
+ *
+ * A loop with state tools works differently in three ways:
+ * - **The calls of an answer run one after the other**, in the order the model wrote them, and each
+ *   call gets the state the call before it left. A call that fails changes nothing, and the calls
+ *   after it still run.
+ * - **[append] is called once for each result**, before the next call runs. A state tool that calls
+ *   `interrupt` with the state it received therefore saves what the calls before it did, with their
+ *   results, and `resume` continues with the call that paused.
+ * - **The tools node returns a whole state.** When it can run in the same step as another node
+ *   that returns a whole state, `compile()` asks for a `Reducer`, as for any two such nodes.
+ *
  * @param model the model to ask.
- * @param tools the tools the model may call.
+ * @param tools the tools the model may call that only need their input.
  * @param messages reads the conversation from the state.
  * @param append returns the state with the given messages added to its conversation. It is called
  * with the model's answer, and with the results of the tools.
@@ -80,11 +107,14 @@ import kotlinx.serialization.Serializable
  * @param then where the graph continues when the model is done. The default ends the branch.
  * @param modelNode the name of the model node.
  * @param toolsNode the name of the tools node.
+ * @param stateTools the tools the model may call that read and change the state of the run.
+ * @param inOrder `true` to run the calls of an answer one after the other, in the order the model
+ * wrote them, for tools that depend on each other. A loop with [stateTools] always does.
  * @throws GraphValidationException if two tools have the same name, or a node name is already used.
  */
 public fun <State> StateGraph<State>.toolLoop(
     model: ChatModel,
-    tools: List<Tool>,
+    tools: List<Tool> = emptyList(),
     messages: (State) -> List<ChatMessage>,
     append: (State, List<ChatMessage>) -> State,
     firstMessage: ((State) -> String)? = null,
@@ -92,8 +122,10 @@ public fun <State> StateGraph<State>.toolLoop(
     then: NodeRef = NodeRef.END,
     modelNode: String = "model",
     toolsNode: String = "tools",
+    stateTools: List<StateTool<State>> = emptyList(),
+    inOrder: Boolean = false,
 ): NodeRef {
-    val specs = tools.map { it.spec }
+    val specs = tools.map { it.spec } + stateTools.map { it.spec }
     specs.groupingBy { it.name }.eachCount().filterValues { it > 1 }.keys.firstOrNull()?.let {
         throw GraphValidationException("Two tools are named '$it'. Tool names must be unique.")
     }
@@ -112,8 +144,24 @@ public fun <State> StateGraph<State>.toolLoop(
             },
         ) { state, new -> append(state, new) }
     val runTools =
-        node(toolsNode, work = { state -> tools.execute(messages(state).pendingToolCalls()) }) { state, results ->
-            append(state, results)
+        when {
+            stateTools.isNotEmpty() ->
+                node(toolsNode) { state ->
+                    messages(state).pendingToolCalls().fold(state) { current, call ->
+                        val (after, result) = runOnState(call, current, tools, stateTools)
+                        append(after, listOf(result))
+                    }
+                }
+            inOrder ->
+                node(toolsNode, work = { state ->
+                    messages(state).pendingToolCalls().map { tools.execute(listOf(it)).single() }
+                }) { state, results ->
+                    append(state, results)
+                }
+            else ->
+                node(toolsNode, work = { state -> tools.execute(messages(state).pendingToolCalls()) }) { state, results ->
+                    append(state, results)
+                }
         }
 
     conditionalEdge(askModel, targets = setOf(runTools, then)) { state ->
@@ -141,9 +189,16 @@ public fun <State> StateGraph<State>.toolLoop(
  * The graph is a [toolLoop] with its default node names. Use [toolLoop] directly to put the agent
  * inside a larger graph, or to keep the conversation in a state of your own.
  *
+ * @param inOrder `true` to run the tool calls of an answer one after the other, in the order the
+ * model wrote them, for tools that depend on each other. By default they run at the same time.
  * @throws GraphValidationException if two tools have the same name.
  */
-public fun toolAgent(model: ChatModel, tools: List<Tool> = emptyList(), system: String? = null): CompiledGraph<AgentState> =
+public fun toolAgent(
+    model: ChatModel,
+    tools: List<Tool> = emptyList(),
+    system: String? = null,
+    inOrder: Boolean = false,
+): CompiledGraph<AgentState> =
     StateGraph<AgentState> {
         START then
             toolLoop(
@@ -152,6 +207,7 @@ public fun toolAgent(model: ChatModel, tools: List<Tool> = emptyList(), system: 
                 messages = { it.messages },
                 append = { state, new -> state.copy(messages = state.messages + new) },
                 system = system,
+                inOrder = inOrder,
             )
     }.compile()
 
