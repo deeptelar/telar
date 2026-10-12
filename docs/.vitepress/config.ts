@@ -85,6 +85,7 @@ export default withMermaid(
             { text: 'AI models', link: '/guides/ai-models' },
             { text: 'Decision models', link: '/guides/decision-models' },
             { text: 'Agents with tools', link: '/guides/agents-with-tools' },
+            { text: 'Tools from MCP servers', link: '/guides/mcp' },
             { text: 'Inspecting a graph', link: '/guides/inspecting-a-graph' },
             { text: 'Retries and time limits', link: '/guides/retries' },
             { text: 'Testing', link: '/guides/testing' },

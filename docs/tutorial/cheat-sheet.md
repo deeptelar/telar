@@ -194,6 +194,7 @@ agent.invoke(state.withUserMessage("And two?"))  // the next turn of the convers
 | The answer while the model writes it | `agent.stream(input).collect { event -> event.textDelta?.let(::print) }` |
 | The same in a node of your own | `model.chatWithProgress("...")` in place of `model.chat("...")` |
 | To approve tool calls | `interruptBefore = setOf("tools")`, then `state.messages.pendingToolCalls()` |
+| The tools of an MCP server | `mcpTools(server)` from `telar-mcp`, with `server` a connected `Client` of the MCP SDK |
 | A model for a test | `ScriptedChatModel { calls("menu_price", MenuLookup("cola")); says("2 euros.") }` from `telar-test` |
 | What a run did, in a test | `agent.stream(input).record()`, then `run.nodes`, `run.text`, `run.state` |
 
