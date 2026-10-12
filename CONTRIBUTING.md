@@ -60,6 +60,7 @@ Chrome. Install Chrome or Chromium, and set `CHROME_BIN` to its path if it is no
 | `telar-openai` | `OpenAiChatModel`, the Chat Completions API of OpenAI, Ollama and others through Ktor (multiplatform) |
 | `telar-langchain4j` | LangChain4j integration (JVM) |
 | `telar-typesafe` | `TypeSafeDecisionModel`, the Jev decision model of TypeSafe AI through Ktor (multiplatform) |
+| `telar-test` | `ScriptedChatModel`, `ScriptedDecisionModel` and `record()`, for the tests of an app (multiplatform) |
 | `samples` | Runnable examples, not published. `samples/.../tutorial` holds the code of the tutorial |
 | `docs` | The [documentation site](https://deeptelar.github.io/telar/), built with VitePress: `index.md` is its home page, `docs/guides` has a page per feature and `docs/tutorial` a page per level. Its menu is in `docs/.vitepress/config.ts`, and its look (colors, typefaces, the home banner) in `docs/.vitepress/theme`. `docs/brand` holds the logo and banners |
 | `build-logic` | Gradle convention plugins shared by all modules |

@@ -78,3 +78,5 @@ val anger = jev.score(email.body, "How angry is the customer?", listOf("Calm", "
   `EdgeConditionException`.
 - A call to `TypeSafeDecisionModel` may take one minute. Change that with `timeout`.
 - In a test, a lambda is a model: `DecisionModel { request -> DecisionResponse(request.questions.mapValues { Answer.Choice("refund") }) }`.
+  `ScriptedDecisionModel { chooses("refund"); no() }` of `telar-test` gives one decision after the
+  other: see [Testing](testing.md).

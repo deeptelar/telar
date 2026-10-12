@@ -63,6 +63,11 @@ made under that name keep it. The repository is `deeptelar/telar` and the demo i
   (System One API) on Ktor client core. It implements `DecisionModel` of `telar-agent`, the
   interface for models that pick an option, answer yes or no, or rate, instead of writing;
   `decisionEdge` routes a graph with one
+- **`telar-test`** (KMP, no test framework): helpers for the tests of an app. `ScriptedChatModel`
+  and `ScriptedDecisionModel` give the answers of a script in order and keep their requests; a
+  script that is too short throws an `AssertionError`, which the engine passes on. `record()`
+  collects a stream into a `RunRecord` (`nodes`, `steps`, `text`, `result`). The tests of
+  `telar-agent` do not use it: they have their own `ScriptedModel`
 - **`samples`**: runnable examples with tests; not published. `samples/.../tutorial/levelN` is the
   code of the tutorial in `docs/tutorial/`; a page shows its level's code and output, so change both together
 - **`docs`**: the documentation site (VitePress), published at <https://deeptelar.github.io/telar/>

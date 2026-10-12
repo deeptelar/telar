@@ -38,6 +38,13 @@ breaking changes.
   `NodeExecutionException` has `attempts`. `toolLoop` and `toolAgent` take a `retry` for the node
   that asks the model. The guide
   [Retries and time limits](https://deeptelar.github.io/telar/guides/retries) shows it.
+- `telar-test`, a new module with helpers for the tests of an app, for every platform and without a
+  test framework. `ScriptedChatModel { calls("order_status", OrderLookup("Ana")); says("5 minutes.") }`
+  is a `ChatModel` that gives the answers of its script in order and keeps the requests it
+  received; its script also has answers for `ask`, calls that fail, and the tokens of an answer.
+  `ScriptedDecisionModel { chooses("refund"); no() }` is the same for a `DecisionModel`. `record()`
+  collects the stream of a run and returns its `nodes`, `steps`, `text` and `result`. The guide
+  [Testing](https://deeptelar.github.io/telar/guides/testing) shows it.
 
 ### Changed
 
