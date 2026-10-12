@@ -7,6 +7,14 @@ breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- `ChatModel.ask` in `telar-agent`: ask a model for a `@Serializable` class and get an instance of
+  it, `model.ask<Verdict>("Classify this email: ...")`. The model gets the schema of the class, which
+  is built as the input schema of a tool is. An answer that cannot be read goes back to the model
+  with what was wrong, and the model is asked again, `attempts` times at most. It works with every
+  `ChatModel`. The guide [AI models](https://deeptelar.github.io/telar/guides/ai-models) shows it.
+
 ## [0.1.0-alpha09] - 2026-10-10
 
 ### Changed
