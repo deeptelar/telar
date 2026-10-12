@@ -125,12 +125,7 @@ internal fun jsonObjectIn(text: String): JsonObject? {
     }
 }
 
-private operator fun TokenUsage?.plus(other: TokenUsage?): TokenUsage? =
-    when {
-        this == null -> other
-        other == null -> this
-        else -> TokenUsage(inputTokens + other.inputTokens, outputTokens + other.outputTokens)
-    }
+private operator fun TokenUsage?.plus(other: TokenUsage?): TokenUsage? = if (this == null) other else this + other
 
 private const val ANSWER_INSTRUCTIONS =
     "Reply with one JSON object and nothing else: no text before or after it, and no code block. " +

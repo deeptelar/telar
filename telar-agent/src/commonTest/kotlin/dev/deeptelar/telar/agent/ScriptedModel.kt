@@ -21,6 +21,9 @@ fun says(text: String): ChatResponse = ChatResponse(ChatMessage.Assistant(text))
 
 fun calls(vararg calls: ToolCall): ChatResponse = ChatResponse(ChatMessage.Assistant(toolCalls = calls.toList()))
 
+/** The same answer, for which the provider reports these tokens. */
+fun ChatResponse.using(inputTokens: Int, outputTokens: Int): ChatResponse = copy(usage = TokenUsage(inputTokens, outputTokens))
+
 /** The same answer, cut off at the model's output limit. */
 fun ChatResponse.cutOff(): ChatResponse = copy(message = message.copy(truncated = true))
 

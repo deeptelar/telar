@@ -18,9 +18,6 @@ data class Desk(
     fun answered(usage: TokenUsage?): Desk = copy(tokens = tokens + usage, answers = answers + 1)
 }
 
-operator fun TokenUsage.plus(other: TokenUsage?): TokenUsage =
-    TokenUsage(inputTokens + (other?.inputTokens ?: 0), outputTokens + (other?.outputTokens ?: 0))
-
 /**
  * A shift in a kitchen whose chefs are models, whatever the kitchen is built like: what every layout
  * is measured on.

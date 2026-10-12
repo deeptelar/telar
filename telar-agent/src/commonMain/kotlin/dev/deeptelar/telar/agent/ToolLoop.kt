@@ -95,6 +95,28 @@ import kotlinx.serialization.Serializable
  * - **The tools node returns a whole state.** When it can run in the same step as another node
  *   that returns a whole state, `compile()` asks for a `Reducer`, as for any two such nodes.
  *
+ * To know what the loop costs, give it [countTokens], which adds the tokens of each answer of the
+ * model to the state. To limit it, give it [stopWhen]. It is asked before each call to the model,
+ * and when it returns `true` the model is not asked and the graph continues at [then], as after a
+ * last answer:
+ *
+ * ```kotlin
+ * data class Order(val messages: List<ChatMessage>, val tokens: TokenUsage = TokenUsage())
+ *
+ * toolLoop(
+ *     model = model,
+ *     tools = tools,
+ *     messages = { it.messages },
+ *     append = { order, new -> order.copy(messages = order.messages + new) },
+ *     countTokens = { order, used -> order.copy(tokens = order.tokens + used) },
+ *     stopWhen = { order -> order.tokens.total >= 50_000 },
+ * )
+ * ```
+ *
+ * The count has the numbers the provider reported for the calls so far, so a loop with a limit on
+ * its tokens ends up to one call above it. A loop that was stopped ends with the results of its
+ * last tools, or with the message of the user, and not with an answer of the model.
+ *
  * @param model the model to ask.
  * @param tools the tools the model may call that only need their input.
  * @param messages reads the conversation from the state.
@@ -110,6 +132,10 @@ import kotlinx.serialization.Serializable
  * @param stateTools the tools the model may call that read and change the state of the run.
  * @param inOrder `true` to run the calls of an answer one after the other, in the order the model
  * wrote them, for tools that depend on each other. A loop with [stateTools] always does.
+ * @param countTokens returns the state with the tokens of one answer of the model added to its
+ * count. It is not called for an answer whose provider reports no usage.
+ * @param stopWhen returns `true` when the model must not be asked again, for example because the
+ * state says that a budget is used.
  * @throws GraphValidationException if two tools have the same name, or a node name is already used.
  */
 public fun <State> StateGraph<State>.toolLoop(
@@ -124,6 +150,8 @@ public fun <State> StateGraph<State>.toolLoop(
     toolsNode: String = "tools",
     stateTools: List<StateTool<State>> = emptyList(),
     inOrder: Boolean = false,
+    countTokens: ((State, TokenUsage) -> State)? = null,
+    stopWhen: ((State) -> Boolean)? = null,
 ): NodeRef {
     val specs = tools.map { it.spec } + stateTools.map { it.spec }
     specs.groupingBy { it.name }.eachCount().filterValues { it > 1 }.keys.firstOrNull()?.let {
@@ -134,15 +162,34 @@ public fun <State> StateGraph<State>.toolLoop(
         node(
             modelNode,
             work = { state ->
-                val stored = messages(state)
-                val opening = if (stored.isEmpty() && firstMessage != null) listOf(ChatMessage.User(firstMessage(state))) else emptyList()
-                val response = model.chatWithProgress(ChatRequest(opening + stored, system, specs))
-                if (response.message.truncated && response.message.toolCalls.isNotEmpty()) {
-                    throw ChatModelException("The model reached its output limit in the middle of a tool call. Raise the limit.")
+                if (stopWhen != null && stopWhen(state)) {
+                    null
+                } else {
+                    val stored = messages(state)
+                    val opening =
+                        if (stored.isEmpty() &&
+                            firstMessage != null
+                        ) {
+                            listOf(ChatMessage.User(firstMessage(state)))
+                        } else {
+                            emptyList()
+                        }
+                    val response = model.chatWithProgress(ChatRequest(opening + stored, system, specs))
+                    if (response.message.truncated && response.message.toolCalls.isNotEmpty()) {
+                        throw ChatModelException("The model reached its output limit in the middle of a tool call. Raise the limit.")
+                    }
+                    ModelTurn(opening + response.message, response.usage)
                 }
-                opening + response.message
             },
-        ) { state, new -> append(state, new) }
+        ) { state, turn ->
+            // No turn: the loop was stopped before the model was asked.
+            if (turn == null) {
+                state
+            } else {
+                val answered = append(state, turn.messages)
+                if (countTokens != null && turn.usage != null) countTokens(answered, turn.usage) else answered
+            }
+        }
     val runTools =
         when {
             stateTools.isNotEmpty() ->
@@ -189,17 +236,35 @@ public fun <State> StateGraph<State>.toolLoop(
  * The graph is a [toolLoop] with its default node names. Use [toolLoop] directly to put the agent
  * inside a larger graph, or to keep the conversation in a state of your own.
  *
+ * The state counts the tokens of the conversation in [AgentState.tokens]. With a [tokenBudget], the
+ * model is not asked again once the count has reached it, and the run ends without an answer:
+ *
+ * ```kotlin
+ * val agent = toolAgent(model, tools = listOf(forecast), tokenBudget = 50_000)
+ *
+ * val state = agent.invoke(AgentState("Plan a week in Portugal.")).state
+ * println("${state.tokens.total} tokens")
+ * if (state.answer == null) println("The agent used its budget before it had an answer.")
+ * ```
+ *
  * @param inOrder `true` to run the tool calls of an answer one after the other, in the order the
  * model wrote them, for tools that depend on each other. By default they run at the same time.
- * @throws GraphValidationException if two tools have the same name.
+ * @param tokenBudget the tokens the conversation in the state may use. The count is compared with
+ * it before each call to the model, with the numbers of the calls so far, so a run ends up to one
+ * call above it. `null` is no limit.
+ * @throws GraphValidationException if two tools have the same name, or [tokenBudget] is less than 1.
  */
 public fun toolAgent(
     model: ChatModel,
     tools: List<Tool> = emptyList(),
     system: String? = null,
     inOrder: Boolean = false,
-): CompiledGraph<AgentState> =
-    StateGraph<AgentState> {
+    tokenBudget: Int? = null,
+): CompiledGraph<AgentState> {
+    if (tokenBudget != null && tokenBudget < 1) {
+        throw GraphValidationException("A token budget must be at least 1, but was $tokenBudget.")
+    }
+    return StateGraph<AgentState> {
         START then
             toolLoop(
                 model = model,
@@ -208,24 +273,39 @@ public fun toolAgent(
                 append = { state, new -> state.copy(messages = state.messages + new) },
                 system = system,
                 inOrder = inOrder,
+                countTokens = { state, used -> state.copy(tokens = state.tokens + used) },
+                stopWhen = tokenBudget?.let { budget -> { state -> state.tokens.total >= budget } },
             )
     }.compile()
+}
+
+/** What the model node of a [toolLoop] hands to its update: the messages to store and the tokens of the answer. */
+private class ModelTurn(
+    val messages: List<ChatMessage>,
+    val usage: TokenUsage?,
+)
 
 /**
- * The state of a [toolAgent]: the conversation so far, oldest message first.
+ * The state of a [toolAgent]: the conversation so far, oldest message first, and what it cost.
  *
  * It is `@Serializable`, so a checkpointer that uses kotlinx.serialization can save it.
+ *
+ * @property tokens the tokens of every answer of the model in this conversation, as far as the
+ * provider reported them. A conversation that continues with [withUserMessage] keeps counting. Use
+ * `copy(tokens = TokenUsage())` to start the count again, for example for a budget per question.
  */
 @Serializable
 public data class AgentState(
     val messages: List<ChatMessage> = emptyList(),
+    val tokens: TokenUsage = TokenUsage(),
 ) {
     /** Starts a conversation with [question] as the user's first message. */
     public constructor(question: String) : this(listOf(ChatMessage.User(question)))
 
     /**
      * The text of the model's final answer, or `null` while the conversation does not end with one:
-     * before the first run, or when the run paused with tool calls waiting.
+     * before the first run, when the run paused with tool calls waiting, or when the agent used its
+     * token budget before it had an answer.
      *
      * The text is incomplete when [answerTruncated] is `true`.
      */
