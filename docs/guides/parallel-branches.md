@@ -87,9 +87,59 @@ val graph = StateGraph<Research> {
 
 - A rule names a property and says how to write the merged value back, which is a `copy`.
 - A node that changes a property without a rule fails the run with a `ReducerException`. Nothing is
-  lost without a word.
+  lost without a word. The `cause` of the exception is a `MergeRuleException`, and its message names
+  the property.
 - So do two nodes that `replace` a property with different values. `merge` says which one counts:
   `combine = { _, changed -> changed.last() }` lets the last node of the step win.
+
+## When two branches write the same property
+
+The two ways to write a node do not treat this the same way. Take two branches that both set
+`status`. With a `work` and an `update`, there is no error:
+
+```kotlin
+data class Job(val status: String = "new", val notes: List<String> = emptyList())
+
+// The updates are applied in the order the nodes were added, so "docs" writes over what "web" wrote.
+// The run ends with status = "docs done".
+val web = node("web", work = { searchWeb() }) { job, found -> job.copy(status = "web done", notes = job.notes + found) }
+val docs = node("docs", work = { searchDocs() }) { job, found -> job.copy(status = "docs done", notes = job.notes + found) }
+```
+
+Written as whole states, the same two nodes need a reducer, and the rule for `status` decides:
+
+```kotlin
+val web = node("web") { it.copy(status = "web done", notes = it.notes + searchWeb()) }
+val docs = node("docs") { it.copy(status = "docs done", notes = it.notes + searchDocs()) }
+
+compile(
+    reducer = mergeRules {
+        append(Job::notes) { copy(notes = it) }
+        // Two different values fail the run:
+        // Property 'status' was set to different values by nodes of the same step: [web done, docs done].
+        replace(Job::status) { copy(status = it) }
+    },
+)
+```
+
+| The nodes are written as | Two branches set `status` to different values |
+|---|---|
+| `node(name, work) { state, result -> ... }` | The node that was added to the graph later wins. Nothing is reported |
+| `node(name) { ... }` with `replace(Job::status)` | The run fails with a `ReducerException` |
+| `node(name) { ... }` with `merge(Job::status, combine = ...)` | What `combine` returns. `{ _, changed -> changed.last() }` lets the later node win |
+| `node(name) { ... }` with a reducer of your own | What the reducer returns |
+| `node(name) { ... }` without a reducer | `compile()` rejects the graph |
+
+- "Later" is the order of the `node(...)` lines, not the order of the edges. Moving the line of a
+  node with a `work` and an `update` changes which value the run ends with.
+- Changing the form of a node changes this policy. A node that goes from a whole state to a `work`
+  and an `update` loses the check that `replace` made.
+- When two branches must not disagree about a property, write them as whole states and give the
+  property a `replace` rule. When one of them should win, say so with `merge`, or let only one
+  branch write the property.
+
+[Issue #101](https://github.com/deeptelar/telar/issues/101) is about saying this policy in one place
+for both forms.
 
 Which one to use: `work` and `update` when a node does slow work and then adds its result;
 `mergeRules` when nodes are written as `node(name) { ... }` and change different properties, or add
