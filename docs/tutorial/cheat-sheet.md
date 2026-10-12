@@ -182,6 +182,8 @@ agent.invoke(state.withUserMessage("And two?"))  // the next turn of the convers
 | One text from a model, in any node | `model.chat("...")` |
 | A value of your own class from a model | `model.ask<Verdict>("...")`, with `Verdict` a `@Serializable` class |
 | The agent inside your own graph | `toolLoop(model, tools, messages = { ... }, append = { state, new -> ... })` |
+| A tool that reads and changes the state | `StateTool<Order, NewLine>("add_line", "...") { order, line -> ToolOutcome(order.copy(...), "Added.") }` in `toolLoop(..., stateTools = listOf(...))` |
+| Tool calls of one answer in order | `toolLoop(..., inOrder = true)`; always with `stateTools` |
 | A conversation that starts from other fields of the state | `toolLoop(..., firstMessage = { state -> "..." })` |
 | The answer while the model writes it | `agent.stream(input).collect { event -> event.textDelta?.let(::print) }` |
 | The same in a node of your own | `model.chatWithProgress("...")` in place of `model.chat("...")` |

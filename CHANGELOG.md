@@ -14,6 +14,14 @@ breaking changes.
   is built as the input schema of a tool is. An answer that cannot be read goes back to the model
   with what was wrong, and the model is asked again, `attempts` times at most. It works with every
   `ChatModel`. The guide [AI models](https://deeptelar.github.io/telar/guides/ai-models) shows it.
+- `StateTool` in `telar-agent`: a tool of `toolLoop` that reads the state of the run and changes
+  it. It gets the state next to its input and returns a `ToolOutcome`, the state it leaves and the
+  text for the model, so what it did is in every checkpoint. Give them to `toolLoop` as
+  `stateTools`. The calls of an answer then run one after the other, each on the state the one
+  before left, and a state tool that calls `interrupt` saves what the calls before it did.
+- `toolLoop` and `toolAgent` have `inOrder`: `true` runs the tool calls of an answer one after the
+  other, in the order the model wrote them, for tools that depend on each other. The guide
+  [Agents with tools](https://deeptelar.github.io/telar/guides/agents-with-tools) shows both.
 
 ## [0.1.0-alpha09] - 2026-10-10
 
