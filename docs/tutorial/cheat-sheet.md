@@ -184,6 +184,8 @@ agent.invoke(state.withUserMessage("And two?"))  // the next turn of the convers
 | The agent inside your own graph | `toolLoop(model, tools, messages = { ... }, append = { state, new -> ... })` |
 | A tool that reads and changes the state | `StateTool<Order, NewLine>("add_line", "...") { order, line -> ToolOutcome(order.copy(...), "Added.") }` in `toolLoop(..., stateTools = listOf(...))` |
 | Tool calls of one answer in order | `toolLoop(..., inOrder = true)`; always with `stateTools` |
+| What an agent cost | `state.tokens` of an `AgentState`; in `toolLoop`, `countTokens = { state, used -> state.copy(tokens = state.tokens + used) }` |
+| A limit on what an agent may use | `toolAgent(model, tools, tokenBudget = 50_000)`; in `toolLoop`, `stopWhen = { it.tokens.total >= 50_000 }` |
 | A conversation that starts from other fields of the state | `toolLoop(..., firstMessage = { state -> "..." })` |
 | The answer while the model writes it | `agent.stream(input).collect { event -> event.textDelta?.let(::print) }` |
 | The same in a node of your own | `model.chatWithProgress("...")` in place of `model.chat("...")` |

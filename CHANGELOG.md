@@ -22,6 +22,17 @@ breaking changes.
 - `toolLoop` and `toolAgent` have `inOrder`: `true` runs the tool calls of an answer one after the
   other, in the order the model wrote them, for tools that depend on each other. The guide
   [Agents with tools](https://deeptelar.github.io/telar/guides/agents-with-tools) shows both.
+- The tokens of a run are counted. `AgentState` has `tokens`, the tokens of every answer of the
+  model in its conversation, and `toolAgent(model, tools, tokenBudget = 50_000)` stops asking the
+  model once the count has reached the budget. In `toolLoop`, `countTokens` adds the tokens of
+  each answer to your state and `stopWhen` is asked before each call to the model: when it returns
+  `true`, the loop ends and the graph continues at `then`. `TokenUsage` has `+` and `total`, and
+  `TokenUsage()` is the start of a count.
+
+### Changed
+
+- `TokenUsage` is `@Serializable`, so that a state with a count can be saved. `AgentState` is saved
+  with its `tokens`; a state saved by an earlier version is read with a count of zero.
 
 ## [0.1.0-alpha09] - 2026-10-10
 
