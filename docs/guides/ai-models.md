@@ -47,6 +47,51 @@ val answer = node(
 ) { email, reply -> email.copy(reply = reply) } // Puts the model's answer into the state.
 ```
 
+A node that needs a value, not a text, asks for a `@Serializable` class with `ask`:
+
+```kotlin
+@Serializable
+data class Verdict(
+    val category: Category,
+    @Description("One sentence that says why") val reason: String,
+    val urgent: Boolean = false,
+)
+
+val classify = node(
+    "classify",
+    work = { email -> model.ask<Verdict>("Classify this support email: ${email.body}") },
+) { email, verdict -> email.copy(category = verdict.category, urgent = verdict.urgent) }
+```
+
+The model gets the schema of the class and is told to reply with JSON that matches it, so `ask`
+works with every `ChatModel`. The schema is built as the one of a [tool's input](agents-with-tools.md):
+`@Description` describes a property, and a property with a default value or a nullable one may be
+left out. An answer that cannot be read goes back to the model with what was wrong, and the model
+is asked once more; `attempts` says how often it is asked at most. After that, `ask` throws a
+`ChatModelException`.
+
+A `require` in the `init` of the class is checked in the same way, so it is the place for a rule
+that a schema cannot say. Its message goes to the model:
+
+```kotlin
+@Serializable
+data class Rating(val stars: Int) {
+    init {
+        require(stars in 1..5) { "stars must be from 1 to 5, but was $stars." }
+    }
+}
+```
+
+To ask for a value at the end of a conversation, pass a `ChatRequest`. The result has the value,
+the message it was read from and the tokens of the calls it took. The request cannot have tools:
+in an agent, let `toolLoop` finish and ask in the node after it.
+
+```kotlin
+val response = model.ask<Verdict>(ChatRequest(ticket.messages + ChatMessage.User("What is your verdict?")))
+response.value   // Verdict(category = REFUND, ...)
+response.message // add it to the conversation to continue it
+```
+
 `ChatModel` has one function, `chat(ChatRequest): ChatResponse`, so a model of your own is a few
 lines. A failed call throws `ChatModelException`. When the call is made in a node, the run fails
 with a `NodeExecutionException` that names the node and has the `ChatModelException` as its `cause`.

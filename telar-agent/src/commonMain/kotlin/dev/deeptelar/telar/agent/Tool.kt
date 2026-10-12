@@ -86,11 +86,12 @@ public inline fun <reified Input> Tool(name: String, description: String, noinli
 /** Creates a [Tool] whose input is read with [serializer]. See the overload with a reified type. */
 public fun <Input> Tool(name: String, description: String, serializer: KSerializer<Input>, execute: suspend (Input) -> String): Tool =
     Tool(ToolSpec(name, description, inputSchema(serializer.descriptor))) { input ->
-        execute(inputFormat.decodeFromJsonElement(serializer, input))
+        execute(modelJson.decodeFromJsonElement(serializer, input))
     }
 
 /**
- * Describes a property of a tool's input class to the model.
+ * Describes a property to the model: of the input class of a [Tool], or of the class a model is
+ * asked for with [ask].
  *
  * ```kotlin
  * @Serializable
@@ -140,8 +141,8 @@ private suspend fun List<Tool>.execute(call: ToolCall): ChatMessage.ToolResult {
 private fun ToolCall.failed(message: String?): ChatMessage.ToolResult =
     ChatMessage.ToolResult(id, name, message ?: "The tool failed.", isError = true)
 
-/** Models leave optional properties out and may add ones the schema does not have. */
-private val inputFormat =
+/** Reads what a model wrote: models leave optional properties out and may add ones the schema does not have. */
+internal val modelJson: Json =
     Json {
         ignoreUnknownKeys = true
         explicitNulls = false
