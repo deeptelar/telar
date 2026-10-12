@@ -12,6 +12,8 @@ graph.stream(SupportEmail(sender = "Ana", body = "I would like a refund.")).coll
         is GraphEvent.NodeProgress -> println("${event.node} reports ${event.value}")
         // A node that runs another graph passes on what happens in it. See "Subgraphs".
         is GraphEvent.SubgraphEvent -> println("inside ${event.node}: ${event.event}")
+        // A node with a retry failed and will run again. See "Retries and time limits".
+        is GraphEvent.NodeRetry -> println("${event.node} failed, next try in ${event.pause}")
         // A node has returned its updated state.
         is GraphEvent.NodeCompleted -> println("${event.node} finished")
         // A step is over: every node that ran at the same time has finished.

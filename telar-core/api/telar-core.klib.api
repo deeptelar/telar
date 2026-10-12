@@ -96,6 +96,34 @@ sealed interface <#A: out kotlin/Any?> dev.deeptelar.telar/GraphEvent { // dev.d
         final fun toString(): kotlin/String // dev.deeptelar.telar/GraphEvent.NodeProgress.toString|toString(){}[0]
     }
 
+    final class <#A1: out kotlin/Any?> NodeRetry : dev.deeptelar.telar/GraphEvent<#A1> { // dev.deeptelar.telar/GraphEvent.NodeRetry|null[0]
+        constructor <init>(kotlin/Int, kotlin/String, kotlin/Int, kotlin/Throwable, kotlin.time/Duration, #A1) // dev.deeptelar.telar/GraphEvent.NodeRetry.<init>|<init>(kotlin.Int;kotlin.String;kotlin.Int;kotlin.Throwable;kotlin.time.Duration;1:0){}[0]
+
+        final val attempt // dev.deeptelar.telar/GraphEvent.NodeRetry.attempt|{}attempt[0]
+            final fun <get-attempt>(): kotlin/Int // dev.deeptelar.telar/GraphEvent.NodeRetry.attempt.<get-attempt>|<get-attempt>(){}[0]
+        final val cause // dev.deeptelar.telar/GraphEvent.NodeRetry.cause|{}cause[0]
+            final fun <get-cause>(): kotlin/Throwable // dev.deeptelar.telar/GraphEvent.NodeRetry.cause.<get-cause>|<get-cause>(){}[0]
+        final val node // dev.deeptelar.telar/GraphEvent.NodeRetry.node|{}node[0]
+            final fun <get-node>(): kotlin/String // dev.deeptelar.telar/GraphEvent.NodeRetry.node.<get-node>|<get-node>(){}[0]
+        final val pause // dev.deeptelar.telar/GraphEvent.NodeRetry.pause|{}pause[0]
+            final fun <get-pause>(): kotlin.time/Duration // dev.deeptelar.telar/GraphEvent.NodeRetry.pause.<get-pause>|<get-pause>(){}[0]
+        final val state // dev.deeptelar.telar/GraphEvent.NodeRetry.state|{}state[0]
+            final fun <get-state>(): #A1 // dev.deeptelar.telar/GraphEvent.NodeRetry.state.<get-state>|<get-state>(){}[0]
+        final val step // dev.deeptelar.telar/GraphEvent.NodeRetry.step|{}step[0]
+            final fun <get-step>(): kotlin/Int // dev.deeptelar.telar/GraphEvent.NodeRetry.step.<get-step>|<get-step>(){}[0]
+
+        final fun component1(): kotlin/Int // dev.deeptelar.telar/GraphEvent.NodeRetry.component1|component1(){}[0]
+        final fun component2(): kotlin/String // dev.deeptelar.telar/GraphEvent.NodeRetry.component2|component2(){}[0]
+        final fun component3(): kotlin/Int // dev.deeptelar.telar/GraphEvent.NodeRetry.component3|component3(){}[0]
+        final fun component4(): kotlin/Throwable // dev.deeptelar.telar/GraphEvent.NodeRetry.component4|component4(){}[0]
+        final fun component5(): kotlin.time/Duration // dev.deeptelar.telar/GraphEvent.NodeRetry.component5|component5(){}[0]
+        final fun component6(): #A1 // dev.deeptelar.telar/GraphEvent.NodeRetry.component6|component6(){}[0]
+        final fun copy(kotlin/Int = ..., kotlin/String = ..., kotlin/Int = ..., kotlin/Throwable = ..., kotlin.time/Duration = ..., #A1 = ...): dev.deeptelar.telar/GraphEvent.NodeRetry<#A1> // dev.deeptelar.telar/GraphEvent.NodeRetry.copy|copy(kotlin.Int;kotlin.String;kotlin.Int;kotlin.Throwable;kotlin.time.Duration;1:0){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // dev.deeptelar.telar/GraphEvent.NodeRetry.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // dev.deeptelar.telar/GraphEvent.NodeRetry.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // dev.deeptelar.telar/GraphEvent.NodeRetry.toString|toString(){}[0]
+    }
+
     final class <#A1: out kotlin/Any?> NodeStarted : dev.deeptelar.telar/GraphEvent<#A1> { // dev.deeptelar.telar/GraphEvent.NodeStarted|null[0]
         constructor <init>(kotlin/Int, kotlin/String, #A1) // dev.deeptelar.telar/GraphEvent.NodeStarted.<init>|<init>(kotlin.Int;kotlin.String;1:0){}[0]
 
@@ -291,6 +319,7 @@ final class <#A: kotlin/Any?> dev.deeptelar.telar/StateGraph { // dev.deeptelar.
     final fun (dev.deeptelar.telar/NodeRef).then(dev.deeptelar.telar/NodeRef): dev.deeptelar.telar/NodeRef // dev.deeptelar.telar/StateGraph.then|then@dev.deeptelar.telar.NodeRef(dev.deeptelar.telar.NodeRef){}[0]
     final fun (dev.deeptelar.telar/NodeRef).then(kotlin/String): kotlin/String // dev.deeptelar.telar/StateGraph.then|then@dev.deeptelar.telar.NodeRef(kotlin.String){}[0]
     final fun (kotlin/String).then(dev.deeptelar.telar/NodeRef): dev.deeptelar.telar/NodeRef // dev.deeptelar.telar/StateGraph.then|then@kotlin.String(dev.deeptelar.telar.NodeRef){}[0]
+    final fun <#A1: kotlin/Any?> node(kotlin/String, kotlin.coroutines/SuspendFunction1<#A, #A1>, dev.deeptelar.telar/Retry? = ..., kotlin.time/Duration? = ..., kotlin.coroutines/SuspendFunction2<#A, #A1, #A>): dev.deeptelar.telar/NodeRef // dev.deeptelar.telar/StateGraph.node|node(kotlin.String;kotlin.coroutines.SuspendFunction1<1:0,0:0>;dev.deeptelar.telar.Retry?;kotlin.time.Duration?;kotlin.coroutines.SuspendFunction2<1:0,0:0,1:0>){0§<kotlin.Any?>}[0]
     final fun <#A1: kotlin/Any?> node(kotlin/String, kotlin.coroutines/SuspendFunction1<#A, #A1>, kotlin.coroutines/SuspendFunction2<#A, #A1, #A>): dev.deeptelar.telar/NodeRef // dev.deeptelar.telar/StateGraph.node|node(kotlin.String;kotlin.coroutines.SuspendFunction1<1:0,0:0>;kotlin.coroutines.SuspendFunction2<1:0,0:0,1:0>){0§<kotlin.Any?>}[0]
     final fun <#A1: kotlin/Any?> subgraph(kotlin/String, dev.deeptelar.telar/CompiledGraph<#A1>, kotlin.coroutines/SuspendFunction1<#A, #A1>, kotlin.coroutines/SuspendFunction2<#A, #A1, #A>): dev.deeptelar.telar/NodeRef // dev.deeptelar.telar/StateGraph.subgraph|subgraph(kotlin.String;dev.deeptelar.telar.CompiledGraph<0:0>;kotlin.coroutines.SuspendFunction1<1:0,0:0>;kotlin.coroutines.SuspendFunction2<1:0,0:0,1:0>){0§<kotlin.Any?>}[0]
     final fun compile(dev.deeptelar.telar/Reducer<#A>? = ...): dev.deeptelar.telar/CompiledGraph<#A> // dev.deeptelar.telar/StateGraph.compile|compile(dev.deeptelar.telar.Reducer<1:0>?){}[0]
@@ -299,6 +328,7 @@ final class <#A: kotlin/Any?> dev.deeptelar.telar/StateGraph { // dev.deeptelar.
     final fun conditionalEdge(kotlin/String, kotlin.collections/Set<dev.deeptelar.telar/NodeRef>, kotlin.coroutines/SuspendFunction1<#A, dev.deeptelar.telar/NodeRef>) // dev.deeptelar.telar/StateGraph.conditionalEdge|conditionalEdge(kotlin.String;kotlin.collections.Set<dev.deeptelar.telar.NodeRef>;kotlin.coroutines.SuspendFunction1<1:0,dev.deeptelar.telar.NodeRef>){}[0]
     final fun conditionalEdge(kotlin/String, kotlin.collections/Set<kotlin/String>? = ..., kotlin.coroutines/SuspendFunction1<#A, kotlin/String>) // dev.deeptelar.telar/StateGraph.conditionalEdge|conditionalEdge(kotlin.String;kotlin.collections.Set<kotlin.String>?;kotlin.coroutines.SuspendFunction1<1:0,kotlin.String>){}[0]
     final fun edge(kotlin/String, kotlin/String) // dev.deeptelar.telar/StateGraph.edge|edge(kotlin.String;kotlin.String){}[0]
+    final fun node(kotlin/String, dev.deeptelar.telar/Retry? = ..., kotlin.time/Duration? = ..., kotlin.coroutines/SuspendFunction1<#A, #A>): dev.deeptelar.telar/NodeRef // dev.deeptelar.telar/StateGraph.node|node(kotlin.String;dev.deeptelar.telar.Retry?;kotlin.time.Duration?;kotlin.coroutines.SuspendFunction1<1:0,1:0>){}[0]
     final fun node(kotlin/String, kotlin.coroutines/SuspendFunction1<#A, #A>): dev.deeptelar.telar/NodeRef // dev.deeptelar.telar/StateGraph.node|node(kotlin.String;kotlin.coroutines.SuspendFunction1<1:0,1:0>){}[0]
     final fun subgraph(kotlin/String, dev.deeptelar.telar/CompiledGraph<#A>): dev.deeptelar.telar/NodeRef // dev.deeptelar.telar/StateGraph.subgraph|subgraph(kotlin.String;dev.deeptelar.telar.CompiledGraph<1:0>){}[0]
 }
@@ -398,8 +428,10 @@ final class dev.deeptelar.telar/MergeRuleException : dev.deeptelar.telar/TelarEx
 }
 
 final class dev.deeptelar.telar/NodeExecutionException : dev.deeptelar.telar/TelarException { // dev.deeptelar.telar/NodeExecutionException|null[0]
-    constructor <init>(kotlin/String, kotlin/Throwable) // dev.deeptelar.telar/NodeExecutionException.<init>|<init>(kotlin.String;kotlin.Throwable){}[0]
+    constructor <init>(kotlin/String, kotlin/Throwable, kotlin/Int = ...) // dev.deeptelar.telar/NodeExecutionException.<init>|<init>(kotlin.String;kotlin.Throwable;kotlin.Int){}[0]
 
+    final val attempts // dev.deeptelar.telar/NodeExecutionException.attempts|{}attempts[0]
+        final fun <get-attempts>(): kotlin/Int // dev.deeptelar.telar/NodeExecutionException.attempts.<get-attempts>|<get-attempts>(){}[0]
     final val nodeName // dev.deeptelar.telar/NodeExecutionException.nodeName|{}nodeName[0]
         final fun <get-nodeName>(): kotlin/String // dev.deeptelar.telar/NodeExecutionException.nodeName.<get-nodeName>|<get-nodeName>(){}[0]
 }
@@ -416,11 +448,35 @@ final class dev.deeptelar.telar/NodeRef { // dev.deeptelar.telar/NodeRef|null[0]
     }
 }
 
+final class dev.deeptelar.telar/NodeTimeoutException : dev.deeptelar.telar/TelarException { // dev.deeptelar.telar/NodeTimeoutException|null[0]
+    constructor <init>(kotlin.time/Duration) // dev.deeptelar.telar/NodeTimeoutException.<init>|<init>(kotlin.time.Duration){}[0]
+
+    final val timeout // dev.deeptelar.telar/NodeTimeoutException.timeout|{}timeout[0]
+        final fun <get-timeout>(): kotlin.time/Duration // dev.deeptelar.telar/NodeTimeoutException.timeout.<get-timeout>|<get-timeout>(){}[0]
+}
+
 final class dev.deeptelar.telar/ReducerException : dev.deeptelar.telar/TelarException { // dev.deeptelar.telar/ReducerException|null[0]
     constructor <init>(kotlin.collections/List<kotlin/String>, kotlin/Throwable) // dev.deeptelar.telar/ReducerException.<init>|<init>(kotlin.collections.List<kotlin.String>;kotlin.Throwable){}[0]
 
     final val nodes // dev.deeptelar.telar/ReducerException.nodes|{}nodes[0]
         final fun <get-nodes>(): kotlin.collections/List<kotlin/String> // dev.deeptelar.telar/ReducerException.nodes.<get-nodes>|<get-nodes>(){}[0]
+}
+
+final class dev.deeptelar.telar/Retry { // dev.deeptelar.telar/Retry|null[0]
+    constructor <init>(kotlin/Int = ..., kotlin.time/Duration = ..., kotlin/Double = ..., kotlin.time/Duration = ..., kotlin/Function1<kotlin/Throwable, kotlin/Boolean> = ...) // dev.deeptelar.telar/Retry.<init>|<init>(kotlin.Int;kotlin.time.Duration;kotlin.Double;kotlin.time.Duration;kotlin.Function1<kotlin.Throwable,kotlin.Boolean>){}[0]
+
+    final val attempts // dev.deeptelar.telar/Retry.attempts|{}attempts[0]
+        final fun <get-attempts>(): kotlin/Int // dev.deeptelar.telar/Retry.attempts.<get-attempts>|<get-attempts>(){}[0]
+    final val factor // dev.deeptelar.telar/Retry.factor|{}factor[0]
+        final fun <get-factor>(): kotlin/Double // dev.deeptelar.telar/Retry.factor.<get-factor>|<get-factor>(){}[0]
+    final val maxPause // dev.deeptelar.telar/Retry.maxPause|{}maxPause[0]
+        final fun <get-maxPause>(): kotlin.time/Duration // dev.deeptelar.telar/Retry.maxPause.<get-maxPause>|<get-maxPause>(){}[0]
+    final val pause // dev.deeptelar.telar/Retry.pause|{}pause[0]
+        final fun <get-pause>(): kotlin.time/Duration // dev.deeptelar.telar/Retry.pause.<get-pause>|<get-pause>(){}[0]
+    final val retryOn // dev.deeptelar.telar/Retry.retryOn|{}retryOn[0]
+        final fun <get-retryOn>(): kotlin/Function1<kotlin/Throwable, kotlin/Boolean> // dev.deeptelar.telar/Retry.retryOn.<get-retryOn>|<get-retryOn>(){}[0]
+
+    final fun toString(): kotlin/String // dev.deeptelar.telar/Retry.toString|toString(){}[0]
 }
 
 final class dev.deeptelar.telar/SubgraphPosition { // dev.deeptelar.telar/SubgraphPosition|null[0]

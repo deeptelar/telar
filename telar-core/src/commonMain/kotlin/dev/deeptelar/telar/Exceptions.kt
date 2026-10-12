@@ -1,5 +1,7 @@
 package dev.deeptelar.telar
 
+import kotlin.time.Duration
+
 /**
  * Base class for every error raised by Telar itself, so callers can catch the whole family
  * with a single `catch (e: TelarException)`. Integration modules and custom [Checkpointer]s may
@@ -64,11 +66,24 @@ internal fun Throwable.isFailure(): Boolean = this !is Error || this::class == E
  * Cancellation of the run itself is never wrapped: it propagates as a `CancellationException`. A
  * `CancellationException` that a node raises while the run is still active, such as an expired
  * `withTimeout` inside the node, is a failure of that node and is wrapped like any other.
+ *
+ * @property attempts how often the node ran before the run failed. More than 1 only for a node with
+ * a [Retry].
  */
 public class NodeExecutionException(
     public val nodeName: String,
     cause: Throwable,
-) : TelarException("Node '$nodeName' failed: ${cause.message}", cause)
+    public val attempts: Int = 1,
+) : TelarException("Node '$nodeName' failed${if (attempts > 1) " after $attempts attempts" else ""}: ${cause.message}", cause)
+
+/**
+ * A try of a node took longer than the [timeout] the node was added with, and was cancelled. It is
+ * the `cause` of the [NodeExecutionException] the run fails with, and what the `retryOn` of a
+ * [Retry] gets.
+ */
+public class NodeTimeoutException(
+    public val timeout: Duration,
+) : TelarException("The node did not finish within $timeout.")
 
 /**
  * The condition of the conditional edge from [from] threw an exception. The original exception is

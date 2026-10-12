@@ -79,10 +79,12 @@ made under that name keep it. The repository is `deeptelar/telar` and the demo i
 
 1. **Define** with the `StateGraph<State> { ... }` DSL. `node(name) { ... }` returns a whole state;
    `node(name, work) { state, result -> ... }` splits a node into slow work and a state update, for
-   nodes that run in parallel. `subgraph(name, graph, state, update)` adds a compiled graph as a
-   node, with the two functions mapping its state out of and into this graph's. All return a
-   `NodeRef`; connect nodes with `START then a then b then END`, `edge(from, to)`, or
-   `conditionalEdge(from, targets) { ... }`.
+   nodes that run in parallel. Both take a `retry` (a `Retry`: how often the node is tried and the
+   pause between tries) and a `timeout` for one try; the tries happen inside the node's step, and a
+   stream gets a `GraphEvent.NodeRetry` for each failed one. `subgraph(name, graph, state, update)`
+   adds a compiled graph as a node, with the two functions mapping its state out of and into this
+   graph's. All return a `NodeRef`; connect nodes with `START then a then b then END`,
+   `edge(from, to)`, or `conditionalEdge(from, targets) { ... }`.
 2. **Compile** with `.compile()`, which validates the graph and returns a `CompiledGraph<State>`. It
    needs a `reducer` only when two nodes that return a whole state can run in the same step.
 3. **Execute** with `invoke(input, config)` (returns `GraphResult.Completed` or `.Interrupted`) or

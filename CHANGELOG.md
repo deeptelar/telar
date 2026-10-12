@@ -29,8 +29,19 @@ breaking changes.
   `true`, the loop ends and the graph continues at `then`. `TokenUsage` has `+` and `total`, and
   `TokenUsage()` is the start of a count.
 
+- A node can be tried again when it fails, and can have a time limit:
+  `node("stock", retry = Retry(attempts = 3), timeout = 30.seconds) { ... }`, and the same for a
+  node with a `work` and an `update`. A node with a `Retry` runs again on the same state, in the
+  same step, with a pause that grows from try to try, and the run fails only when the last try
+  fails. A try that takes longer than `timeout` is cancelled and fails with a
+  `NodeTimeoutException`. A stream has a `GraphEvent.NodeRetry` for each try that failed, and
+  `NodeExecutionException` has `attempts`. `toolLoop` and `toolAgent` take a `retry` for the node
+  that asks the model. The guide
+  [Retries and time limits](https://deeptelar.github.io/telar/guides/retries) shows it.
+
 ### Changed
 
+- `GraphEvent` has a new subclass, `NodeRetry`. A `when` over all events needs a branch for it.
 - `TokenUsage` is `@Serializable`, so that a state with a count can be saved. `AgentState` is saved
   with its `tokens`; a state saved by an earlier version is read with a count of zero.
 

@@ -104,6 +104,7 @@ suspend fun main() {
             is GraphEvent.NodeStarted -> println("${event.node} started")
             is GraphEvent.NodeProgress -> println("${event.node} reports ${event.value}")
             is GraphEvent.SubgraphEvent -> println("inside ${event.node}: ${event.event}")
+            is GraphEvent.NodeRetry -> println("${event.node} failed, next try in ${event.pause}")
             is GraphEvent.NodeCompleted -> println("${event.node} finished")
             is GraphEvent.StepCompleted -> println("step ${event.step} done, ran ${event.nodes}")
             is GraphEvent.Completed -> println("done: ${event.state.reply}")
