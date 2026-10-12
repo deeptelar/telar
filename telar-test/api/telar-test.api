@@ -1,0 +1,60 @@
+public final class dev/deeptelar/telar/test/ChatScript {
+	public final fun call (Ljava/lang/String;)Ldev/deeptelar/telar/agent/ToolCall;
+	public final fun call (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)Ldev/deeptelar/telar/agent/ToolCall;
+	public final fun calls ([Ldev/deeptelar/telar/agent/ToolCall;Ljava/lang/String;Ldev/deeptelar/telar/agent/TokenUsage;)V
+	public static synthetic fun calls$default (Ldev/deeptelar/telar/test/ChatScript;[Ldev/deeptelar/telar/agent/ToolCall;Ljava/lang/String;Ldev/deeptelar/telar/agent/TokenUsage;ILjava/lang/Object;)V
+	public final fun fails (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun fails (Ljava/lang/Throwable;Ljava/lang/String;)V
+	public static synthetic fun fails$default (Ldev/deeptelar/telar/test/ChatScript;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)V
+	public static synthetic fun fails$default (Ldev/deeptelar/telar/test/ChatScript;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/Object;)V
+	public final fun json (Lkotlinx/serialization/KSerializer;Ljava/lang/Object;)Ljava/lang/String;
+	public final fun jsonObject (Lkotlinx/serialization/KSerializer;Ljava/lang/Object;)Lkotlinx/serialization/json/JsonObject;
+	public final fun responds (Lkotlin/jvm/functions/Function2;)V
+	public final fun says (Ljava/lang/String;Ldev/deeptelar/telar/agent/TokenUsage;Z)V
+	public static synthetic fun says$default (Ldev/deeptelar/telar/test/ChatScript;Ljava/lang/String;Ldev/deeptelar/telar/agent/TokenUsage;ZILjava/lang/Object;)V
+}
+
+public final class dev/deeptelar/telar/test/DecisionScript {
+	public final fun chooses (Ljava/lang/String;DLdev/deeptelar/telar/agent/TokenUsage;)V
+	public static synthetic fun chooses$default (Ldev/deeptelar/telar/test/DecisionScript;Ljava/lang/String;DLdev/deeptelar/telar/agent/TokenUsage;ILjava/lang/Object;)V
+	public final fun decides (Lkotlin/jvm/functions/Function2;)V
+	public final fun fails (Ljava/lang/String;)V
+	public final fun fails (Ljava/lang/Throwable;)V
+	public final fun no (DLdev/deeptelar/telar/agent/TokenUsage;)V
+	public static synthetic fun no$default (Ldev/deeptelar/telar/test/DecisionScript;DLdev/deeptelar/telar/agent/TokenUsage;ILjava/lang/Object;)V
+	public final fun scores (DDLdev/deeptelar/telar/agent/TokenUsage;)V
+	public static synthetic fun scores$default (Ldev/deeptelar/telar/test/DecisionScript;DDLdev/deeptelar/telar/agent/TokenUsage;ILjava/lang/Object;)V
+	public final fun yes (DLdev/deeptelar/telar/agent/TokenUsage;)V
+	public static synthetic fun yes$default (Ldev/deeptelar/telar/test/DecisionScript;DLdev/deeptelar/telar/agent/TokenUsage;ILjava/lang/Object;)V
+}
+
+public final class dev/deeptelar/telar/test/RunRecord {
+	public fun <init> (Ljava/util/List;)V
+	public final fun getEvents ()Ljava/util/List;
+	public final fun getNodes ()Ljava/util/List;
+	public final fun getResult ()Ldev/deeptelar/telar/GraphResult;
+	public final fun getState ()Ljava/lang/Object;
+	public final fun getSteps ()Ljava/util/List;
+	public final fun getText ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/deeptelar/telar/test/RunRecordKt {
+	public static final fun record (Lkotlinx/coroutines/flow/Flow;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class dev/deeptelar/telar/test/ScriptedChatModel : dev/deeptelar/telar/agent/ChatModel {
+	public fun <init> (Lkotlin/jvm/functions/Function1;)V
+	public fun chat (Ldev/deeptelar/telar/agent/ChatRequest;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getRemaining ()I
+	public final fun getRequests ()Ljava/util/List;
+	public fun stream (Ldev/deeptelar/telar/agent/ChatRequest;)Lkotlinx/coroutines/flow/Flow;
+}
+
+public final class dev/deeptelar/telar/test/ScriptedDecisionModel : dev/deeptelar/telar/agent/DecisionModel {
+	public fun <init> (Lkotlin/jvm/functions/Function1;)V
+	public fun decide (Ldev/deeptelar/telar/agent/DecisionRequest;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getRemaining ()I
+	public final fun getRequests ()Ljava/util/List;
+}
+

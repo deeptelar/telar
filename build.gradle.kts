@@ -12,6 +12,7 @@ dependencies {
     dokka(project(":telar-openai"))
     dokka(project(":telar-langchain4j"))
     dokka(project(":telar-typesafe"))
+    dokka(project(":telar-test"))
     kover(project(":telar-core"))
     kover(project(":telar-serialization"))
     kover(project(":telar-checkpoint-file"))
@@ -20,4 +21,5 @@ dependencies {
     kover(project(":telar-openai"))
     kover(project(":telar-langchain4j"))
     kover(project(":telar-typesafe"))
+    kover(project(":telar-test"))
 }
