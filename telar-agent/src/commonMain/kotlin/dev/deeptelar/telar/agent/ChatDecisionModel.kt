@@ -1,7 +1,5 @@
 package dev.deeptelar.telar.agent
 
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -77,23 +75,9 @@ public class ChatDecisionModel(
         return "State:\n$text\n\nQuestions:\n$questions"
     }
 
-    /** Reads the JSON object of the reply, also when the model wrapped it in a code block or in a sentence. */
-    private fun parse(text: String): JsonObject {
-        val start = text.indexOf('{')
-        val end = text.lastIndexOf('}')
-        val json =
-            if (start in 0..<end) {
-                try {
-                    Json.parseToJsonElement(text.substring(start, end + 1))
-                } catch (_: SerializationException) {
-                    null
-                }
-            } else {
-                null
-            }
-        return json as? JsonObject
+    private fun parse(text: String): JsonObject =
+        jsonObjectIn(text)
             ?: throw DecisionModelException("The chat model did not answer with a JSON object: ${text.take(REPLY_EXCERPT)}")
-    }
 
     /** The probability of each label of a question, adding up to 1, in the order of [labels]. */
     private fun probabilities(name: String, labels: Map<String, String?>, reply: JsonElement?): List<Double> {
