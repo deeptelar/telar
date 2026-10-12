@@ -12,7 +12,7 @@ what is already released.
 To ask for a feature or to move one up, add a 👍 to its issue or
 [start a discussion](https://github.com/deeptelar/telar/discussions).
 
-Last updated: 2026-10-10.
+Last updated: 2026-10-12.
 
 ## Where the project is
 
@@ -24,15 +24,28 @@ Ollama and the other servers with the Chat Completions API, for LangChain4j, and
 model. Any of the chat models can take the decisions of a workflow too. The API can still change in
 any release.
 
+The engine is ahead of the agent that runs on it. A model answers with text only and reads text
+only, a tool cannot change the state of the run, nothing counts what a run costs, and a call that
+fails ends the run. The first sections of this page are about that.
+
 ## The way to 1.0
 
 | Stage | What happens | The public API |
 |---|---|---|
-| **Alpha** (now) | The features below are added, the engine first | May change in any release |
+| **Alpha** (now) | The features below are added, in the order of this page | May change in any release |
 | **Beta** | No new features. The API is reviewed and the documentation completed | Changes only for a good reason, and the changelog says how to update |
 | **1.0** | Released when the beta has been used in real apps without API changes | Stable. A breaking change waits for `2.0` |
 
-Features that change the core API come first, so that the API can stop moving as early as possible.
+The features are numbered in the order they are worked on. Two rules decide it:
+
+- **What an agent needs in a real app comes first.** These are the things a developer looks for
+  when choosing a library, and the things the samples of Telar had to write by hand.
+- **A change to an API that exists comes before a new module.** Sections 1 and 2 change
+  `telar-core` and `telar-agent`, so that their API can stop moving as early as possible. Most of
+  section 3 is new modules, which change nothing that exists.
+
+The issues have the same order as labels: `priority: now` for section 1, `priority: next` for
+section 2 and `priority: later` for section 3.
 
 Each item has one of three states:
 
@@ -40,29 +53,41 @@ Each item has one of three states:
 - **Planned**: it will be in `1.0`.
 - **Exploring**: wanted, but the design is open. It may arrive after `1.0`.
 
-## 1. Finish the engine
+## 1. An agent for a real app
 
-These change `telar-core`, so they come first.
+| | Feature | What you get | State | Issue |
+|---|---|---|---|---|
+| 1 | Typed answers from a model | Ask a model for a `@Serializable` class and get an instance of it, built on the schema generator that tools already use. | In progress | [#85] |
+| 2 | Tools that change the state | A tool of `toolLoop` reads the state of the run and writes to it, so that a checkpoint holds what the tool did. And calls that depend on each other run in order. Today a tool returns text, and the calls of one answer run in parallel. | Planned | [#98] |
+| 3 | Token count and budget | A run knows how many tokens its models used, and stops at a limit. Today `toolLoop` drops the count of each call. | Planned | [#99] |
+| 4 | Retry and time limit for a node | A node says how often it may be tried again and how long it may take. Today a failed run is retried by hand with `resume`. | Planned | [#83] |
+| 5 | Helpers for tests | `telar-test`: a model that gives the answers a test wrote down, so that a graph with an agent is tested without an API key and without a model of your own. | Planned | [#86] |
+| 6 | Tools from MCP servers | Use the tools of a Model Context Protocol server as `Tool`s, without writing each by hand. | Planned | [#104] |
 
-| Feature | What you get | State | Issue |
-|---|---|---|---|
-| Subgraphs | A compiled graph becomes a node of another graph, with a mapping between the two states and one thread for both. Released: `subgraph`, a run that pauses inside a subgraph and resumes there, the events of a subgraph in the stream of the graph around it, and the subgraph in `topology`. Still to come: `interruptBefore` for a node of a subgraph, and a retry after a failure that continues inside the subgraph. | In progress | [#34] |
-| Fan-out over a list | One node runs once per item of a list, all at the same time, when the number of items is only known at run time. Today the edges fix how many nodes run in parallel. | Planned | [#82] |
-| Retry and time limit for a node | A node says how often it may be tried again and how long it may take. Today a failed run is retried by hand with `resume`. | Planned | [#83] |
+## 2. Finish the engine and the messages
 
-## 2. Around the engine
+These change how a graph runs or what a message holds, so they come before the beta.
 
-New modules and additions to `telar-agent`. They do not change the core.
+| | Feature | What you get | State | Issue |
+|---|---|---|---|---|
+| 7 | One rule for parallel nodes that write the same property | You decide what happens, and the rule is the same for both ways to write a node. Today a node with `work` and `update` overwrites without a word, and a node that returns a whole state follows the `mergeRules`. | Planned | [#101] |
+| 8 | Fan-out over a list | One node runs once per item of a list, all at the same time, when the number of items is only known at run time. Today the edges fix how many nodes run in parallel. | Planned | [#82] |
+| 9 | Images and files in messages | Send a model a picture or a PDF with the question, and let a tool return one. A `ChatMessage` holds text only today. | Planned | [#103] |
+| 10 | Subgraphs | A compiled graph becomes a node of another graph, with a mapping between the two states and one thread for both. Released: `subgraph`, a run that pauses inside a subgraph and resumes there, the events of a subgraph in the stream of the graph around it, and the subgraph in `topology`. Still to come: `interruptBefore` for a node of a subgraph, and a retry after a failure that continues inside the subgraph. | In progress | [#34] |
 
-| Feature | What you get | State | Issue |
-|---|---|---|---|
-| Database checkpointer | Saves runs in a SQL database, for servers and for Android apps. | Planned | [#84] |
-| Typed answers from a model | Ask a model for a `@Serializable` class and get an instance of it, built on the schema generator that tools already use. | Planned | [#85] |
-| Tracing | Hooks in the engine that report every node, edge, tool call and token count, and a module that sends them to OpenTelemetry. | Planned | [#38] |
-| Helpers for tests | `telar-test`: a model that gives the answers a test wrote down, so that a graph with an agent is tested without an API key and without a model of your own. | Planned | [#86] |
-| One version for all modules | `telar-bom`: a bill of materials. An app names the version of Telar once, and every module it adds uses that version. | Planned | [#79] |
+## 3. Run it in production
 
-## 3. Beta: make it stable
+New modules and additions. They change nothing that exists, so one of them can be built at any
+time by someone who needs it.
+
+| | Feature | What you get | State | Issue |
+|---|---|---|---|---|
+| 11 | Tracing | Hooks in the engine that report every node, edge, tool call and token count, and a module that sends them to OpenTelemetry. | Planned | [#38] |
+| 12 | Database checkpointer | Saves runs in a SQL database, for servers and for Android apps. | Planned | [#84] |
+| 13 | Long conversations | A conversation that is kept short for the model, by dropping or summarizing old messages, and that pays less for what the provider already read. Today every request sends everything. | Planned | [#105] |
+| 14 | One version for all modules | `telar-bom`: a bill of materials. An app names the version of Telar once, and every module it adds uses that version. | Planned | [#79] |
+
+## 4. Beta: make it stable
 
 - **API review.** Every public declaration is checked once more: its name, its defaults, and whether
   it can be `internal`. `apiCheck` already fails a build that changes the public API by accident.
@@ -85,8 +110,6 @@ Ideas without a place in the plan yet. Say so in the issue or in a discussion if
 | Idea | What it is | Issue |
 |---|---|---|
 | Functional API | Write a small workflow as ordinary `suspend` functions, without a graph, and keep checkpoints and streaming. | [#39] |
-| Images and files in messages | A `ChatMessage` holds text only today. | |
-| Tools from MCP servers | Use the tools of a Model Context Protocol server as `Tool`s. | |
 | Memory across threads | A store that an agent reads and writes in every conversation, next to the checkpoint of one thread. | |
 | Ready-made teams of agents | A supervisor and hand-offs between agents, built on subgraphs. | |
 
@@ -121,3 +144,9 @@ are larger, or need something the maintainers lack, such as a key for another mo
 [#84]: https://github.com/deeptelar/telar/issues/84
 [#85]: https://github.com/deeptelar/telar/issues/85
 [#86]: https://github.com/deeptelar/telar/issues/86
+[#98]: https://github.com/deeptelar/telar/issues/98
+[#99]: https://github.com/deeptelar/telar/issues/99
+[#101]: https://github.com/deeptelar/telar/issues/101
+[#103]: https://github.com/deeptelar/telar/issues/103
+[#104]: https://github.com/deeptelar/telar/issues/104
+[#105]: https://github.com/deeptelar/telar/issues/105
