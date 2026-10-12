@@ -1,6 +1,7 @@
 package dev.deeptelar.telar
 
 import kotlin.jvm.JvmName
+import kotlin.time.Duration
 
 /**
  * Builder for a graph of nodes and edges over an immutable [State].
@@ -47,7 +48,38 @@ public class StateGraph<State> {
      *
      * @throws GraphValidationException if the name is blank, reserved ([START], [END]) or already used.
      */
-    public fun node(name: String, action: NodeAction<State>): NodeRef = add(stateNode(name, action))
+    public fun node(name: String, action: NodeAction<State>): NodeRef = add(stateNode(name, action = action))
+
+    /**
+     * Adds a node that is tried again when it fails, that has a time limit, or both.
+     *
+     * ```kotlin
+     * val fetch = node("fetch", retry = Retry(attempts = 3), timeout = 30.seconds) { order ->
+     *     order.copy(stock = warehouse.stock(order.item))
+     * }
+     * ```
+     *
+     * With a [retry], a node that fails runs again on the same state, in the same step: see [Retry]
+     * for how often and with which pause. Only when its last try fails does the run fail, with a
+     * [NodeExecutionException]. Nothing is saved between two tries, and the other nodes of the step
+     * go on while this one waits for its next try. A stream gets a [GraphEvent.NodeRetry] for each
+     * try that failed.
+     *
+     * With a [timeout], a try that takes longer is cancelled and fails with a
+     * [NodeTimeoutException], which a [retry] treats like any other failure. The limit stops code
+     * that suspends, such as a call with a Ktor client. Code that blocks its thread goes on until
+     * it returns, and the node fails then.
+     *
+     * A node that is tried again starts from its first line, so make its side effects safe to
+     * repeat.
+     *
+     * @param retry how the node is tried again after a failure. `null` runs it once.
+     * @param timeout how long one try may take. `null` is no limit.
+     * @throws GraphValidationException if the name is blank, reserved ([START], [END]) or already
+     * used, or [timeout] is not positive.
+     */
+    public fun node(name: String, retry: Retry? = null, timeout: Duration? = null, action: NodeAction<State>): NodeRef =
+        add(stateNode(name, retry, checked(name, timeout), action))
 
     /**
      * Adds a node whose job is split in two, so that it can run next to other nodes without a
@@ -71,7 +103,43 @@ public class StateGraph<State> {
      * @throws GraphValidationException if the name is blank, reserved ([START], [END]) or already used.
      */
     public fun <Result> node(name: String, work: suspend (State) -> Result, update: suspend (State, Result) -> State): NodeRef =
-        add(workNode(name, work, update))
+        add(workNode(name, work, update = update))
+
+    /**
+     * Adds a node with a [work] and an [update] that is tried again when it fails, that has a time
+     * limit, or both. See the overload of a node that returns a whole state for what [retry] and
+     * [timeout] do.
+     *
+     * ```kotlin
+     * val classify = node(
+     *     "classify",
+     *     work = { email -> model.ask<Verdict>("Classify this email: ${email.body}") },
+     *     retry = Retry(attempts = 3),
+     * ) { email, verdict -> email.copy(category = verdict.category) }
+     * ```
+     *
+     * A try is the [work] of the node. In a step with several nodes, the [update] runs once, after
+     * the work of every node of the step has succeeded.
+     *
+     * @param retry how the node is tried again after a failure. `null` runs it once.
+     * @param timeout how long one try may take. `null` is no limit.
+     * @throws GraphValidationException if the name is blank, reserved ([START], [END]) or already
+     * used, or [timeout] is not positive.
+     */
+    public fun <Result> node(
+        name: String,
+        work: suspend (State) -> Result,
+        retry: Retry? = null,
+        timeout: Duration? = null,
+        update: suspend (State, Result) -> State,
+    ): NodeRef = add(workNode(name, work, retry, checked(name, timeout), update))
+
+    private fun checked(node: String, timeout: Duration?): Duration? {
+        if (timeout != null && !timeout.isPositive()) {
+            throw GraphValidationException("The timeout of node '$node' must be positive, but was $timeout.")
+        }
+        return timeout
+    }
 
     /**
      * Adds a node that runs another graph, a *subgraph*, on a state of its own type.

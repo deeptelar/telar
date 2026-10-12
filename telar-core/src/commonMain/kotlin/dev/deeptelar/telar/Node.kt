@@ -1,6 +1,7 @@
 package dev.deeptelar.telar
 
 import kotlinx.coroutines.currentCoroutineContext
+import kotlin.time.Duration
 
 /**
  * The work a node performs: a suspending function that takes the current state and returns the
@@ -36,11 +37,15 @@ public class NodeRef internal constructor(
  * @property returnsState `true` for a node that returns a whole state. Two such nodes in one step
  * need a [Reducer]. `false` for a node with a `work` and an `update`.
  * @property subgraph the graph that this node runs, for a node added with [StateGraph.subgraph].
+ * @property retry how the node is tried again after a failure. `null` for a node that runs once.
+ * @property timeout how long one try of the node may take. `null` for no limit.
  */
 internal class Node<State>(
     val name: String,
     val returnsState: Boolean,
     val subgraph: CompiledGraph<*>? = null,
+    val retry: Retry? = null,
+    val timeout: Duration? = null,
     val run: suspend (State) -> NodeOutput<State>,
 )
 
@@ -58,16 +63,18 @@ internal class NodeOutput<State>(
 )
 
 /** A node that returns a whole state. */
-internal fun <State> stateNode(name: String, action: NodeAction<State>): Node<State> =
-    Node(name, returnsState = true) { NodeOutput(action(it), update = null) }
+internal fun <State> stateNode(name: String, retry: Retry? = null, timeout: Duration? = null, action: NodeAction<State>): Node<State> =
+    Node(name, returnsState = true, retry = retry, timeout = timeout) { NodeOutput(action(it), update = null) }
 
 /** A node that does its [work] first and then writes the result into the state with [update]. */
 internal fun <State, Result> workNode(
     name: String,
     work: suspend (State) -> Result,
+    retry: Retry? = null,
+    timeout: Duration? = null,
     update: suspend (State, Result) -> State,
 ): Node<State> =
-    Node(name, returnsState = false) { state ->
+    Node(name, returnsState = false, retry = retry, timeout = timeout) { state ->
         val result = work(state)
         NodeOutput(update(state, result)) { update(it, result) }
     }

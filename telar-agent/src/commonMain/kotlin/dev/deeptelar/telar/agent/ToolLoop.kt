@@ -1,8 +1,10 @@
 package dev.deeptelar.telar.agent
 
 import dev.deeptelar.telar.CompiledGraph
+import dev.deeptelar.telar.GraphEvent
 import dev.deeptelar.telar.GraphValidationException
 import dev.deeptelar.telar.NodeRef
+import dev.deeptelar.telar.Retry
 import dev.deeptelar.telar.START
 import dev.deeptelar.telar.StateGraph
 import kotlinx.serialization.Serializable
@@ -117,6 +119,16 @@ import kotlinx.serialization.Serializable
  * its tokens ends up to one call above it. A loop that was stopped ends with the results of its
  * last tools, or with the message of the user, and not with an answer of the model.
  *
+ * A call to the model that fails ends the run. Give the loop a [retry] to ask the model again
+ * first. Tools need none: a tool that fails returns an error to the model, which can call it again.
+ *
+ * ```kotlin
+ * toolLoop(model = model, tools = tools, messages = { it.messages }, append = ::append, retry = Retry(attempts = 3))
+ * ```
+ *
+ * In a streamed run, the text of a try that failed has already arrived. The stream then has a
+ * [GraphEvent.NodeRetry] for the model node, and the text of the next try starts from its beginning.
+ *
  * @param model the model to ask.
  * @param tools the tools the model may call that only need their input.
  * @param messages reads the conversation from the state.
@@ -136,6 +148,8 @@ import kotlinx.serialization.Serializable
  * count. It is not called for an answer whose provider reports no usage.
  * @param stopWhen returns `true` when the model must not be asked again, for example because the
  * state says that a budget is used.
+ * @param retry how the model node is tried again when a call to the model fails. `null` ends the
+ * run at the first failure.
  * @throws GraphValidationException if two tools have the same name, or a node name is already used.
  */
 public fun <State> StateGraph<State>.toolLoop(
@@ -152,6 +166,7 @@ public fun <State> StateGraph<State>.toolLoop(
     inOrder: Boolean = false,
     countTokens: ((State, TokenUsage) -> State)? = null,
     stopWhen: ((State) -> Boolean)? = null,
+    retry: Retry? = null,
 ): NodeRef {
     val specs = tools.map { it.spec } + stateTools.map { it.spec }
     specs.groupingBy { it.name }.eachCount().filterValues { it > 1 }.keys.firstOrNull()?.let {
@@ -181,6 +196,7 @@ public fun <State> StateGraph<State>.toolLoop(
                     ModelTurn(opening + response.message, response.usage)
                 }
             },
+            retry = retry,
         ) { state, turn ->
             // No turn: the loop was stopped before the model was asked.
             if (turn == null) {
@@ -252,6 +268,8 @@ public fun <State> StateGraph<State>.toolLoop(
  * @param tokenBudget the tokens the conversation in the state may use. The count is compared with
  * it before each call to the model, with the numbers of the calls so far, so a run ends up to one
  * call above it. `null` is no limit.
+ * @param retry how the model is asked again when a call to it fails, for example
+ * `Retry(attempts = 3)`. `null` ends the run at the first failure.
  * @throws GraphValidationException if two tools have the same name, or [tokenBudget] is less than 1.
  */
 public fun toolAgent(
@@ -260,6 +278,7 @@ public fun toolAgent(
     system: String? = null,
     inOrder: Boolean = false,
     tokenBudget: Int? = null,
+    retry: Retry? = null,
 ): CompiledGraph<AgentState> {
     if (tokenBudget != null && tokenBudget < 1) {
         throw GraphValidationException("A token budget must be at least 1, but was $tokenBudget.")
@@ -275,6 +294,7 @@ public fun toolAgent(
                 inOrder = inOrder,
                 countTokens = { state, used -> state.copy(tokens = state.tokens + used) },
                 stopWhen = tokenBudget?.let { budget -> { state -> state.tokens.total >= budget } },
+                retry = retry,
             )
     }.compile()
 }

@@ -8,13 +8,16 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.coroutines.EmptyCoroutineContext
+import kotlin.time.Duration
 
 /**
  * An executable graph produced by [StateGraph.compile]. It is immutable and can be shared and run
@@ -33,8 +36,10 @@ import kotlin.coroutines.EmptyCoroutineContext
  * lengths, the node runs once for each step in which a branch reaches it.
  *
  * Nodes run in the coroutine context of the caller. If a node fails, the other nodes of that step
- * are cancelled and the failure is rethrown as [NodeExecutionException]. A failure of the reducer or
- * of the condition of an edge is rethrown as [ReducerException] or [EdgeConditionException].
+ * are cancelled and the failure is rethrown as [NodeExecutionException]. A node that was added with
+ * a [Retry] is first tried again, inside the same step and on the same state. A failure of the
+ * reducer or of the condition of an edge is rethrown as [ReducerException] or
+ * [EdgeConditionException].
  *
  * ## Pauses
  *
@@ -61,6 +66,10 @@ import kotlin.coroutines.EmptyCoroutineContext
  * next nodes are chosen. A step that fails at any of these points is not saved, so [resume] runs the
  * whole step again, including the nodes of that step that had already finished. Make the side
  * effects of a node safe to repeat.
+ *
+ * The tries of a node with a [Retry] are not saved either. They do not count for
+ * [GraphConfig.maxIterations], and a step that runs again after [resume] gives each of its nodes
+ * all of its tries again.
  */
 public class CompiledGraph<State> internal constructor(
     internal val nodes: Map<String, Node<State>>,
@@ -104,7 +113,8 @@ public class CompiledGraph<State> internal constructor(
      * @throws GraphValidationException if [config] names interrupt nodes that are not in the graph, or
      * if a node calls [interrupt] and [config] has no checkpointer.
      * @throws MaxIterationsExceededException if the run needs more than [GraphConfig.maxIterations] steps.
-     * @throws NodeExecutionException if a node throws.
+     * @throws NodeExecutionException if a node throws, or takes longer than its time limit, and has
+     * no try left.
      * @throws ReducerException if the reducer throws.
      * @throws EdgeConditionException if the condition of a conditional edge throws.
      * @throws InvalidRouteException if a conditional edge returns an invalid target.
@@ -227,7 +237,8 @@ public class CompiledGraph<State> internal constructor(
      * Like [invoke], but returns a cold [Flow] that emits a [GraphEvent] as each node starts and
      * finishes and after every step, and ends with [GraphEvent.Completed] or
      * [GraphEvent.Interrupted]. What a node passes to [reportProgress] while it runs arrives as a
-     * [GraphEvent.NodeProgress], and what happens inside a subgraph as a [GraphEvent.SubgraphEvent].
+     * [GraphEvent.NodeProgress], what happens inside a subgraph as a [GraphEvent.SubgraphEvent], and
+     * a try of a node that failed and is followed by another as a [GraphEvent.NodeRetry].
      * Nothing runs until the flow is collected, and each collection is a new run.
      */
     public fun stream(input: State, config: GraphConfig<State> = GraphConfig()): Flow<GraphEvent<State>> =
@@ -391,7 +402,11 @@ public class CompiledGraph<State> internal constructor(
         activeNodes.forEach { emit(GraphEvent.NodeStarted(step, it, state)) }
         if (activeNodes.size == 1 && !progress) {
             val name = activeNodes.single()
-            return runNode(run, nodes.getValue(name), state).state.also { emit(GraphEvent.NodeCompleted(step, name, it)) }
+            val output =
+                runNode(run, nodes.getValue(name), state) { attempt, cause, pause ->
+                    emit(GraphEvent.NodeRetry(step, name, attempt, cause, pause, state))
+                }
+            return output.state.also { emit(GraphEvent.NodeCompleted(step, name, it)) }
         }
 
         // A flow may only emit from the coroutine that collects it, so the nodes hand what they
@@ -405,7 +420,11 @@ public class CompiledGraph<State> internal constructor(
                     val results =
                         activeNodes.map { name ->
                             async(if (progress) reporter(name, signals) else EmptyCoroutineContext) {
-                                runNode(run, nodes.getValue(name), state).also { signals.send(NodeSignal.Finished(name, it.state)) }
+                                val output =
+                                    runNode(run, nodes.getValue(name), state) { attempt, cause, pause ->
+                                        signals.send(NodeSignal.Retry(name, attempt, cause, pause))
+                                    }
+                                output.also { signals.send(NodeSignal.Finished(name, it.state)) }
                             }
                         }
                     var running = activeNodes.size
@@ -422,6 +441,8 @@ public class CompiledGraph<State> internal constructor(
                                 )
                                 signal.emitted.complete(Unit)
                             }
+                            is NodeSignal.Retry ->
+                                emit(GraphEvent.NodeRetry(step, signal.node, signal.attempt, signal.cause, signal.pause, state))
                             is NodeSignal.Finished -> {
                                 emit(GraphEvent.NodeCompleted(step, signal.node, signal.state))
                                 running--
@@ -455,6 +476,13 @@ public class CompiledGraph<State> internal constructor(
             val node: String,
             val value: Any,
             val emitted: CompletableDeferred<Unit>,
+        ) : NodeSignal<Nothing>
+
+        class Retry(
+            val node: String,
+            val attempt: Int,
+            val cause: Throwable,
+            val pause: Duration,
         ) : NodeSignal<Nothing>
 
         class Finished<State>(
@@ -491,9 +519,46 @@ public class CompiledGraph<State> internal constructor(
         return combined
     }
 
-    private suspend fun runNode(run: StepRun, node: Node<State>, state: State): NodeOutput<State> =
+    /**
+     * Runs [node] on [state], and again after a failure for as long as its [Retry] allows.
+     *
+     * @param retrying is told about each try that failed and is followed by another, before the
+     * pause between the two. It is called outside the context of the node, so that the collector of
+     * the run may emit from it.
+     */
+    private suspend inline fun runNode(
+        run: StepRun,
+        node: Node<State>,
+        state: State,
+        retrying: (attempt: Int, cause: Throwable, pause: Duration) -> Unit,
+    ): NodeOutput<State> {
+        var attempt = 1
+        while (true) {
+            try {
+                return runOnce(run, node, state, attempt)
+            } catch (failure: NodeExecutionException) {
+                // Thrown by runOnce and by nothing inside the node: a failure in there is its cause.
+                val cause = checkNotNull(failure.cause) { "A NodeExecutionException always has a cause" }
+                val pause = node.retry?.pauseAfter(attempt, cause) ?: throw failure
+                retrying(attempt, cause, pause)
+                delay(pause)
+                attempt++
+            }
+        }
+    }
+
+    /** One try of [node], the one with the number [attempt]. */
+    private suspend fun runOnce(run: StepRun, node: Node<State>, state: State, attempt: Int): NodeOutput<State> =
         withContext(RunningNode(node.name, run.threadId, run.canPause, run.maxIterations, run.subgraphs[node.name])) {
-            wrapFailure({ NodeExecutionException(node.name, it) }) { node.run(state) }
+            wrapFailure({ NodeExecutionException(node.name, it, attempt) }) {
+                val timeout = node.timeout
+                if (timeout == null) {
+                    node.run(state)
+                } else {
+                    // Null only when this limit ran out: one that the node set for itself throws.
+                    withTimeoutOrNull(timeout) { node.run(state) } ?: throw NodeTimeoutException(timeout)
+                }
+            }
         }
 
     /**
@@ -567,6 +632,7 @@ public class CompiledGraph<State> internal constructor(
             is GraphEvent.NodeStarted,
             is GraphEvent.NodeProgress,
             is GraphEvent.SubgraphEvent,
+            is GraphEvent.NodeRetry,
             is GraphEvent.NodeCompleted,
             is GraphEvent.StepCompleted,
             -> error("A graph stream always ends with Completed or Interrupted")

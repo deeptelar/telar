@@ -181,6 +181,27 @@ public final class dev/deeptelar/telar/GraphEvent$NodeProgress : dev/deeptelar/t
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class dev/deeptelar/telar/GraphEvent$NodeRetry : dev/deeptelar/telar/GraphEvent {
+	public synthetic fun <init> (ILjava/lang/String;ILjava/lang/Throwable;JLjava/lang/Object;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()I
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()I
+	public final fun component4 ()Ljava/lang/Throwable;
+	public final fun component5-UwyO8pc ()J
+	public final fun component6 ()Ljava/lang/Object;
+	public final fun copy-myKFqkg (ILjava/lang/String;ILjava/lang/Throwable;JLjava/lang/Object;)Ldev/deeptelar/telar/GraphEvent$NodeRetry;
+	public static synthetic fun copy-myKFqkg$default (Ldev/deeptelar/telar/GraphEvent$NodeRetry;ILjava/lang/String;ILjava/lang/Throwable;JLjava/lang/Object;ILjava/lang/Object;)Ldev/deeptelar/telar/GraphEvent$NodeRetry;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAttempt ()I
+	public final fun getCause ()Ljava/lang/Throwable;
+	public final fun getNode ()Ljava/lang/String;
+	public final fun getPause-UwyO8pc ()J
+	public fun getState ()Ljava/lang/Object;
+	public final fun getStep ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class dev/deeptelar/telar/GraphEvent$NodeStarted : dev/deeptelar/telar/GraphEvent {
 	public fun <init> (ILjava/lang/String;Ljava/lang/Object;)V
 	public final fun component1 ()I
@@ -325,7 +346,9 @@ public final class dev/deeptelar/telar/MergeRulesKt {
 }
 
 public final class dev/deeptelar/telar/NodeExecutionException : dev/deeptelar/telar/TelarException {
-	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;I)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getAttempts ()I
 	public final fun getNodeName ()Ljava/lang/String;
 }
 
@@ -337,6 +360,11 @@ public final class dev/deeptelar/telar/NodeRef {
 
 public final class dev/deeptelar/telar/NodeRef$Companion {
 	public final fun getEND ()Ldev/deeptelar/telar/NodeRef;
+}
+
+public final class dev/deeptelar/telar/NodeTimeoutException : dev/deeptelar/telar/TelarException {
+	public synthetic fun <init> (JLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getTimeout-UwyO8pc ()J
 }
 
 public final class dev/deeptelar/telar/ProgressKt {
@@ -353,6 +381,18 @@ public final class dev/deeptelar/telar/ReducerException : dev/deeptelar/telar/Te
 	public final fun getNodes ()Ljava/util/List;
 }
 
+public final class dev/deeptelar/telar/Retry {
+	public fun <init> ()V
+	public synthetic fun <init> (IJDJLkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (IJDJLkotlin/jvm/functions/Function1;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getAttempts ()I
+	public final fun getFactor ()D
+	public final fun getMaxPause-UwyO8pc ()J
+	public final fun getPause-UwyO8pc ()J
+	public final fun getRetryOn ()Lkotlin/jvm/functions/Function1;
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class dev/deeptelar/telar/StateGraph {
 	public fun <init> ()V
 	public final fun compile (Ldev/deeptelar/telar/Reducer;)Ldev/deeptelar/telar/CompiledGraph;
@@ -366,6 +406,10 @@ public final class dev/deeptelar/telar/StateGraph {
 	public final fun edge (Ljava/lang/String;Ljava/lang/String;)V
 	public final fun node (Ljava/lang/String;Lkotlin/jvm/functions/Function2;)Ldev/deeptelar/telar/NodeRef;
 	public final fun node (Ljava/lang/String;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function3;)Ldev/deeptelar/telar/NodeRef;
+	public final fun node-51bEbmg (Ljava/lang/String;Lkotlin/jvm/functions/Function2;Ldev/deeptelar/telar/Retry;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function3;)Ldev/deeptelar/telar/NodeRef;
+	public static synthetic fun node-51bEbmg$default (Ldev/deeptelar/telar/StateGraph;Ljava/lang/String;Lkotlin/jvm/functions/Function2;Ldev/deeptelar/telar/Retry;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function3;ILjava/lang/Object;)Ldev/deeptelar/telar/NodeRef;
+	public final fun node-5_5nbZA (Ljava/lang/String;Ldev/deeptelar/telar/Retry;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function2;)Ldev/deeptelar/telar/NodeRef;
+	public static synthetic fun node-5_5nbZA$default (Ldev/deeptelar/telar/StateGraph;Ljava/lang/String;Ldev/deeptelar/telar/Retry;Lkotlin/time/Duration;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Ldev/deeptelar/telar/NodeRef;
 	public final fun subgraph (Ljava/lang/String;Ldev/deeptelar/telar/CompiledGraph;)Ldev/deeptelar/telar/NodeRef;
 	public final fun subgraph (Ljava/lang/String;Ldev/deeptelar/telar/CompiledGraph;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function3;)Ldev/deeptelar/telar/NodeRef;
 	public final fun then (Ldev/deeptelar/telar/NodeRef;Ldev/deeptelar/telar/NodeRef;)Ldev/deeptelar/telar/NodeRef;
