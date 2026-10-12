@@ -60,7 +60,9 @@ What to know:
 - **Text before a failure is not an answer.** When a model call fails or the model declines in the
   middle of its answer, the run fails after the pieces that already arrived. Clear them.
 - **Tools of one answer run at the same time.** If a tool throws, or the model sends input that does
-  not fit, the run goes on: the model gets the error as the result and can try again.
+  not fit, the run goes on: the model gets the error as the result and can try again. For tools
+  that depend on each other, `toolAgent(model, tools, inOrder = true)` runs them one after the
+  other, in the order the model wrote them.
 - **Every round of tools is two steps.** Raise `GraphConfig.maxIterations` (25 by default) for an
   agent that needs more than twelve rounds.
 - **An answer can be cut off.** When the model reaches its output limit in the text of its answer,
@@ -123,6 +125,50 @@ toolLoop(
     firstMessage = { "${it.customer} writes: ${it.question}" },
 )
 ```
+
+A tool gets the input the model sent and returns a text. A tool that acts on the state of the
+run, one that adds a line to an order, books a seat or moves a piece, is a `StateTool`. It gets the
+state as well, and returns the state it leaves with the text for the model:
+
+```kotlin
+data class Order(val messages: List<ChatMessage>, val lines: List<String> = emptyList())
+
+@Serializable
+data class NewLine(@Description("The item, for example \"margherita\"") val item: String)
+
+val addLine = StateTool<Order, NewLine>("add_line", "Adds a line to the order.") { order, line ->
+    if (line.item !in menu) throw IllegalArgumentException("We do not sell ${line.item}.")
+    ToolOutcome(order.copy(lines = order.lines + line.item), "Added ${line.item}. The order has ${order.lines.size + 1} lines.")
+}
+
+val graph = StateGraph<Order> {
+    START then toolLoop(
+        model = model,
+        tools = listOf(menuPrice),    // tools that only need their input
+        stateTools = listOf(addLine), // tools that read and change the state
+        messages = { it.messages },
+        append = { order, new -> order.copy(messages = order.messages + new) },
+    )
+}.compile()
+
+graph.invoke(Order(listOf(ChatMessage.User("A margherita and a cola, please.")))).state.lines // [margherita, cola]
+```
+
+What the tool did is in the state: a checkpoint holds it, `history` and `fork` go back before it,
+and the next node reads it. What changes in a loop with state tools:
+
+- **The calls of one answer run one after the other**, in the order the model wrote them, and each
+  call gets the state the call before it left. "Make the pizza, then bake it" works in one answer.
+- **A call that fails changes nothing.** The model gets the error, and the calls after it still
+  run, so a tool that depends on an earlier one checks in the state whether that one happened.
+- **A state tool can ask a person.** It calls `interrupt` with the state it received, which has
+  what the calls before it did, with their results. `resume` continues with the call that paused,
+  and the calls before it are not run again. See [Human-in-the-loop](human-in-the-loop.md).
+- **`append` is called for each result**, and not once for all results of an answer.
+- **The node that runs the tools returns a whole state.** When it can run in the same step as
+  another node that returns a whole state, `compile()` asks for a reducer, as the guide
+  [Parallel branches](parallel-branches.md) explains. Next to nodes with a `work` and an `update`
+  it needs none.
 
 Runnable version: [`ToolAgent`](https://github.com/deeptelar/telar/blob/main/samples/src/main/kotlin/dev/deeptelar/telar/samples/ToolAgent.kt). It
 runs without an API key, with Claude when `ANTHROPIC_API_KEY` is set, with OpenAI when

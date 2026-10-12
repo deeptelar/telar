@@ -59,6 +59,8 @@ time     0 s
 The kitchen is plain code and a value in the state of the graph, which only the tools change.
 `SoloChef.kt` is the loop of an agent written by hand, a `chef` node that asks the model and a
 `kitchen` node that runs its tool calls in order, because these tools change the state of the run.
+It is written by hand because a shift counts its tokens and ends when the kitchen closes; for tools
+that change the state without that, `toolLoop` has [`stateTools`](guides/agents-with-tools.md).
 `Line.kt` is a clock: a `bell` node starts a minute, the three stations run in parallel, and a
 `clock` node moves the kitchen to the next minute.
 
