@@ -34,6 +34,9 @@ Runnable version: [`ParallelResearch`](https://github.com/deeptelar/telar/blob/m
 - The updates are applied in the order the nodes were added to the graph (`web`, then `docs`), each
   to the state that the previous one produced. If two nodes write the same property, the one added
   later wins.
+- So an update reads what the updates before it wrote in the same step. That is why both findings
+  above are kept without a rule: the update of `docs` adds to the list that already has the finding
+  of `web`. [Where the order counts](#where-the-order-counts) has more on this.
 - `update` only builds the new state, and the engine may call it more than once. Keep slow calls
   and side effects in `work`.
 - If one branch fails, the others are cancelled and the error is rethrown as
@@ -90,7 +93,8 @@ val graph = StateGraph<Research> {
   lost without a word. The `cause` of the exception is a `MergeRuleException`, and its message names
   the property.
 - So do two nodes that `replace` a property with different values. `merge` says which one counts:
-  `combine = { _, changed -> changed.last() }` lets the last node of the step win.
+  `combine = { _, changed -> changed.last() }` lets the last node of the step win, which is the one
+  that the edges reach last.
 
 ## When two branches write the same property
 
@@ -126,12 +130,12 @@ compile(
 |---|---|
 | `node(name, work) { state, result -> ... }` | The node that was added to the graph later wins. Nothing is reported |
 | `node(name) { ... }` with `replace(Job::status)` | The run fails with a `ReducerException` |
-| `node(name) { ... }` with `merge(Job::status, combine = ...)` | What `combine` returns. `{ _, changed -> changed.last() }` lets the later node win |
+| `node(name) { ... }` with `merge(Job::status, combine = ...)` | What `combine` returns. `{ _, changed -> changed.last() }` lets the node win that the edges reach last |
 | `node(name) { ... }` with a reducer of your own | What the reducer returns |
 | `node(name) { ... }` without a reducer | `compile()` rejects the graph |
 
-- "Later" is the order of the `node(...)` lines, not the order of the edges. Moving the line of a
-  node with a `work` and an `update` changes which value the run ends with.
+- For nodes with a `work` and an `update`, "later" is the order of the `node(...)` lines, not the
+  order of the edges. Moving the line of such a node changes which value the run ends with.
 - Changing the form of a node changes this policy. A node that goes from a whole state to a `work`
   and an `update` loses the check that `replace` made.
 - When two branches must not disagree about a property, write them as whole states and give the
@@ -140,6 +144,34 @@ compile(
 
 [Issue #101](https://github.com/deeptelar/telar/issues/101) is about saying this policy in one place
 for both forms.
+
+## Where the order counts
+
+The nodes of a step run at the same time, but their results are put together one after the other.
+The two forms do this in different orders:
+
+| The nodes are written as | Their results are put together in | What a node reads |
+|---|---|---|
+| `node(name, work) { state, result -> ... }` | The order of the `node(...)` lines | `work` reads the state from before the step. `update` gets the state that the update before it returned |
+| `node(name) { ... }` | The order in which the edges reach the nodes. For two edges that leave the same node, that is the order of the two `then` lines | The state from before the step |
+
+An update can depend on that order even when no other node writes its property:
+
+```kotlin
+data class Job(val status: String = "new", val label: String = "")
+
+val web = node("web", work = { searchWeb() }) { job, _ -> job.copy(status = "found") }
+// "label" is written by this node only, but it is computed from what "web" wrote in the same step.
+// With "web" added first it is "found by docs". With this line above the one of "web" it is "new by docs".
+val docs = node("docs", work = { searchDocs() }) { job, _ -> job.copy(label = "${job.status} by docs") }
+```
+
+- When an update should not depend on another node of its step, compute the value in `work`, which
+  always reads the state from before the step, and let `update` only write it.
+- A rule does not make a step independent of the order by itself. `replace`, and a `combine` such as
+  `changed.max()` or a sum, return the same value in any order. `changed.last()`, `changed.first()`
+  and a `combine` that joins texts do not, and `append` adds the items in that order.
+- The same holds for a reducer of your own that picks by position, such as `updates.last()`.
 
 Which one to use: `work` and `update` when a node does slow work and then adds its result;
 `mergeRules` when nodes are written as `node(name) { ... }` and change different properties, or add
