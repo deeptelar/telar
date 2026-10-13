@@ -59,6 +59,15 @@ breaking changes.
 - `TokenUsage` is `@Serializable`, so that a state with a count can be saved. `AgentState` is saved
   with its `tokens`; a state saved by an earlier version is read with a count of zero.
 
+### Fixed
+
+- A tool call whose arguments are not JSON, which a model behind `OpenAiChatModel` or
+  `LangChain4jChatModel` can send, no longer runs the tool with an empty input. The tool then failed
+  as if a property were missing, so the model fixed the wrong thing, or, when every property has a
+  default, it ran with none of what the model asked for. `ToolCall` has
+  `invalidInput`, the text the model sent, and the call gets an error result that quotes it, so the
+  model can send it again as JSON.
+
 ## [0.1.0-alpha09] - 2026-10-10
 
 ### Changed

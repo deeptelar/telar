@@ -262,11 +262,14 @@ class LangChain4jChatModelTest {
                     .id
                     .startsWith("call-"),
             )
+            assertEquals(JsonObject(emptyMap()), response.message.toolCalls[1].input)
+            assertNull(response.message.toolCalls[1].invalidInput)
             assertEquals(
-                listOf(JsonObject(emptyMap()), JsonObject(emptyMap())),
-                response.message.toolCalls
-                    .drop(2)
-                    .map { it.input },
+                listOf(
+                    ToolCall("call-3", "menu_price", JsonObject(emptyMap()), invalidInput = "not json"),
+                    ToolCall("call-4", "menu_price", JsonObject(emptyMap()), invalidInput = "[]"),
+                ),
+                response.message.toolCalls.drop(2),
             )
             assertNull(response.message.providerContent)
             assertFalse(response.message.truncated)
