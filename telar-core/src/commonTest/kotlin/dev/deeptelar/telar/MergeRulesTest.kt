@@ -116,6 +116,27 @@ class MergeRulesTest {
         }
 
     @Test
+    fun `a rule gets the values in the order the edges reach the nodes, not the order the nodes were added`() =
+        runTest {
+            val lastWins =
+                mergeRules<Findings> {
+                    merge(Findings::status, combine = { _, changed -> changed.last() }) { copy(status = it) }
+                    append(Findings::notes) { copy(notes = it) }
+                }
+            val graph =
+                StateGraph<Findings> {
+                    val web = node("web") { it.copy(status = "web", notes = it.notes + "web") }
+                    val docs = node("docs") { it.copy(status = "docs", notes = it.notes + "docs") }
+
+                    // "web" was added first, but the edge to "docs" was written first.
+                    START then docs then END
+                    START then web then END
+                }.compile(reducer = lastWins)
+
+            assertEquals(Findings(notes = listOf("start", "docs", "web"), status = "web", score = 1), graph.invoke(before).state)
+        }
+
+    @Test
     fun `a change to a property without a rule is an error and not lost`() =
         runTest {
             val failure =

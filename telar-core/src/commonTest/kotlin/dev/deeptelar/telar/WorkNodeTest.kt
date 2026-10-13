@@ -75,6 +75,37 @@ class WorkNodeTest {
         }
 
     @Test
+    fun `an update reads what the update of a node added earlier wrote in the same step`() =
+        runTest {
+            // "summarize" writes only the summary, but computes it from the sources that "count" writes.
+            fun StateGraph<Research>.count(): NodeRef = node("count", work = { 3 }) { state, sources -> state.copy(sources = sources) }
+
+            fun StateGraph<Research>.summarize(): NodeRef =
+                node("summarize", work = { "sources" }) { state, word -> state.copy(summary = "${state.sources} $word") }
+
+            val countFirst =
+                StateGraph<Research> {
+                    val count = count()
+                    val summarize = summarize()
+
+                    START then summarize then END
+                    START then count then END
+                }.compile()
+            val summarizeFirst =
+                StateGraph<Research> {
+                    val summarize = summarize()
+                    val count = count()
+
+                    START then summarize then END
+                    START then count then END
+                }.compile()
+
+            // The two nodes write different properties, and the order they were added in still decides the result.
+            assertEquals(Research(sources = 3, summary = "3 sources"), countFirst.invoke(Research()).state)
+            assertEquals(Research(sources = 3, summary = "0 sources"), summarizeFirst.invoke(Research()).state)
+        }
+
+    @Test
     fun `changes to different properties are all kept`() =
         runTest {
             val app =
