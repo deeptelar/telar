@@ -116,7 +116,7 @@ class MergeRulesTest {
         }
 
     @Test
-    fun `a rule gets the values in the order the edges reach the nodes, not the order the nodes were added`() =
+    fun `a rule gets the values in the order the edges reach the nodes and not the order the nodes were added`() =
         runTest {
             val lastWins =
                 mergeRules<Findings> {
