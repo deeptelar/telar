@@ -28,6 +28,29 @@ public final class dev/deeptelar/telar/test/DecisionScript {
 	public static synthetic fun yes$default (Ldev/deeptelar/telar/test/DecisionScript;DLdev/deeptelar/telar/agent/TokenUsage;ILjava/lang/Object;)V
 }
 
+public final class dev/deeptelar/telar/test/GraphTest {
+	public final fun expectFailure (Lkotlin/jvm/functions/Function1;)Ljava/lang/Exception;
+	public static synthetic fun expectFailure$default (Ldev/deeptelar/telar/test/GraphTest;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Exception;
+	public final fun expectFinished (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static synthetic fun expectFinished$default (Ldev/deeptelar/telar/test/GraphTest;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun expectInterruptBefore (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static synthetic fun expectInterruptBefore$default (Ldev/deeptelar/telar/test/GraphTest;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun expectNode (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static synthetic fun expectNode$default (Ldev/deeptelar/telar/test/GraphTest;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun expectNodes ([Ljava/lang/String;)V
+	public final fun expectStep ([Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static synthetic fun expectStep$default (Ldev/deeptelar/telar/test/GraphTest;[Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
+	public final fun resumeWith (Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun resumeWith$default (Ldev/deeptelar/telar/test/GraphTest;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class dev/deeptelar/telar/test/GraphTestKt {
+	public static final fun replay (Ldev/deeptelar/telar/CompiledGraph;Ldev/deeptelar/telar/Checkpoint;Ldev/deeptelar/telar/GraphConfig;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun replay$default (Ldev/deeptelar/telar/CompiledGraph;Ldev/deeptelar/telar/Checkpoint;Ldev/deeptelar/telar/GraphConfig;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static final fun test (Ldev/deeptelar/telar/CompiledGraph;Ljava/lang/Object;Ldev/deeptelar/telar/GraphConfig;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun test$default (Ldev/deeptelar/telar/CompiledGraph;Ljava/lang/Object;Ldev/deeptelar/telar/GraphConfig;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
 public final class dev/deeptelar/telar/test/RunRecord {
 	public fun <init> (Ljava/util/List;)V
 	public final fun getEvents ()Ljava/util/List;
