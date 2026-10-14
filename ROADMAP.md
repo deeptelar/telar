@@ -70,7 +70,7 @@ These change how a graph runs or what a message holds, so they come before the b
 
 | | Feature | What you get | State | Issue |
 |---|---|---|---|---|
-| 7 | One rule for parallel nodes that write the same property | You decide what happens, and the rule is the same for both ways to write a node. Today a node with `work` and `update` overwrites without a word, and a node that returns a whole state follows the `mergeRules`. | Planned | [#101] |
+| 7 | One rule for parallel nodes that write the same property | You decide what happens, and the rule is the same for both ways to write a node: `compile(rules = mergeRules { ... })` merges every node of a step, so a node with `work` and `update` no longer overwrites another without a word. | In progress | [#101] |
 | 8 | Fan-out over a list | One node runs once per item of a list, all at the same time, when the number of items is only known at run time. Today the edges fix how many nodes run in parallel. | Planned | [#82] |
 | 9 | Images and files in messages | Send a model a picture or a PDF with the question, and let a tool return one. A `ChatMessage` holds text only today. | Planned | [#103] |
 | 10 | Subgraphs | A compiled graph becomes a node of another graph, with a mapping between the two states and one thread for both. Released: `subgraph`, a run that pauses inside a subgraph and resumes there, the events of a subgraph in the stream of the graph around it, and the subgraph in `topology`. Still to come: `interruptBefore` for a node of a subgraph, and a retry after a failure that continues inside the subgraph. | In progress | [#34] |
