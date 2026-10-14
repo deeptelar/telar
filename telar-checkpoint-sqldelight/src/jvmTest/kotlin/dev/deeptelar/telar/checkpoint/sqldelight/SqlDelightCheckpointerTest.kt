@@ -69,6 +69,7 @@ class SqlDelightCheckpointerTest {
                     step = 3,
                     interruptedBefore = true,
                     subgraphs = mapOf("pay" to SubgraphPosition(listOf("card"), step = 1, interruptedBefore = true)),
+                    effects = mapOf("pay/charge" to "\"receipt-7\""),
                 )
 
             checkpointer.save("order-42", checkpoint)
