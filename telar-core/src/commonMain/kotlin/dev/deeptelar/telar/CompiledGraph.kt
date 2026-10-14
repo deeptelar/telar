@@ -29,6 +29,8 @@ import kotlin.time.Duration
  * input state. When there is more than one, their results are combined: the [Reducer] merges the
  * nodes that returned a whole state, and the updates of the nodes that were added with a `work` and
  * an `update` are then applied one after another, in the order those nodes were added to the graph.
+ * In a graph compiled with `rules`, each node instead gets the state from before the step, its
+ * `update` too, and the [MergeRules] merge all results in the order the nodes were added.
  * The outgoing edges of the nodes then decide which nodes are active in the next step. A branch
  * that routes to [END] simply stops; the run completes when no nodes are active.
  *
@@ -76,6 +78,7 @@ public class CompiledGraph<State> internal constructor(
     internal val edges: Map<String, List<String>>,
     internal val conditionalEdges: Map<String, ConditionalEdge<State>>,
     internal val reducer: Reducer<State>? = null,
+    internal val rules: MergeRules<State>? = null,
 ) {
     /** The position of each node in the order the nodes were added to the graph. */
     private val nodeOrder: Map<String, Int> = nodes.keys.withIndex().associate { it.value to it.index }
@@ -497,9 +500,10 @@ public class CompiledGraph<State> internal constructor(
      * The nodes that returned a whole state decide the state to start from: [state] when there is
      * none, the state of the only one, or what the reducer makes of several. The updates of the
      * other nodes are then applied to it one after another, in the order those nodes were added to
-     * the graph.
+     * the graph. In a graph with [rules], they merge the results of all nodes instead.
      */
     private suspend fun combine(state: State, outputs: List<Pair<String, NodeOutput<State>>>): State {
+        if (rules != null) return merge(rules, state, outputs.sortedBy { nodeOrder.getValue(it.first) })
         val states = outputs.filter { (_, output) -> output.update == null }
         var combined =
             when (states.size) {
@@ -509,7 +513,11 @@ public class CompiledGraph<State> internal constructor(
                     val reducer =
                         checkNotNull(reducer) { "compile() guarantees a reducer when two nodes that return a state can run together" }
                     val names = states.map { it.first }
-                    wrapFailure({ cause -> ReducerException(names, cause) }) { reducer.reduce(state, states.map { it.second.state }) }
+                    if (reducer is MergeRules) {
+                        merge(reducer, state, states)
+                    } else {
+                        wrapFailure({ cause -> ReducerException(names, cause) }) { reducer.reduce(state, states.map { it.second.state }) }
+                    }
                 }
             }
         for ((name, output) in outputs.sortedBy { nodeOrder.getValue(it.first) }) {
@@ -517,6 +525,18 @@ public class CompiledGraph<State> internal constructor(
             combined = wrapFailure({ cause -> NodeExecutionException(name, cause) }) { update(combined) }
         }
         return combined
+    }
+
+    /**
+     * Merges what [outputs] produced by [rules], each output being the state after its node alone,
+     * so that an error names the node.
+     */
+    private suspend fun merge(rules: MergeRules<State>, state: State, outputs: List<Pair<String, NodeOutput<State>>>): State {
+        if (outputs.size <= 1) return outputs.singleOrNull()?.second?.state ?: state
+        val names = outputs.map { it.first }
+        return wrapFailure({ cause -> ReducerException(names, cause) }) {
+            rules.merge(state, outputs.map { it.second.state }) { "Node '${names[it]}'" }
+        }
     }
 
     /**

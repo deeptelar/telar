@@ -335,14 +335,18 @@ public final class dev/deeptelar/telar/MergeRuleException : dev/deeptelar/telar/
 	public fun <init> (Ljava/lang/String;)V
 }
 
-public final class dev/deeptelar/telar/MergeRules {
+public final class dev/deeptelar/telar/MergeRules : dev/deeptelar/telar/Reducer {
+	public fun reduce (Ljava/lang/Object;Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class dev/deeptelar/telar/MergeRulesBuilder {
 	public final fun append (Lkotlin/reflect/KProperty1;Lkotlin/jvm/functions/Function2;)V
 	public final fun merge (Lkotlin/reflect/KProperty1;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;)V
 	public final fun replace (Lkotlin/reflect/KProperty1;Lkotlin/jvm/functions/Function2;)V
 }
 
 public final class dev/deeptelar/telar/MergeRulesKt {
-	public static final fun mergeRules (Lkotlin/jvm/functions/Function1;)Ldev/deeptelar/telar/Reducer;
+	public static final fun mergeRules (Lkotlin/jvm/functions/Function1;)Ldev/deeptelar/telar/MergeRules;
 }
 
 public final class dev/deeptelar/telar/NodeExecutionException : dev/deeptelar/telar/TelarException {
@@ -395,8 +399,8 @@ public final class dev/deeptelar/telar/Retry {
 
 public final class dev/deeptelar/telar/StateGraph {
 	public fun <init> ()V
-	public final fun compile (Ldev/deeptelar/telar/Reducer;)Ldev/deeptelar/telar/CompiledGraph;
-	public static synthetic fun compile$default (Ldev/deeptelar/telar/StateGraph;Ldev/deeptelar/telar/Reducer;ILjava/lang/Object;)Ldev/deeptelar/telar/CompiledGraph;
+	public final fun compile (Ldev/deeptelar/telar/MergeRules;Ldev/deeptelar/telar/Reducer;)Ldev/deeptelar/telar/CompiledGraph;
+	public static synthetic fun compile$default (Ldev/deeptelar/telar/StateGraph;Ldev/deeptelar/telar/MergeRules;Ldev/deeptelar/telar/Reducer;ILjava/lang/Object;)Ldev/deeptelar/telar/CompiledGraph;
 	public final fun conditionalEdge (Ldev/deeptelar/telar/NodeRef;Ljava/util/Set;Lkotlin/jvm/functions/Function2;)V
 	public final fun conditionalEdge (Ljava/lang/String;Ljava/util/Set;Lkotlin/jvm/functions/Function2;)V
 	public static synthetic fun conditionalEdge$default (Ldev/deeptelar/telar/StateGraph;Ldev/deeptelar/telar/NodeRef;Ljava/util/Set;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)V
