@@ -89,20 +89,22 @@ public final class dev/deeptelar/telar/GraphConfig {
 	public static final field Companion Ldev/deeptelar/telar/GraphConfig$Companion;
 	public static final field DEFAULT_MAX_ITERATIONS I
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ldev/deeptelar/telar/Checkpointer;Ljava/util/Set;Ljava/util/Set;I)V
-	public synthetic fun <init> (Ljava/lang/String;Ldev/deeptelar/telar/Checkpointer;Ljava/util/Set;Ljava/util/Set;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ldev/deeptelar/telar/Checkpointer;Ljava/util/Set;Ljava/util/Set;ILjava/util/List;)V
+	public synthetic fun <init> (Ljava/lang/String;Ldev/deeptelar/telar/Checkpointer;Ljava/util/Set;Ljava/util/Set;ILjava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ldev/deeptelar/telar/Checkpointer;
 	public final fun component3 ()Ljava/util/Set;
 	public final fun component4 ()Ljava/util/Set;
 	public final fun component5 ()I
-	public final fun copy (Ljava/lang/String;Ldev/deeptelar/telar/Checkpointer;Ljava/util/Set;Ljava/util/Set;I)Ldev/deeptelar/telar/GraphConfig;
-	public static synthetic fun copy$default (Ldev/deeptelar/telar/GraphConfig;Ljava/lang/String;Ldev/deeptelar/telar/Checkpointer;Ljava/util/Set;Ljava/util/Set;IILjava/lang/Object;)Ldev/deeptelar/telar/GraphConfig;
+	public final fun component6 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;Ldev/deeptelar/telar/Checkpointer;Ljava/util/Set;Ljava/util/Set;ILjava/util/List;)Ldev/deeptelar/telar/GraphConfig;
+	public static synthetic fun copy$default (Ldev/deeptelar/telar/GraphConfig;Ljava/lang/String;Ldev/deeptelar/telar/Checkpointer;Ljava/util/Set;Ljava/util/Set;ILjava/util/List;ILjava/lang/Object;)Ldev/deeptelar/telar/GraphConfig;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCheckpointer ()Ldev/deeptelar/telar/Checkpointer;
 	public final fun getInterruptAfter ()Ljava/util/Set;
 	public final fun getInterruptBefore ()Ljava/util/Set;
 	public final fun getMaxIterations ()I
+	public final fun getObservers ()Ljava/util/List;
 	public final fun getThreadId ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -259,6 +261,38 @@ public final class dev/deeptelar/telar/GraphEvent$SubgraphEvent : dev/deeptelar/
 
 public final class dev/deeptelar/telar/GraphEventKt {
 	public static final fun states (Lkotlinx/coroutines/flow/Flow;)Lkotlinx/coroutines/flow/Flow;
+}
+
+public abstract interface class dev/deeptelar/telar/GraphObserver {
+	public fun nodeContext (Ldev/deeptelar/telar/ObservedNode;)Lkotlin/coroutines/CoroutineContext;
+	public fun onCheckpointSaved (Ldev/deeptelar/telar/ObservedRun;ILjava/util/List;)V
+	public fun onNodeCompleted (Ldev/deeptelar/telar/ObservedNode;)V
+	public fun onNodeFailed (Ldev/deeptelar/telar/ObservedNode;Ljava/lang/Throwable;)V
+	public fun onNodeInterrupted (Ldev/deeptelar/telar/ObservedNode;)V
+	public fun onNodeProgress (Ldev/deeptelar/telar/ObservedNode;Ljava/lang/Object;)V
+	public fun onNodeRetry-Wn2Vu4Y (Ldev/deeptelar/telar/ObservedNode;ILjava/lang/Throwable;J)V
+	public fun onNodeStarted (Ldev/deeptelar/telar/ObservedNode;)V
+	public fun onRunCompleted (Ldev/deeptelar/telar/ObservedRun;)V
+	public fun onRunFailed (Ldev/deeptelar/telar/ObservedRun;Ljava/lang/Throwable;)V
+	public fun onRunInterrupted (Ldev/deeptelar/telar/ObservedRun;Ljava/util/List;)V
+	public fun onRunStarted (Ldev/deeptelar/telar/ObservedRun;)V
+	public fun onStepCompleted (Ldev/deeptelar/telar/ObservedRun;ILjava/util/List;Ljava/util/List;)V
+}
+
+public final class dev/deeptelar/telar/GraphObserver$DefaultImpls {
+	public static fun nodeContext (Ldev/deeptelar/telar/GraphObserver;Ldev/deeptelar/telar/ObservedNode;)Lkotlin/coroutines/CoroutineContext;
+	public static fun onCheckpointSaved (Ldev/deeptelar/telar/GraphObserver;Ldev/deeptelar/telar/ObservedRun;ILjava/util/List;)V
+	public static fun onNodeCompleted (Ldev/deeptelar/telar/GraphObserver;Ldev/deeptelar/telar/ObservedNode;)V
+	public static fun onNodeFailed (Ldev/deeptelar/telar/GraphObserver;Ldev/deeptelar/telar/ObservedNode;Ljava/lang/Throwable;)V
+	public static fun onNodeInterrupted (Ldev/deeptelar/telar/GraphObserver;Ldev/deeptelar/telar/ObservedNode;)V
+	public static fun onNodeProgress (Ldev/deeptelar/telar/GraphObserver;Ldev/deeptelar/telar/ObservedNode;Ljava/lang/Object;)V
+	public static fun onNodeRetry-Wn2Vu4Y (Ldev/deeptelar/telar/GraphObserver;Ldev/deeptelar/telar/ObservedNode;ILjava/lang/Throwable;J)V
+	public static fun onNodeStarted (Ldev/deeptelar/telar/GraphObserver;Ldev/deeptelar/telar/ObservedNode;)V
+	public static fun onRunCompleted (Ldev/deeptelar/telar/GraphObserver;Ldev/deeptelar/telar/ObservedRun;)V
+	public static fun onRunFailed (Ldev/deeptelar/telar/GraphObserver;Ldev/deeptelar/telar/ObservedRun;Ljava/lang/Throwable;)V
+	public static fun onRunInterrupted (Ldev/deeptelar/telar/GraphObserver;Ldev/deeptelar/telar/ObservedRun;Ljava/util/List;)V
+	public static fun onRunStarted (Ldev/deeptelar/telar/GraphObserver;Ldev/deeptelar/telar/ObservedRun;)V
+	public static fun onStepCompleted (Ldev/deeptelar/telar/GraphObserver;Ldev/deeptelar/telar/ObservedRun;ILjava/util/List;Ljava/util/List;)V
 }
 
 public abstract interface class dev/deeptelar/telar/GraphResult {
@@ -458,6 +492,19 @@ public final class dev/deeptelar/telar/NodeRef$Companion {
 public final class dev/deeptelar/telar/NodeTimeoutException : dev/deeptelar/telar/TelarException {
 	public synthetic fun <init> (JLkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getTimeout-UwyO8pc ()J
+}
+
+public final class dev/deeptelar/telar/ObservedNode {
+	public final fun getName ()Ljava/lang/String;
+	public final fun getRun ()Ldev/deeptelar/telar/ObservedRun;
+	public final fun getStep ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/deeptelar/telar/ObservedRun {
+	public final fun getParent ()Ldev/deeptelar/telar/ObservedNode;
+	public final fun getThreadId ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class dev/deeptelar/telar/ProgressKt {

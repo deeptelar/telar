@@ -34,6 +34,7 @@ dependencies {
 | `telar-langchain4j` | JVM (Java 17+) | `LangChain4jChatModel` and `chatNode` / `chatMessagesNode` for LangChain4j 1.x models |
 | `telar-typesafe` | same as core | `TypeSafeDecisionModel`: Jev, the decision model of TypeSafe AI, through Ktor |
 | `telar-mcp` | same as core | `mcpTools`: the tools of a [Model Context Protocol server](guides/mcp.md) as tools of an agent, on the Kotlin SDK of MCP. Not released yet: it comes with the version after `0.1.0-alpha09`. |
+| `telar-otel` | JVM/Android | `OpenTelemetryObserver`: the runs and nodes of a graph as [OpenTelemetry traces](guides/tracing.md). Not released yet: it comes with the version after `0.1.0-alpha09`. |
 | `telar-test` | same as core | `ScriptedChatModel`, `ScriptedDecisionModel`, `record()`, and `graph.test { }` / `graph.replay { }` for the path of a run, for [tests](guides/testing.md) of a graph. Not released yet: it comes with the version after `0.1.0-alpha09`. |
 
 Requires Kotlin 2.x. JVM artifacts target Java 11, except `telar-langchain4j`, which needs

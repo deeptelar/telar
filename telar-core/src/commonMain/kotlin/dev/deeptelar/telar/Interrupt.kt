@@ -58,6 +58,7 @@ public suspend fun <State> interrupt(state: State): Nothing {
  * @property effects where [effect] records what finished in this step.
  * @property effectPath names this node in [effects]: its name, and for a node of a subgraph the
  * nodes and steps around it.
+ * @property observed this node for [observer], which a subgraph tells about its run as well.
  */
 internal class RunningNode(
     val name: String,
@@ -67,6 +68,8 @@ internal class RunningNode(
     val position: SubgraphPosition?,
     val effects: EffectLog,
     val effectPath: String,
+    val observed: ObservedNode,
+    val observer: GraphObserver,
 ) : AbstractCoroutineContextElement(Key) {
     /** The paths of the effects this try of the node has called. [effects] guards it. */
     val effectsUsed: MutableSet<String> = mutableSetOf()

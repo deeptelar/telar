@@ -90,6 +90,7 @@ export default withMermaid(
             { text: 'Inspecting a graph', link: '/guides/inspecting-a-graph' },
             { text: 'Retries and time limits', link: '/guides/retries' },
             { text: 'Side effects', link: '/guides/side-effects' },
+            { text: 'Tracing', link: '/guides/tracing' },
             { text: 'Testing', link: '/guides/testing' },
             { text: 'Errors', link: '/guides/errors' },
           ],
