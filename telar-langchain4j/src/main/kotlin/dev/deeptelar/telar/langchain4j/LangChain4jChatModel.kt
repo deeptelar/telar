@@ -227,8 +227,14 @@ private fun response(response: LangChain4jResponse): ChatResponse {
             text = answer.text().orEmpty(),
             toolCalls =
                 answer.toolExecutionRequests().orEmpty().map {
-                    // Some providers do not number their tool calls.
-                    ToolCall(it.id() ?: "call-${UUID.randomUUID()}", it.name(), arguments(it.arguments()))
+                    val input = arguments(it.arguments())
+                    ToolCall(
+                        // Some providers do not number their tool calls.
+                        it.id() ?: "call-${UUID.randomUUID()}",
+                        it.name(),
+                        input ?: JsonObject(emptyMap()),
+                        invalidInput = if (input == null) it.arguments() else null,
+                    )
                 },
             // Text and tool calls can be rebuilt from the message. Thinking and provider attributes cannot.
             providerContent =
@@ -243,12 +249,15 @@ private fun response(response: LangChain4jResponse): ChatResponse {
     return ChatResponse(message, usage)
 }
 
-private fun arguments(json: String?): JsonObject =
-    try {
-        Json.parseToJsonElement(json.orEmpty()) as? JsonObject
+/** Returns the input of a tool call, empty when it has no arguments, and `null` when they are not a JSON object. */
+private fun arguments(json: String?): JsonObject? {
+    if (json.isNullOrBlank()) return JsonObject(emptyMap())
+    return try {
+        Json.parseToJsonElement(json) as? JsonObject
     } catch (_: SerializationException) {
         null
-    } ?: JsonObject(emptyMap())
+    }
+}
 
 private fun specification(tool: ToolSpec): ToolSpecification =
     ToolSpecification

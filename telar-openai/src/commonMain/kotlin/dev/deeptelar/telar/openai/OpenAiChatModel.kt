@@ -266,11 +266,14 @@ public class OpenAiChatModel(
         val toolCalls =
             calls.mapIndexed { index, call ->
                 val function = call["function"] as? JsonObject
+                val arguments = function?.get("arguments")
+                val input = input(arguments)
                 ToolCall(
                     // A result names its call by this id, so a call that came without one gets one.
                     call.string("id")?.takeIf { it.isNotEmpty() } ?: "call_$index",
                     function.string("name").orEmpty(),
-                    input(function?.get("arguments")),
+                    input ?: JsonObject(emptyMap()),
+                    invalidInput = if (input == null) (arguments as? JsonPrimitive)?.content else null,
                 )
             }
         val message =
@@ -553,15 +556,15 @@ private fun text(content: JsonElement?): String =
     }
 
 /**
- * The input of a tool call: JSON in a string, or for some servers a JSON object. A call that was
- * cut off has input that is not JSON yet, and gets an empty input.
+ * The input of a tool call: JSON in a string, or for some servers a JSON object. A call without
+ * arguments has an empty input. Returns `null` when the arguments are text that is not a JSON
+ * object, which a model can write, and which a call that was cut off has.
  */
-private fun input(arguments: JsonElement?): JsonObject =
-    when (arguments) {
-        is JsonObject -> arguments
-        is JsonPrimitive -> arguments.contentOrNull?.let(::parse) ?: JsonObject(emptyMap())
-        else -> JsonObject(emptyMap())
-    }
+private fun input(arguments: JsonElement?): JsonObject? {
+    if (arguments is JsonObject) return arguments
+    val text = (arguments as? JsonPrimitive)?.contentOrNull
+    return if (text.isNullOrBlank()) JsonObject(emptyMap()) else parse(text)
+}
 
 private fun JsonObject?.string(key: String): String? = (this?.get(key) as? JsonPrimitive)?.contentOrNull
 

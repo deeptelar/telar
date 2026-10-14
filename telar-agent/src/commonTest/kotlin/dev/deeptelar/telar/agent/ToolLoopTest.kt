@@ -111,6 +111,22 @@ class ToolLoopTest {
         }
 
     @Test
+    fun `a call whose input is not JSON goes back to the model and the model can send it again`() =
+        runTest {
+            val broken = ToolCall("call-1", "menu_price", noInput, invalidInput = "{\"item\": cola}")
+            val model = ScriptedModel(calls(broken), calls(price), says("A cola is 2 euros."))
+
+            val state = toolAgent(model, tools).invoke(AgentState("How much is a cola?")).state
+
+            assertEquals("A cola is 2 euros.", state.answer)
+            assertEquals(listOf("menu_price"), ran)
+            assertEquals(
+                ChatMessage.ToolResult("call-1", "menu_price", "The input is not a JSON object: {\"item\": cola}", isError = true),
+                state.messages[2],
+            )
+        }
+
+    @Test
     fun `two tools with the same name are rejected when the graph is built`() {
         val failure = assertFailsWith<GraphValidationException> { toolAgent(ScriptedModel(), listOf(orderStatus, orderStatus)) }
 

@@ -474,19 +474,22 @@ final class dev.deeptelar.telar.agent/Tool { // dev.deeptelar.telar.agent/Tool|n
 }
 
 final class dev.deeptelar.telar.agent/ToolCall { // dev.deeptelar.telar.agent/ToolCall|null[0]
-    constructor <init>(kotlin/String, kotlin/String, kotlinx.serialization.json/JsonObject) // dev.deeptelar.telar.agent/ToolCall.<init>|<init>(kotlin.String;kotlin.String;kotlinx.serialization.json.JsonObject){}[0]
+    constructor <init>(kotlin/String, kotlin/String, kotlinx.serialization.json/JsonObject, kotlin/String? = ...) // dev.deeptelar.telar.agent/ToolCall.<init>|<init>(kotlin.String;kotlin.String;kotlinx.serialization.json.JsonObject;kotlin.String?){}[0]
 
     final val id // dev.deeptelar.telar.agent/ToolCall.id|{}id[0]
         final fun <get-id>(): kotlin/String // dev.deeptelar.telar.agent/ToolCall.id.<get-id>|<get-id>(){}[0]
     final val input // dev.deeptelar.telar.agent/ToolCall.input|{}input[0]
         final fun <get-input>(): kotlinx.serialization.json/JsonObject // dev.deeptelar.telar.agent/ToolCall.input.<get-input>|<get-input>(){}[0]
+    final val invalidInput // dev.deeptelar.telar.agent/ToolCall.invalidInput|{}invalidInput[0]
+        final fun <get-invalidInput>(): kotlin/String? // dev.deeptelar.telar.agent/ToolCall.invalidInput.<get-invalidInput>|<get-invalidInput>(){}[0]
     final val name // dev.deeptelar.telar.agent/ToolCall.name|{}name[0]
         final fun <get-name>(): kotlin/String // dev.deeptelar.telar.agent/ToolCall.name.<get-name>|<get-name>(){}[0]
 
     final fun component1(): kotlin/String // dev.deeptelar.telar.agent/ToolCall.component1|component1(){}[0]
     final fun component2(): kotlin/String // dev.deeptelar.telar.agent/ToolCall.component2|component2(){}[0]
     final fun component3(): kotlinx.serialization.json/JsonObject // dev.deeptelar.telar.agent/ToolCall.component3|component3(){}[0]
-    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlinx.serialization.json/JsonObject = ...): dev.deeptelar.telar.agent/ToolCall // dev.deeptelar.telar.agent/ToolCall.copy|copy(kotlin.String;kotlin.String;kotlinx.serialization.json.JsonObject){}[0]
+    final fun component4(): kotlin/String? // dev.deeptelar.telar.agent/ToolCall.component4|component4(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlinx.serialization.json/JsonObject = ..., kotlin/String? = ...): dev.deeptelar.telar.agent/ToolCall // dev.deeptelar.telar.agent/ToolCall.copy|copy(kotlin.String;kotlin.String;kotlinx.serialization.json.JsonObject;kotlin.String?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // dev.deeptelar.telar.agent/ToolCall.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // dev.deeptelar.telar.agent/ToolCall.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // dev.deeptelar.telar.agent/ToolCall.toString|toString(){}[0]

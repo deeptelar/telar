@@ -29,6 +29,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -373,7 +374,7 @@ class OpenAiChatModelTest {
         }
 
     @Test
-    fun `a call whose input is not JSON gets an empty input`() =
+    fun `a call that was cut off gets an empty input and keeps the text it has`() =
         runTest {
             val response =
                 model(
@@ -383,8 +384,66 @@ class OpenAiChatModelTest {
                     ),
                 ).chat(hello)
 
-            assertEquals(ToolCall("call_1", "menu_price", JsonObject(emptyMap())), response.message.toolCalls.single())
+            assertEquals(
+                ToolCall("call_1", "menu_price", JsonObject(emptyMap()), invalidInput = """{"item": "co"""),
+                response.message.toolCalls.single(),
+            )
             assertTrue(response.message.truncated)
+        }
+
+    @Test
+    fun `a call whose input is not a JSON object keeps the text and a call without input gets an empty one`() =
+        runTest {
+            val response =
+                model(
+                    answer(
+                        """
+                        {"content": null, "tool_calls": [
+                          {"id": "call_1", "function": {"name": "menu_price", "arguments": "{item: cola}"}},
+                          {"id": "call_2", "function": {"name": "menu_price", "arguments": "[\"cola\"]"}},
+                          {"id": "call_3", "function": {"name": "opening_hours", "arguments": ""}},
+                          {"id": "call_4", "function": {"name": "opening_hours"}}
+                        ]}
+                        """,
+                        finishReason = "tool_calls",
+                    ),
+                ).chat(hello)
+
+            val empty = JsonObject(emptyMap())
+            assertEquals(
+                listOf(
+                    ToolCall("call_1", "menu_price", empty, invalidInput = "{item: cola}"),
+                    ToolCall("call_2", "menu_price", empty, invalidInput = """["cola"]"""),
+                    ToolCall("call_3", "opening_hours", empty),
+                    ToolCall("call_4", "opening_hours", empty),
+                ),
+                response.message.toolCalls,
+            )
+        }
+
+    @Test
+    fun `a call whose input is not JSON goes back to the server with an empty input`() =
+        runTest {
+            val model = model(answer("""{"content": "Sorry."}"""))
+            val broken = ToolCall("call_1", "menu_price", JsonObject(emptyMap()), invalidInput = "{item: cola}")
+
+            model.chat(
+                ChatRequest(
+                    listOf(
+                        ChatMessage.User("How much is a cola?"),
+                        ChatMessage.Assistant(toolCalls = listOf(broken)),
+                        ChatMessage.ToolResult("call_1", "menu_price", "The input is not a JSON object: {item: cola}", isError = true),
+                    ),
+                ),
+            )
+
+            val function =
+                sentBody()["messages"]!!
+                    .jsonArray[1]
+                    .jsonObject["tool_calls"]!!
+                    .jsonArray[0]
+                    .jsonObject["function"]
+            assertEquals(json("""{"name": "menu_price", "arguments": "{}"}"""), function)
         }
 
     @Test
