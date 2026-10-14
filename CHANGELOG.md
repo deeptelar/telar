@@ -9,6 +9,14 @@ breaking changes.
 
 ### Added
 
+- `GraphSession` in `telar-core`: one thread of a graph for a screen. It runs in a scope such as
+  `viewModelScope`, its `snapshot` is a `StateFlow<GraphSnapshot>` that a screen draws with a
+  `when` (`Idle`, `Restoring`, `Running`, `Interrupted`, `Completed`, `Stopped`), and `start`,
+  `resume`, `restore` and `cancel` are plain function calls. `restore()` reads the last checkpoint,
+  so that a screen comes back where the run stopped after the operating system ended the app. A
+  failure becomes a `Stopped` snapshot instead of crashing the app, and `events` has every event of
+  the run, such as the text a model writes. The guide
+  [Apps with a screen](https://deeptelar.github.io/telar/guides/apps-with-a-screen) shows it.
 - `ChatModel.ask` in `telar-agent`: ask a model for a `@Serializable` class and get an instance of
   it, `model.ask<Verdict>("Classify this email: ...")`. The model gets the schema of the class, which
   is built as the input schema of a tool is. An answer that cannot be read goes back to the model
