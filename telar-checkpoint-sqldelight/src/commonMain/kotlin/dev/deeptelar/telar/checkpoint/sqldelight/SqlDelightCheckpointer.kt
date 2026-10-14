@@ -25,7 +25,7 @@ import kotlinx.coroutines.withContext
  * | Android | `AndroidSqliteDriver` of `android-driver` |
  * | iOS, macOS, Linux, Windows | `NativeSqliteDriver` of `native-driver` |
  * | Desktop and servers (JVM) | `JdbcSqliteDriver` of `sqlite-driver` |
- * | Browser (JS and Wasm) | `WebWorkerDriver` of `web-worker-driver`, with SQLite in a web worker |
+ * | Browser (JS and Wasm) | `WebWorkerDriver` of `web-worker-driver`, with SQLite in a web worker. The worker of SQLDelight keeps the database in memory, so it is gone when the page is reloaded |
  *
  * ```kotlin
  * // Android, with a database file that only holds checkpoints.
@@ -199,7 +199,8 @@ public class SqlDelightCheckpointer<State>(
      * ```
      *
      * A database with tables of the app has the schema of the app instead: the checkpointer adds its
-     * table to it.
+     * table to it. The web worker driver of the browser takes no schema and needs none, and this one
+     * does not work with it: its statements only run when they are awaited.
      */
     public object Schema : SqlSchema<QueryResult.Value<Unit>> {
         /** The version of the schema. It is `1`. */

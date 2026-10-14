@@ -90,10 +90,11 @@ opens, and the snapshot is where the last step left the run:
   again. Which of the two it is, the state tells: write into it what the screen needs to know,
   such as whether the run waits for an approval.
 
-`SqlDelightCheckpointer` stores to a SQLite database on Android, iOS, desktop and in the browser,
-with one line of setup for each platform: see
+`SqlDelightCheckpointer` stores to a SQLite database on Android, iOS and desktop, with one line of
+setup for each platform: see
 [In a database, on every platform](human-in-the-loop.md#in-a-database-on-every-platform).
-`FileCheckpointer` stores to files, and `LocalStorageCheckpointer` in the storage of a browser.
+`FileCheckpointer` stores to files. In a browser, `LocalStorageCheckpointer` keeps runs across a
+reload; the SQLite worker of SQLDelight keeps its database in memory only.
 
 ## Text as a model writes it
 
