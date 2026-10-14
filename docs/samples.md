@@ -6,6 +6,7 @@ Runnable examples live in the repository, in [`samples/`](https://github.com/dee
 ./gradlew :samples:runQuickStart        # the email support agent of the quick start
 ./gradlew :samples:runDecisionRouter    # the same agent, routed by a decision model
 ./gradlew :samples:runHumanInTheLoop    # a refund that waits for approval, saved to disk
+./gradlew :samples:runAppRestart        # quit while a draft waits for approval, start again: it is still there
 ./gradlew :samples:runReviewLoop        # a reviewer approves a draft or sends it back
 ./gradlew :samples:runAskFromANode      # a payout that asks for approval only when it is large
 ./gradlew :samples:runSubgraph          # the payout graph as one node of a larger graph

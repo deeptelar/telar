@@ -1,5 +1,6 @@
 package dev.deeptelar.telar.samples
 
+import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import dev.deeptelar.telar.GraphConfig
 import dev.deeptelar.telar.GraphResult
 import dev.deeptelar.telar.MemoryCheckpointer
@@ -18,6 +19,7 @@ import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
 import io.ktor.http.headersOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.files.Path
@@ -68,6 +70,30 @@ class SamplesTest {
             val finished = refundGraph().resume(refundConfig(directory, "order-1001")) { it.copy(approved = true) }
             assertEquals("Refund issued", finished.state.log.last())
         }
+
+    @Test
+    fun `a draft waiting for approval is still there when the app starts again`() {
+        val database = Files.createTempFile("app-restart", ".db")
+
+        fun launch(vararg answers: String): List<String> {
+            val shown = mutableListOf<String>()
+            val typed = answers.iterator()
+            JdbcSqliteDriver("jdbc:sqlite:$database").use { driver ->
+                runBlocking { replyApp(driver, { if (typed.hasNext()) typed.next() else null }, { shown += it }) }
+            }
+            return shown
+        }
+
+        val first = launch("q")
+        assertEquals("No saved run. A customer asks: where is my pizza?", first.first())
+        assertEquals("Closed. Start the app again: the draft will be waiting.", first.last())
+
+        val second = launch("y")
+        assertEquals("Draft: Your pizza left the oven 5 minutes ago and arrives in 20.", second.first())
+        assertEquals("Done: drafted, sent. The next launch starts a new run.", second.last())
+
+        assertEquals("No saved run. A customer asks: where is my pizza?", launch("q").first())
+    }
 
     @Test
     fun `a small payout does not pause`() =

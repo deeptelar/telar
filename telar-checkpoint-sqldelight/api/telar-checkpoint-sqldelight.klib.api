@@ -1,0 +1,24 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, js, linuxArm64, linuxX64, macosArm64, mingwX64, wasmJs]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <telar:telar-checkpoint-sqldelight>
+final class <#A: kotlin/Any?> dev.deeptelar.telar.checkpoint.sqldelight/SqlDelightCheckpointer : dev.deeptelar.telar/Checkpointer<#A> { // dev.deeptelar.telar.checkpoint.sqldelight/SqlDelightCheckpointer|null[0]
+    constructor <init>(app.cash.sqldelight.db/SqlDriver, dev.deeptelar.telar/StateSerializer<#A>, kotlin/String = ..., kotlin/Int = ...) // dev.deeptelar.telar.checkpoint.sqldelight/SqlDelightCheckpointer.<init>|<init>(app.cash.sqldelight.db.SqlDriver;dev.deeptelar.telar.StateSerializer<1:0>;kotlin.String;kotlin.Int){}[0]
+
+    final suspend fun delete(kotlin/String) // dev.deeptelar.telar.checkpoint.sqldelight/SqlDelightCheckpointer.delete|delete(kotlin.String){}[0]
+    final suspend fun history(kotlin/String): kotlin.collections/List<dev.deeptelar.telar/Checkpoint<#A>> // dev.deeptelar.telar.checkpoint.sqldelight/SqlDelightCheckpointer.history|history(kotlin.String){}[0]
+    final suspend fun load(kotlin/String): dev.deeptelar.telar/Checkpoint<#A>? // dev.deeptelar.telar.checkpoint.sqldelight/SqlDelightCheckpointer.load|load(kotlin.String){}[0]
+    final suspend fun save(kotlin/String, dev.deeptelar.telar/Checkpoint<#A>) // dev.deeptelar.telar.checkpoint.sqldelight/SqlDelightCheckpointer.save|save(kotlin.String;dev.deeptelar.telar.Checkpoint<1:0>){}[0]
+
+    final object Schema : app.cash.sqldelight.db/SqlSchema<app.cash.sqldelight.db/QueryResult.Value<kotlin/Unit>> { // dev.deeptelar.telar.checkpoint.sqldelight/SqlDelightCheckpointer.Schema|null[0]
+        final val version // dev.deeptelar.telar.checkpoint.sqldelight/SqlDelightCheckpointer.Schema.version|{}version[0]
+            final fun <get-version>(): kotlin/Long // dev.deeptelar.telar.checkpoint.sqldelight/SqlDelightCheckpointer.Schema.version.<get-version>|<get-version>(){}[0]
+
+        final fun create(app.cash.sqldelight.db/SqlDriver): app.cash.sqldelight.db/QueryResult.Value<kotlin/Unit> // dev.deeptelar.telar.checkpoint.sqldelight/SqlDelightCheckpointer.Schema.create|create(app.cash.sqldelight.db.SqlDriver){}[0]
+        final fun migrate(app.cash.sqldelight.db/SqlDriver, kotlin/Long, kotlin/Long, kotlin/Array<out app.cash.sqldelight.db/AfterVersion>...): app.cash.sqldelight.db/QueryResult.Value<kotlin/Unit> // dev.deeptelar.telar.checkpoint.sqldelight/SqlDelightCheckpointer.Schema.migrate|migrate(app.cash.sqldelight.db.SqlDriver;kotlin.Long;kotlin.Long;kotlin.Array<out|app.cash.sqldelight.db.AfterVersion>...){}[0]
+    }
+}

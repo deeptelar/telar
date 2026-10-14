@@ -90,8 +90,10 @@ opens, and the snapshot is where the last step left the run:
   again. Which of the two it is, the state tells: write into it what the screen needs to know,
   such as whether the run waits for an approval.
 
-`FileCheckpointer` stores to disk on Android, iOS and desktop, and `LocalStorageCheckpointer` in a
-browser.
+`SqlDelightCheckpointer` stores to a SQLite database on Android, iOS, desktop and in the browser,
+with one line of setup for each platform: see
+[In a database, on every platform](human-in-the-loop.md#in-a-database-on-every-platform).
+`FileCheckpointer` stores to files, and `LocalStorageCheckpointer` in the storage of a browser.
 
 ## Text as a model writes it
 
