@@ -11,7 +11,8 @@ package dev.deeptelar.telar
  * that nothing has to be carried over by hand.
  *
  * Nodes added with a `work` and an `update` do not go through the reducer, and a graph whose
- * parallel nodes are all of that kind needs none. See [StateGraph.node] and [StateGraph.compile].
+ * parallel nodes are all of that kind needs none. A graph compiled with [MergeRules] as `rules`
+ * merges those nodes too. See [StateGraph.node] and [StateGraph.compile].
  */
 public fun interface Reducer<State> {
     public suspend fun reduce(currentState: State, updates: List<State>): State

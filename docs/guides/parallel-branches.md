@@ -133,17 +133,48 @@ compile(
 | `node(name) { ... }` with `merge(Job::status, combine = ...)` | What `combine` returns. `{ _, changed -> changed.last() }` lets the node win that the edges reach last |
 | `node(name) { ... }` with a reducer of your own | What the reducer returns |
 | `node(name) { ... }` without a reducer | `compile()` rejects the graph |
+| Either form, in a graph compiled with `rules = mergeRules { replace(Job::status) ... }` | The run fails with a `ReducerException`. See [One rule for both forms](#one-rule-for-both-forms) |
 
 - For nodes with a `work` and an `update`, "later" is the order of the `node(...)` lines, not the
   order of the edges. Moving the line of such a node changes which value the run ends with.
 - Changing the form of a node changes this policy. A node that goes from a whole state to a `work`
   and an `update` loses the check that `replace` made.
-- When two branches must not disagree about a property, write them as whole states and give the
-  property a `replace` rule. When one of them should win, say so with `merge`, or let only one
-  branch write the property.
+- When two branches must not disagree about a property, give the property a `replace` rule and
+  compile the graph with `rules`, which checks both forms. When one of them should win, say so with
+  `merge`, or let only one branch write the property.
 
-[Issue #101](https://github.com/deeptelar/telar/issues/101) is about saying this policy in one place
-for both forms.
+### One rule for both forms
+
+Give the rules to `compile()` as `rules` instead of `reducer`, and they hold for every node of a
+step, the nodes with a `work` and an `update` too:
+
+```kotlin
+val web = node("web", work = { searchWeb() }) { job, found -> job.copy(status = "web done", notes = job.notes + found) }
+val docs = node("docs", work = { searchDocs() }) { job, found -> job.copy(status = "docs done", notes = job.notes + found) }
+
+compile(
+    rules = mergeRules {
+        append(Job::notes) { copy(notes = it) }
+        // The run fails:
+        // Property 'status' was set to different values by nodes of the same step: [web done, docs done].
+        replace(Job::status) { copy(status = it) }
+    },
+)
+```
+
+With `rules`, a step works like this:
+
+- **What a node reads.** Each node gets the state from before the step, its `update` too. An update
+  no longer sees what another node of the step wrote.
+- **How the results are merged.** The rules merge what every node returned, in the order the nodes
+  were added to the graph, whatever form the nodes have. A node that changes a property without a
+  rule fails the run, and the error names the node.
+- **A node alone.** A step with a single node continues with what it returned, and needs no rule.
+
+So turning `rules` on can change a graph that worked without them. Two updates that each add to the
+same list need an `append` rule, because both start from the list from before the step. And an
+update that read what another node of the step wrote now reads the value from before the step.
+Changing the form of a node no longer changes the policy: the rules decide for both.
 
 ## Where the order counts
 
@@ -154,6 +185,7 @@ The two forms do this in different orders:
 |---|---|---|
 | `node(name, work) { state, result -> ... }` | The order of the `node(...)` lines | `work` reads the state from before the step. `update` gets the state that the update before it returned |
 | `node(name) { ... }` | The order in which the edges reach the nodes. For two edges that leave the same node, that is the order of the two `then` lines | The state from before the step |
+| Either form, in a graph compiled with `rules` | The order of the `node(...)` lines | The state from before the step, `update` too |
 
 An update can depend on that order even when no other node writes its property:
 
@@ -174,5 +206,6 @@ val docs = node("docs", work = { searchDocs() }) { job, _ -> job.copy(label = "$
 - The same holds for a reducer of your own that picks by position, such as `updates.last()`.
 
 Which one to use: `work` and `update` when a node does slow work and then adds its result;
-`mergeRules` when nodes are written as `node(name) { ... }` and change different properties, or add
-to the same list; a reducer of your own when the step has to choose or compare whole states.
+`mergeRules` when nodes change different properties, or add to the same list, given as `rules` when
+two nodes must not overwrite each other without a word; a reducer of your own when the step has to
+choose or compare whole states.

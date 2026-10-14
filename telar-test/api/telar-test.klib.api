@@ -6,6 +6,16 @@
 // - Show declarations: true
 
 // Library unique name: <telar:telar-test>
+final class <#A: kotlin/Any?> dev.deeptelar.telar.test/GraphTest { // dev.deeptelar.telar.test/GraphTest|null[0]
+    final fun expectFailure(kotlin/Function1<kotlin/Exception, kotlin/Unit> = ...): kotlin/Exception // dev.deeptelar.telar.test/GraphTest.expectFailure|expectFailure(kotlin.Function1<kotlin.Exception,kotlin.Unit>){}[0]
+    final fun expectFinished(kotlin/Function1<#A, kotlin/Unit> = ...): #A // dev.deeptelar.telar.test/GraphTest.expectFinished|expectFinished(kotlin.Function1<1:0,kotlin.Unit>){}[0]
+    final fun expectInterruptBefore(kotlin/String, kotlin/Function1<#A, kotlin/Unit> = ...): #A // dev.deeptelar.telar.test/GraphTest.expectInterruptBefore|expectInterruptBefore(kotlin.String;kotlin.Function1<1:0,kotlin.Unit>){}[0]
+    final fun expectNode(kotlin/String, kotlin/Function1<#A, kotlin/Unit> = ...): #A // dev.deeptelar.telar.test/GraphTest.expectNode|expectNode(kotlin.String;kotlin.Function1<1:0,kotlin.Unit>){}[0]
+    final fun expectNodes(kotlin/Array<out kotlin/String>...) // dev.deeptelar.telar.test/GraphTest.expectNodes|expectNodes(kotlin.Array<out|kotlin.String>...){}[0]
+    final fun expectStep(kotlin/Array<out kotlin/String>..., kotlin/Function1<#A, kotlin/Unit> = ...): #A // dev.deeptelar.telar.test/GraphTest.expectStep|expectStep(kotlin.Array<out|kotlin.String>...;kotlin.Function1<1:0,kotlin.Unit>){}[0]
+    final suspend fun resumeWith(kotlin.coroutines/SuspendFunction1<#A, #A> = ...) // dev.deeptelar.telar.test/GraphTest.resumeWith|resumeWith(kotlin.coroutines.SuspendFunction1<1:0,1:0>){}[0]
+}
+
 final class <#A: kotlin/Any?> dev.deeptelar.telar.test/RunRecord { // dev.deeptelar.telar.test/RunRecord|null[0]
     constructor <init>(kotlin.collections/List<dev.deeptelar.telar/GraphEvent<#A>>) // dev.deeptelar.telar.test/RunRecord.<init>|<init>(kotlin.collections.List<dev.deeptelar.telar.GraphEvent<1:0>>){}[0]
 
@@ -73,4 +83,6 @@ final class dev.deeptelar.telar.test/ScriptedDecisionModel : dev.deeptelar.telar
     final suspend fun decide(dev.deeptelar.telar.agent/DecisionRequest): dev.deeptelar.telar.agent/DecisionResponse // dev.deeptelar.telar.test/ScriptedDecisionModel.decide|decide(dev.deeptelar.telar.agent.DecisionRequest){}[0]
 }
 
+final suspend fun <#A: kotlin/Any?> (dev.deeptelar.telar/CompiledGraph<#A>).dev.deeptelar.telar.test/replay(dev.deeptelar.telar/Checkpoint<#A>, dev.deeptelar.telar/GraphConfig<#A> = ..., kotlin.coroutines/SuspendFunction1<#A, #A> = ..., kotlin.coroutines/SuspendFunction1<dev.deeptelar.telar.test/GraphTest<#A>, kotlin/Unit>) // dev.deeptelar.telar.test/replay|replay@dev.deeptelar.telar.CompiledGraph<0:0>(dev.deeptelar.telar.Checkpoint<0:0>;dev.deeptelar.telar.GraphConfig<0:0>;kotlin.coroutines.SuspendFunction1<0:0,0:0>;kotlin.coroutines.SuspendFunction1<dev.deeptelar.telar.test.GraphTest<0:0>,kotlin.Unit>){0§<kotlin.Any?>}[0]
+final suspend fun <#A: kotlin/Any?> (dev.deeptelar.telar/CompiledGraph<#A>).dev.deeptelar.telar.test/test(#A, dev.deeptelar.telar/GraphConfig<#A> = ..., kotlin.coroutines/SuspendFunction1<dev.deeptelar.telar.test/GraphTest<#A>, kotlin/Unit>) // dev.deeptelar.telar.test/test|test@dev.deeptelar.telar.CompiledGraph<0:0>(0:0;dev.deeptelar.telar.GraphConfig<0:0>;kotlin.coroutines.SuspendFunction1<dev.deeptelar.telar.test.GraphTest<0:0>,kotlin.Unit>){0§<kotlin.Any?>}[0]
 final suspend fun <#A: kotlin/Any?> (kotlinx.coroutines.flow/Flow<dev.deeptelar.telar/GraphEvent<#A>>).dev.deeptelar.telar.test/record(): dev.deeptelar.telar.test/RunRecord<#A> // dev.deeptelar.telar.test/record|record@kotlinx.coroutines.flow.Flow<dev.deeptelar.telar.GraphEvent<0:0>>(){0§<kotlin.Any?>}[0]

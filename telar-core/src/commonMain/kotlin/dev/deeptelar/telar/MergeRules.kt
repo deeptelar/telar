@@ -3,7 +3,7 @@ package dev.deeptelar.telar
 import kotlin.reflect.KProperty1
 
 /**
- * Builds a [Reducer] from one rule for each property that nodes of the same step may change, in
+ * Builds [MergeRules] from one rule for each property that nodes of the same step may change, in
  * place of a reducer that merges whole states by hand:
  *
  * ```kotlin
@@ -26,37 +26,58 @@ import kotlin.reflect.KProperty1
  * ```
  *
  * A rule names a property and says how to write its merged value back, which for a data class is
- * a `copy`. The reducer compares what each node returned with the state before the step, so a node
+ * a `copy`. The rules compare what each node returned with the state before the step, so a node
  * is written as usual: it returns a whole state with `copy`.
  *
  * A node that changes a property without a rule fails the run with a [ReducerException] instead of
  * losing the change. For that check the state needs `equals`, which a data class has.
  *
+ * Given as `reducer`, the rules merge the nodes that return a whole state. Given as `rules` to
+ * [StateGraph.compile], they merge every node of a step, the nodes with a `work` and an `update`
+ * too.
+ *
  * @throws GraphValidationException if there is no rule, or two rules for the same property.
  */
-public fun <State> mergeRules(block: MergeRules<State>.() -> Unit): Reducer<State> {
-    val rules = MergeRules<State>().apply(block).rules.toList()
+public fun <State> mergeRules(block: MergeRulesBuilder<State>.() -> Unit): MergeRules<State> {
+    val rules = MergeRulesBuilder<State>().apply(block).rules.toList()
     if (rules.isEmpty()) throw GraphValidationException("mergeRules needs at least one rule.")
     rules.groupingBy { it.name }.eachCount().filterValues { it > 1 }.keys.firstOrNull()?.let {
         throw GraphValidationException("mergeRules has two rules for the property '$it'.")
     }
+    return MergeRules(rules)
+}
 
-    return Reducer { current, updates ->
+/**
+ * A [Reducer] built by [mergeRules] from one rule for each property. Give it to
+ * [StateGraph.compile] as `reducer` to merge the nodes that return a whole state, or as `rules` to
+ * merge every node of a step.
+ */
+public class MergeRules<State> internal constructor(
+    private val rules: List<MergeRule<State, *>>,
+) : Reducer<State> {
+    override suspend fun reduce(currentState: State, updates: List<State>): State =
+        merge(currentState, updates) { "Node ${it + 1} of the ${updates.size} that are merged" }
+
+    /**
+     * Merges [updates] into [current] by the rules.
+     *
+     * @param node names the update with the given index in an error.
+     */
+    internal fun merge(current: State, updates: List<State>, node: (Int) -> String): State {
         updates.forEachIndexed { index, update ->
             // The state before the step with only the properties that have a rule taken from the node.
             if (rules.fold(current) { state, rule -> rule.copy(from = update, into = state) } != update) {
                 throw MergeRuleException(
-                    "Node ${index + 1} of the ${updates.size} that are merged changed a property that has no merge rule. " +
-                        "The rules cover: ${rules.joinToString { it.name }}.",
+                    "${node(index)} changed a property that has no merge rule. The rules cover: ${rules.joinToString { it.name }}.",
                 )
             }
         }
-        rules.fold(current) { state, rule -> rule.merge(current, updates, into = state) }
+        return rules.fold(current) { state, rule -> rule.merge(current, updates, into = state) }
     }
 }
 
 /** The rules of a [mergeRules] block. */
-public class MergeRules<State> internal constructor() {
+public class MergeRulesBuilder<State> internal constructor() {
     internal val rules = mutableListOf<MergeRule<State, *>>()
 
     /**

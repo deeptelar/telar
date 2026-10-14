@@ -19,6 +19,11 @@ import kotlinx.coroutines.sync.withLock
  * @property subgraphs where the run stands inside the subgraphs among [nextNodes], by the name of
  * their node. It has an entry for a subgraph that the run paused in, so that
  * [CompiledGraph.resume] continues inside it. A [Checkpointer] has to store it with the rest.
+ * @property effects the results of the [effect]s that finished in the step of [nextNodes], so that
+ * they do not run again when [CompiledGraph.resume] runs that step again. The keys name the node and
+ * the effect; the values are the results as the serializer of each effect wrote them. Empty until
+ * an effect of that step finishes. In a history, the checkpoint before a step that finished keeps
+ * the effects of that step. A [Checkpointer] has to store it with the rest.
  */
 public data class Checkpoint<State>(
     val state: State,
@@ -26,6 +31,7 @@ public data class Checkpoint<State>(
     val step: Int = 0,
     val interruptedBefore: Boolean = false,
     val subgraphs: Map<String, SubgraphPosition> = emptyMap(),
+    val effects: Map<String, String> = emptyMap(),
 ) {
     /** `true` when the run reached [END] and there is nothing left to resume. */
     public val isComplete: Boolean get() = nextNodes.isEmpty()

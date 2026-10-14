@@ -1,14 +1,16 @@
 public final class dev/deeptelar/telar/Checkpoint {
-	public fun <init> (Ljava/lang/Object;Ljava/util/List;IZLjava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/Object;Ljava/util/List;IZLjava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/Object;Ljava/util/List;IZLjava/util/Map;Ljava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/Object;Ljava/util/List;IZLjava/util/Map;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/Object;
 	public final fun component2 ()Ljava/util/List;
 	public final fun component3 ()I
 	public final fun component4 ()Z
 	public final fun component5 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/Object;Ljava/util/List;IZLjava/util/Map;)Ldev/deeptelar/telar/Checkpoint;
-	public static synthetic fun copy$default (Ldev/deeptelar/telar/Checkpoint;Ljava/lang/Object;Ljava/util/List;IZLjava/util/Map;ILjava/lang/Object;)Ldev/deeptelar/telar/Checkpoint;
+	public final fun component6 ()Ljava/util/Map;
+	public final fun copy (Ljava/lang/Object;Ljava/util/List;IZLjava/util/Map;Ljava/util/Map;)Ldev/deeptelar/telar/Checkpoint;
+	public static synthetic fun copy$default (Ldev/deeptelar/telar/Checkpoint;Ljava/lang/Object;Ljava/util/List;IZLjava/util/Map;Ljava/util/Map;ILjava/lang/Object;)Ldev/deeptelar/telar/Checkpoint;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEffects ()Ljava/util/Map;
 	public final fun getInterruptedBefore ()Z
 	public final fun getNextNodes ()Ljava/util/List;
 	public final fun getState ()Ljava/lang/Object;
@@ -72,6 +74,10 @@ public final class dev/deeptelar/telar/ConstantsKt {
 public final class dev/deeptelar/telar/EdgeConditionException : dev/deeptelar/telar/TelarException {
 	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
 	public final fun getFrom ()Ljava/lang/String;
+}
+
+public final class dev/deeptelar/telar/EffectKt {
+	public static final fun effect (Ljava/lang/String;Ldev/deeptelar/telar/StateSerializer;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class dev/deeptelar/telar/GraphAlreadyCompletedException : dev/deeptelar/telar/TelarException {
@@ -418,14 +424,18 @@ public final class dev/deeptelar/telar/MergeRuleException : dev/deeptelar/telar/
 	public fun <init> (Ljava/lang/String;)V
 }
 
-public final class dev/deeptelar/telar/MergeRules {
+public final class dev/deeptelar/telar/MergeRules : dev/deeptelar/telar/Reducer {
+	public fun reduce (Ljava/lang/Object;Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class dev/deeptelar/telar/MergeRulesBuilder {
 	public final fun append (Lkotlin/reflect/KProperty1;Lkotlin/jvm/functions/Function2;)V
 	public final fun merge (Lkotlin/reflect/KProperty1;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;)V
 	public final fun replace (Lkotlin/reflect/KProperty1;Lkotlin/jvm/functions/Function2;)V
 }
 
 public final class dev/deeptelar/telar/MergeRulesKt {
-	public static final fun mergeRules (Lkotlin/jvm/functions/Function1;)Ldev/deeptelar/telar/Reducer;
+	public static final fun mergeRules (Lkotlin/jvm/functions/Function1;)Ldev/deeptelar/telar/MergeRules;
 }
 
 public final class dev/deeptelar/telar/NodeExecutionException : dev/deeptelar/telar/TelarException {
@@ -478,8 +488,8 @@ public final class dev/deeptelar/telar/Retry {
 
 public final class dev/deeptelar/telar/StateGraph {
 	public fun <init> ()V
-	public final fun compile (Ldev/deeptelar/telar/Reducer;)Ldev/deeptelar/telar/CompiledGraph;
-	public static synthetic fun compile$default (Ldev/deeptelar/telar/StateGraph;Ldev/deeptelar/telar/Reducer;ILjava/lang/Object;)Ldev/deeptelar/telar/CompiledGraph;
+	public final fun compile (Ldev/deeptelar/telar/MergeRules;Ldev/deeptelar/telar/Reducer;)Ldev/deeptelar/telar/CompiledGraph;
+	public static synthetic fun compile$default (Ldev/deeptelar/telar/StateGraph;Ldev/deeptelar/telar/MergeRules;Ldev/deeptelar/telar/Reducer;ILjava/lang/Object;)Ldev/deeptelar/telar/CompiledGraph;
 	public final fun conditionalEdge (Ldev/deeptelar/telar/NodeRef;Ljava/util/Set;Lkotlin/jvm/functions/Function2;)V
 	public final fun conditionalEdge (Ljava/lang/String;Ljava/util/Set;Lkotlin/jvm/functions/Function2;)V
 	public static synthetic fun conditionalEdge$default (Ldev/deeptelar/telar/StateGraph;Ldev/deeptelar/telar/NodeRef;Ljava/util/Set;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)V

@@ -29,6 +29,8 @@ import kotlin.time.Duration
  * input state. When there is more than one, their results are combined: the [Reducer] merges the
  * nodes that returned a whole state, and the updates of the nodes that were added with a `work` and
  * an `update` are then applied one after another, in the order those nodes were added to the graph.
+ * In a graph compiled with `rules`, each node instead gets the state from before the step, its
+ * `update` too, and the [MergeRules] merge all results in the order the nodes were added.
  * The outgoing edges of the nodes then decide which nodes are active in the next step. A branch
  * that routes to [END] simply stops; the run completes when no nodes are active.
  *
@@ -64,8 +66,9 @@ import kotlin.time.Duration
  *
  * With a checkpointer, a step is saved once its nodes have run, their results are merged and the
  * next nodes are chosen. A step that fails at any of these points is not saved, so [resume] runs the
- * whole step again, including the nodes of that step that had already finished. Make the side
- * effects of a node safe to repeat.
+ * whole step again, including the nodes of that step that had already finished. Run the side
+ * effects of a node with [effect], which saves each one as soon as it finished, or make them safe to
+ * repeat.
  *
  * The tries of a node with a [Retry] are not saved either. They do not count for
  * [GraphConfig.maxIterations], and a step that runs again after [resume] gives each of its nodes
@@ -76,6 +79,7 @@ public class CompiledGraph<State> internal constructor(
     internal val edges: Map<String, List<String>>,
     internal val conditionalEdges: Map<String, ConditionalEdge<State>>,
     internal val reducer: Reducer<State>? = null,
+    internal val rules: MergeRules<State>? = null,
 ) {
     /** The position of each node in the order the nodes were added to the graph. */
     private val nodeOrder: Map<String, Int> = nodes.keys.withIndex().associate { it.value to it.index }
@@ -190,7 +194,8 @@ public class CompiledGraph<State> internal constructor(
      * ```
      *
      * The new thread starts with [checkpoint], with the state that [update] returns, and runs its
-     * next nodes like [resume] does. It keeps the step numbers of the run it comes from.
+     * next nodes like [resume] does. It keeps the step numbers of the run it comes from. The
+     * [effect]s of its first step run again, also those that [Checkpoint.effects] holds.
      *
      * @param checkpoint where to continue from, usually one of [history].
      * @param config the settings of the new run. Its thread must not have a checkpoint yet.
@@ -228,9 +233,14 @@ public class CompiledGraph<State> internal constructor(
             validatePosition(config.threadId, checkpoint.nextNodes, checkpoint.subgraphs)
             if (checkpointer.load(config.threadId) != null) throw ThreadAlreadyExistsException(config.threadId)
             // Save the start of the new thread before anything runs, so that a failure in its first step can be resumed.
-            val start = checkpoint.copy(state = update(checkpoint.state))
+            // The effects of the checkpoint belong to the thread it comes from: the new one runs its own.
+            val start = checkpoint.copy(state = update(checkpoint.state), effects = emptyMap())
             checkpointer.save(config.threadId, start)
-            run(config, RunStart(start.state, start.nextNodes, start.step, start.interruptedBefore, start.subgraphs), progress)
+            run(
+                config,
+                RunStart(start.state, start.nextNodes, start.step, start.interruptedBefore, start.subgraphs, saved = start),
+                progress,
+            )
         }
 
     /**
@@ -252,8 +262,9 @@ public class CompiledGraph<State> internal constructor(
             config.checkpointer?.delete(config.threadId)
             val firstNodes = resolveNextNodes(listOf(START), input)
             // Save the input before anything runs, so that a failure in the first step can be resumed.
-            config.checkpointer?.save(config.threadId, Checkpoint(input, firstNodes))
-            run(config, RunStart(input, firstNodes, step = 0, skipInterruptBefore = false), progress)
+            val saved = Checkpoint(input, firstNodes)
+            config.checkpointer?.save(config.threadId, saved)
+            run(config, RunStart(input, firstNodes, step = 0, skipInterruptBefore = false, saved = saved), progress)
         }
 
     /** Like [resume], but returns a cold [Flow] of [GraphEvent]s. See [stream]. */
@@ -277,6 +288,7 @@ public class CompiledGraph<State> internal constructor(
                     checkpoint.step,
                     checkpoint.interruptedBefore,
                     checkpoint.subgraphs,
+                    saved = checkpoint,
                 )
             run(config, start, progress)
         }
@@ -298,7 +310,7 @@ public class CompiledGraph<State> internal constructor(
         // this graph go to that collector through it, like what a node reports.
         val reporter = currentCoroutineContext()[ProgressReporter]
         val events = FlowCollector<GraphEvent<State>> { event -> reporter?.report(SubgraphReport(event)) }
-        return events.run(config, start, progress = reporter != null, canPause = parent.canPause)
+        return events.run(config, start, progress = reporter != null, canPause = parent.canPause, parent = parent)
     }
 
     /**
@@ -306,6 +318,8 @@ public class CompiledGraph<State> internal constructor(
      *
      * @property subgraphs where the run stands inside the subgraphs among [activeNodes], for a run
      * that paused in one of them.
+     * @property saved the checkpoint the run continues from, as it is stored. Its effects are those
+     * that the first step already ran. `null` for a subgraph, which saves nothing.
      */
     private class RunStart<State>(
         val state: State,
@@ -313,6 +327,7 @@ public class CompiledGraph<State> internal constructor(
         val step: Int,
         val skipInterruptBefore: Boolean,
         val subgraphs: Map<String, SubgraphPosition> = emptyMap(),
+        val saved: Checkpoint<State>? = null,
     )
 
     /**
@@ -320,26 +335,39 @@ public class CompiledGraph<State> internal constructor(
      *
      * @param canPause `true` when the run is saved, so that a node may pause it. A subgraph has no
      * checkpointer of its own and can pause when the graph around it can.
+     * @param parent the node that runs this graph as its subgraph. The effects of this graph go
+     * into the step of the graph around it.
      */
     private suspend fun FlowCollector<GraphEvent<State>>.run(
         config: GraphConfig<State>,
         start: RunStart<State>,
         progress: Boolean,
         canPause: Boolean = config.checkpointer != null,
+        parent: RunningNode? = null,
     ): RunEnd<State> {
         var state = start.state
         var activeNodes = start.activeNodes
         var step = start.step
         var skipInterruptBefore = start.skipInterruptBefore
         var subgraphs = start.subgraphs
+        var effects = start.saved?.effects.orEmpty()
+        var saved = start.saved
         var executedSteps = 0
 
         suspend fun save(checkpoint: Checkpoint<State>): Checkpoint<State> =
-            checkpoint.also { config.checkpointer?.save(config.threadId, it) }
+            checkpoint.also {
+                config.checkpointer?.save(config.threadId, it)
+                saved = it
+            }
+
+        // An effect is saved into the checkpoint its step continues from, the one saved last.
+        suspend fun saveEffects(recorded: Map<String, String>) {
+            saved?.let { config.checkpointer?.save(config.threadId, it.copy(effects = recorded)) }
+        }
 
         while (activeNodes.isNotEmpty()) {
             if (!skipInterruptBefore && activeNodes.any { it in config.interruptBefore }) {
-                val paused = save(Checkpoint(state, activeNodes, step, interruptedBefore = true))
+                val paused = save(Checkpoint(state, activeNodes, step, interruptedBefore = true, effects = effects))
                 emit(GraphEvent.Interrupted(state, activeNodes))
                 return RunEnd.Paused(paused)
             }
@@ -349,7 +377,9 @@ public class CompiledGraph<State> internal constructor(
             executedSteps++
             step++
 
-            val run = StepRun(step, config.threadId, canPause, config.maxIterations, subgraphs, progress)
+            val log = parent?.effects ?: EffectLog(effects) { saveEffects(it) }
+            val effectPrefix = parent?.let { "${it.effectPath}/$step/" }.orEmpty()
+            val run = StepRun(step, config.threadId, canPause, config.maxIterations, subgraphs, progress, log, effectPrefix)
             state =
                 try {
                     runStep(run, activeNodes, state)
@@ -365,12 +395,17 @@ public class CompiledGraph<State> internal constructor(
                     // The step did not finish, so it keeps its number, and resume runs its nodes again
                     // without pausing before them a second time. A subgraph continues where it paused.
                     val inside = pause.position?.let { mapOf(pause.node to it) }.orEmpty()
-                    val paused = save(Checkpoint(asked, activeNodes, step - 1, interruptedBefore = true, subgraphs = inside))
+                    // The effects of a subgraph stay in the log of the graph around it, which saves them there.
+                    val recorded = if (parent == null) log.close() else emptyMap()
+                    val paused =
+                        save(Checkpoint(asked, activeNodes, step - 1, interruptedBefore = true, subgraphs = inside, effects = recorded))
                     emit(GraphEvent.Interrupted(asked, activeNodes))
                     return RunEnd.Paused(paused)
                 }
-            // Only the first step of a resumed run continues inside a subgraph.
+            if (parent == null) log.close()
+            // Only the first step of a resumed run continues inside a subgraph, and has effects that ran before.
             subgraphs = emptyMap()
+            effects = emptyMap()
             val nextNodes = resolveNextNodes(activeNodes, state)
             val saved = save(Checkpoint(state, nextNodes, step))
             emit(GraphEvent.StepCompleted(step, activeNodes, state))
@@ -386,7 +421,13 @@ public class CompiledGraph<State> internal constructor(
         return RunEnd.Completed(state)
     }
 
-    /** What the nodes of one step need to know about their run. */
+    /**
+     * What the nodes of one step need to know about their run.
+     *
+     * @property effects where the nodes record their effects.
+     * @property effectPrefix what the path of a node in [effects] starts with: empty in the outermost
+     * graph, and the node and step of the graph around it in a subgraph.
+     */
     private class StepRun(
         val step: Int,
         val threadId: String,
@@ -394,6 +435,8 @@ public class CompiledGraph<State> internal constructor(
         val maxIterations: Int,
         val subgraphs: Map<String, SubgraphPosition>,
         val progress: Boolean,
+        val effects: EffectLog,
+        val effectPrefix: String,
     )
 
     private suspend fun FlowCollector<GraphEvent<State>>.runStep(run: StepRun, activeNodes: List<String>, state: State): State {
@@ -497,9 +540,10 @@ public class CompiledGraph<State> internal constructor(
      * The nodes that returned a whole state decide the state to start from: [state] when there is
      * none, the state of the only one, or what the reducer makes of several. The updates of the
      * other nodes are then applied to it one after another, in the order those nodes were added to
-     * the graph.
+     * the graph. In a graph with [rules], they merge the results of all nodes instead.
      */
     private suspend fun combine(state: State, outputs: List<Pair<String, NodeOutput<State>>>): State {
+        if (rules != null) return merge(rules, state, outputs.sortedBy { nodeOrder.getValue(it.first) })
         val states = outputs.filter { (_, output) -> output.update == null }
         var combined =
             when (states.size) {
@@ -509,7 +553,11 @@ public class CompiledGraph<State> internal constructor(
                     val reducer =
                         checkNotNull(reducer) { "compile() guarantees a reducer when two nodes that return a state can run together" }
                     val names = states.map { it.first }
-                    wrapFailure({ cause -> ReducerException(names, cause) }) { reducer.reduce(state, states.map { it.second.state }) }
+                    if (reducer is MergeRules) {
+                        merge(reducer, state, states)
+                    } else {
+                        wrapFailure({ cause -> ReducerException(names, cause) }) { reducer.reduce(state, states.map { it.second.state }) }
+                    }
                 }
             }
         for ((name, output) in outputs.sortedBy { nodeOrder.getValue(it.first) }) {
@@ -517,6 +565,18 @@ public class CompiledGraph<State> internal constructor(
             combined = wrapFailure({ cause -> NodeExecutionException(name, cause) }) { update(combined) }
         }
         return combined
+    }
+
+    /**
+     * Merges what [outputs] produced by [rules], each output being the state after its node alone,
+     * so that an error names the node.
+     */
+    private suspend fun merge(rules: MergeRules<State>, state: State, outputs: List<Pair<String, NodeOutput<State>>>): State {
+        if (outputs.size <= 1) return outputs.singleOrNull()?.second?.state ?: state
+        val names = outputs.map { it.first }
+        return wrapFailure({ cause -> ReducerException(names, cause) }) {
+            rules.merge(state, outputs.map { it.second.state }) { "Node '${names[it]}'" }
+        }
     }
 
     /**
@@ -549,7 +609,17 @@ public class CompiledGraph<State> internal constructor(
 
     /** One try of [node], the one with the number [attempt]. */
     private suspend fun runOnce(run: StepRun, node: Node<State>, state: State, attempt: Int): NodeOutput<State> =
-        withContext(RunningNode(node.name, run.threadId, run.canPause, run.maxIterations, run.subgraphs[node.name])) {
+        withContext(
+            RunningNode(
+                node.name,
+                run.threadId,
+                run.canPause,
+                run.maxIterations,
+                run.subgraphs[node.name],
+                run.effects,
+                run.effectPrefix + escapeEffectName(node.name),
+            ),
+        ) {
             wrapFailure({ NodeExecutionException(node.name, it, attempt) }) {
                 val timeout = node.timeout
                 if (timeout == null) {
