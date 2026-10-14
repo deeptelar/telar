@@ -13,6 +13,8 @@ package dev.deeptelar.telar
  * @property interruptAfter node names to pause after.
  * @property maxIterations the maximum number of steps a single [CompiledGraph.invoke] or
  * [CompiledGraph.resume] call may execute before [MaxIterationsExceededException] is thrown.
+ * @property observers are told how each run of this config goes, node by node, for example to
+ * send traces. See [GraphObserver].
  * @throws GraphValidationException if [threadId] is blank, [maxIterations] is not positive, or
  * interrupts are configured without a [checkpointer].
  */
@@ -22,6 +24,7 @@ public data class GraphConfig<State>(
     val interruptBefore: Set<String> = emptySet(),
     val interruptAfter: Set<String> = emptySet(),
     val maxIterations: Int = DEFAULT_MAX_ITERATIONS,
+    val observers: List<GraphObserver> = emptyList(),
 ) {
     init {
         if (threadId.isBlank()) throw GraphValidationException("threadId must not be blank.")

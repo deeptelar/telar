@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.time.Duration
 
@@ -218,7 +219,7 @@ public class CompiledGraph<State> internal constructor(
         update: suspend (State) -> State,
         progress: Boolean,
     ): Flow<GraphEvent<State>> =
-        flow {
+        observed(config) { watch ->
             validateInterrupts(config)
             val checkpointer =
                 config.checkpointer ?: throw GraphValidationException("fork() needs a GraphConfig with a checkpointer.")
@@ -230,7 +231,8 @@ public class CompiledGraph<State> internal constructor(
             // Save the start of the new thread before anything runs, so that a failure in its first step can be resumed.
             val start = checkpoint.copy(state = update(checkpoint.state))
             checkpointer.save(config.threadId, start)
-            run(config, RunStart(start.state, start.nextNodes, start.step, start.interruptedBefore, start.subgraphs), progress)
+            watch.observer.onCheckpointSaved(watch.run, start.step, start.nextNodes)
+            run(config, RunStart(start.state, start.nextNodes, start.step, start.interruptedBefore, start.subgraphs), progress, watch)
         }
 
     /**
@@ -246,14 +248,36 @@ public class CompiledGraph<State> internal constructor(
 
     /** The run of [invoke] and [stream]. Only a stream has a collector for the [progress] of its nodes. */
     private fun events(input: State, config: GraphConfig<State>, progress: Boolean): Flow<GraphEvent<State>> =
-        flow {
+        observed(config) { watch ->
             validateInterrupts(config)
             // Drop the previous run now, so that a failure before the first save cannot be resumed into it.
             config.checkpointer?.delete(config.threadId)
             val firstNodes = resolveNextNodes(listOf(START), input)
             // Save the input before anything runs, so that a failure in the first step can be resumed.
-            config.checkpointer?.save(config.threadId, Checkpoint(input, firstNodes))
-            run(config, RunStart(input, firstNodes, step = 0, skipInterruptBefore = false), progress)
+            config.checkpointer?.let { checkpointer ->
+                checkpointer.save(config.threadId, Checkpoint(input, firstNodes))
+                watch.observer.onCheckpointSaved(watch.run, 0, firstNodes)
+            }
+            run(config, RunStart(input, firstNodes, step = 0, skipInterruptBefore = false), progress, watch)
+        }
+
+    /**
+     * A run that the observers of [config] are told about, from its start to its end. [block] runs
+     * the graph and tells [RunWatch] how the run ended; a failure is told here.
+     */
+    private fun observed(
+        config: GraphConfig<State>,
+        block: suspend FlowCollector<GraphEvent<State>>.(RunWatch) -> Unit,
+    ): Flow<GraphEvent<State>> =
+        flow {
+            val watch = RunWatch(config.observer(), ObservedRun(config.threadId, parent = null))
+            watch.started()
+            try {
+                block(watch)
+            } catch (failure: Throwable) {
+                watch.failed(failure)
+                throw failure
+            }
         }
 
     /** Like [resume], but returns a cold [Flow] of [GraphEvent]s. See [stream]. */
@@ -261,7 +285,7 @@ public class CompiledGraph<State> internal constructor(
         resumeEvents(config, update, progress = true)
 
     private fun resumeEvents(config: GraphConfig<State>, update: suspend (State) -> State, progress: Boolean): Flow<GraphEvent<State>> =
-        flow {
+        observed(config) { watch ->
             validateInterrupts(config)
             val checkpointer =
                 config.checkpointer ?: throw GraphValidationException("resume() needs a GraphConfig with a checkpointer.")
@@ -278,7 +302,7 @@ public class CompiledGraph<State> internal constructor(
                     checkpoint.interruptedBefore,
                     checkpoint.subgraphs,
                 )
-            run(config, start, progress)
+            run(config, start, progress, watch)
         }
 
     /**
@@ -287,18 +311,26 @@ public class CompiledGraph<State> internal constructor(
      */
     internal suspend fun runAsSubgraph(state: State, parent: RunningNode): RunEnd<State> {
         val config = GraphConfig<State>(threadId = parent.threadId, maxIterations = parent.maxIterations)
-        val position = parent.position
-        val start =
-            if (position == null) {
-                RunStart(state, resolveNextNodes(listOf(START), state), step = 0, skipInterruptBefore = false)
-            } else {
-                RunStart(state, position.nextNodes, position.step, position.interruptedBefore, position.subgraphs)
-            }
-        // The node of this subgraph has a reporter when the run around it is collected. The events of
-        // this graph go to that collector through it, like what a node reports.
-        val reporter = currentCoroutineContext()[ProgressReporter]
-        val events = FlowCollector<GraphEvent<State>> { event -> reporter?.report(SubgraphReport(event)) }
-        return events.run(config, start, progress = reporter != null, canPause = parent.canPause)
+        // The observers of the run around are told about this run too, as a run inside the node.
+        val watch = RunWatch(parent.observer, ObservedRun(parent.threadId, parent.observed))
+        watch.started()
+        try {
+            val position = parent.position
+            val start =
+                if (position == null) {
+                    RunStart(state, resolveNextNodes(listOf(START), state), step = 0, skipInterruptBefore = false)
+                } else {
+                    RunStart(state, position.nextNodes, position.step, position.interruptedBefore, position.subgraphs)
+                }
+            // The node of this subgraph has a reporter when the run around it is collected. The events of
+            // this graph go to that collector through it, like what a node reports.
+            val reporter = currentCoroutineContext()[ProgressReporter]
+            val events = FlowCollector<GraphEvent<State>> { event -> reporter?.report(SubgraphReport(event)) }
+            return events.run(config, start, progress = reporter != null, watch, canPause = parent.canPause)
+        } catch (failure: Throwable) {
+            watch.failed(failure)
+            throw failure
+        }
     }
 
     /**
@@ -316,7 +348,7 @@ public class CompiledGraph<State> internal constructor(
     )
 
     /**
-     * Runs the graph from [start] and emits its events.
+     * Runs the graph from [start] and emits its events, and tells [watch] how the run ends unless it fails.
      *
      * @param canPause `true` when the run is saved, so that a node may pause it. A subgraph has no
      * checkpointer of its own and can pause when the graph around it can.
@@ -325,6 +357,7 @@ public class CompiledGraph<State> internal constructor(
         config: GraphConfig<State>,
         start: RunStart<State>,
         progress: Boolean,
+        watch: RunWatch,
         canPause: Boolean = config.checkpointer != null,
     ): RunEnd<State> {
         var state = start.state
@@ -334,12 +367,17 @@ public class CompiledGraph<State> internal constructor(
         var subgraphs = start.subgraphs
         var executedSteps = 0
 
-        suspend fun save(checkpoint: Checkpoint<State>): Checkpoint<State> =
-            checkpoint.also { config.checkpointer?.save(config.threadId, it) }
+        suspend fun save(checkpoint: Checkpoint<State>): Checkpoint<State> {
+            val checkpointer = config.checkpointer ?: return checkpoint
+            checkpointer.save(config.threadId, checkpoint)
+            watch.observer.onCheckpointSaved(watch.run, checkpoint.step, checkpoint.nextNodes)
+            return checkpoint
+        }
 
         while (activeNodes.isNotEmpty()) {
             if (!skipInterruptBefore && activeNodes.any { it in config.interruptBefore }) {
                 val paused = save(Checkpoint(state, activeNodes, step, interruptedBefore = true))
+                watch.interrupted(activeNodes)
                 emit(GraphEvent.Interrupted(state, activeNodes))
                 return RunEnd.Paused(paused)
             }
@@ -349,7 +387,7 @@ public class CompiledGraph<State> internal constructor(
             executedSteps++
             step++
 
-            val run = StepRun(step, config.threadId, canPause, config.maxIterations, subgraphs, progress)
+            val run = StepRun(step, config.threadId, canPause, config.maxIterations, subgraphs, progress, watch)
             state =
                 try {
                     runStep(run, activeNodes, state)
@@ -366,22 +404,26 @@ public class CompiledGraph<State> internal constructor(
                     // without pausing before them a second time. A subgraph continues where it paused.
                     val inside = pause.position?.let { mapOf(pause.node to it) }.orEmpty()
                     val paused = save(Checkpoint(asked, activeNodes, step - 1, interruptedBefore = true, subgraphs = inside))
+                    watch.interrupted(activeNodes)
                     emit(GraphEvent.Interrupted(asked, activeNodes))
                     return RunEnd.Paused(paused)
                 }
             // Only the first step of a resumed run continues inside a subgraph.
             subgraphs = emptyMap()
             val nextNodes = resolveNextNodes(activeNodes, state)
+            watch.observer.onStepCompleted(watch.run, step, activeNodes, nextNodes)
             val saved = save(Checkpoint(state, nextNodes, step))
             emit(GraphEvent.StepCompleted(step, activeNodes, state))
 
             if (nextNodes.isNotEmpty() && activeNodes.any { it in config.interruptAfter }) {
+                watch.interrupted(nextNodes)
                 emit(GraphEvent.Interrupted(state, nextNodes))
                 return RunEnd.Paused(saved)
             }
             activeNodes = nextNodes
         }
 
+        watch.completed()
         emit(GraphEvent.Completed(state))
         return RunEnd.Completed(state)
     }
@@ -394,16 +436,18 @@ public class CompiledGraph<State> internal constructor(
         val maxIterations: Int,
         val subgraphs: Map<String, SubgraphPosition>,
         val progress: Boolean,
+        val watch: RunWatch,
     )
 
     private suspend fun FlowCollector<GraphEvent<State>>.runStep(run: StepRun, activeNodes: List<String>, state: State): State {
         val step = run.step
         val progress = run.progress
+        val observed = activeNodes.associateWith { ObservedNode(run.watch.run, step, it) }
         activeNodes.forEach { emit(GraphEvent.NodeStarted(step, it, state)) }
         if (activeNodes.size == 1 && !progress) {
             val name = activeNodes.single()
             val output =
-                runNode(run, nodes.getValue(name), state) { attempt, cause, pause ->
+                runNode(run, nodes.getValue(name), observed.getValue(name), state) { attempt, cause, pause ->
                     emit(GraphEvent.NodeRetry(step, name, attempt, cause, pause, state))
                 }
             return output.state.also { emit(GraphEvent.NodeCompleted(step, name, it)) }
@@ -421,7 +465,7 @@ public class CompiledGraph<State> internal constructor(
                         activeNodes.map { name ->
                             async(if (progress) reporter(name, signals) else EmptyCoroutineContext) {
                                 val output =
-                                    runNode(run, nodes.getValue(name), state) { attempt, cause, pause ->
+                                    runNode(run, nodes.getValue(name), observed.getValue(name), state) { attempt, cause, pause ->
                                         signals.send(NodeSignal.Retry(name, attempt, cause, pause))
                                     }
                                 output.also { signals.send(NodeSignal.Finished(name, it.state)) }
@@ -432,13 +476,12 @@ public class CompiledGraph<State> internal constructor(
                         when (val signal = signals.receive()) {
                             is NodeSignal.Progress -> {
                                 val value = signal.value
-                                emit(
-                                    if (value is SubgraphReport) {
-                                        GraphEvent.SubgraphEvent(step, signal.node, value.event, state)
-                                    } else {
-                                        GraphEvent.NodeProgress(step, signal.node, value, state)
-                                    },
-                                )
+                                if (value is SubgraphReport) {
+                                    emit(GraphEvent.SubgraphEvent(step, signal.node, value.event, state))
+                                } else {
+                                    run.watch.observer.onNodeProgress(observed.getValue(signal.node), value)
+                                    emit(GraphEvent.NodeProgress(step, signal.node, value, state))
+                                }
                                 signal.emitted.complete(Unit)
                             }
                             is NodeSignal.Retry ->
@@ -520,7 +563,8 @@ public class CompiledGraph<State> internal constructor(
     }
 
     /**
-     * Runs [node] on [state], and again after a failure for as long as its [Retry] allows.
+     * Runs [node] on [state], and again after a failure for as long as its [Retry] allows, and tells
+     * the observer of the run about it as [observed].
      *
      * @param retrying is told about each try that failed and is followed by another, before the
      * pause between the two. It is called outside the context of the node, so that the collector of
@@ -529,17 +573,45 @@ public class CompiledGraph<State> internal constructor(
     private suspend inline fun runNode(
         run: StepRun,
         node: Node<State>,
+        observed: ObservedNode,
         state: State,
         retrying: (attempt: Int, cause: Throwable, pause: Duration) -> Unit,
     ): NodeOutput<State> {
+        val observer = run.watch.observer
+        observer.onNodeStarted(observed)
+        val output =
+            try {
+                runTries(run, node, observed, state, retrying)
+            } catch (pause: NodeInterrupt) {
+                observer.onNodeInterrupted(observed)
+                throw pause
+            } catch (failure: Throwable) {
+                observer.onNodeFailed(observed, failure)
+                throw failure
+            }
+        observer.onNodeCompleted(observed)
+        return output
+    }
+
+    /** The tries of [runNode]. */
+    private suspend inline fun runTries(
+        run: StepRun,
+        node: Node<State>,
+        observed: ObservedNode,
+        state: State,
+        retrying: (attempt: Int, cause: Throwable, pause: Duration) -> Unit,
+    ): NodeOutput<State> {
+        val observer = run.watch.observer
+        val context = observer.nodeContext(observed)
         var attempt = 1
         while (true) {
             try {
-                return runOnce(run, node, state, attempt)
+                return runOnce(run, node, observed, context, state, attempt)
             } catch (failure: NodeExecutionException) {
                 // Thrown by runOnce and by nothing inside the node: a failure in there is its cause.
                 val cause = checkNotNull(failure.cause) { "A NodeExecutionException always has a cause" }
                 val pause = node.retry?.pauseAfter(attempt, cause) ?: throw failure
+                observer.onNodeRetry(observed, attempt, cause, pause)
                 retrying(attempt, cause, pause)
                 delay(pause)
                 attempt++
@@ -547,9 +619,18 @@ public class CompiledGraph<State> internal constructor(
         }
     }
 
-    /** One try of [node], the one with the number [attempt]. */
-    private suspend fun runOnce(run: StepRun, node: Node<State>, state: State, attempt: Int): NodeOutput<State> =
-        withContext(RunningNode(node.name, run.threadId, run.canPause, run.maxIterations, run.subgraphs[node.name])) {
+    /** One try of [node], the one with the number [attempt], in [context] and the context of a running node. */
+    private suspend fun runOnce(
+        run: StepRun,
+        node: Node<State>,
+        observed: ObservedNode,
+        context: CoroutineContext,
+        state: State,
+        attempt: Int,
+    ): NodeOutput<State> {
+        val running =
+            RunningNode(node.name, run.threadId, run.canPause, run.maxIterations, run.subgraphs[node.name], observed, run.watch.observer)
+        return withContext(context + running) {
             wrapFailure({ NodeExecutionException(node.name, it, attempt) }) {
                 val timeout = node.timeout
                 if (timeout == null) {
@@ -560,6 +641,7 @@ public class CompiledGraph<State> internal constructor(
                 }
             }
         }
+    }
 
     /**
      * Runs [block], which calls code of the application (a node, the condition of an edge or the

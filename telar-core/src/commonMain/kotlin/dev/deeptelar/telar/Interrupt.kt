@@ -54,6 +54,7 @@ public suspend fun <State> interrupt(state: State): Nothing {
  *
  * @property canPause `true` when the run is saved by a checkpointer, so that it can pause.
  * @property position where the run stands inside the subgraph of this node, when it paused there.
+ * @property observed this node for [observer], which a subgraph tells about its run as well.
  */
 internal class RunningNode(
     val name: String,
@@ -61,6 +62,8 @@ internal class RunningNode(
     val canPause: Boolean,
     val maxIterations: Int,
     val position: SubgraphPosition?,
+    val observed: ObservedNode,
+    val observer: GraphObserver,
 ) : AbstractCoroutineContextElement(Key) {
     companion object Key : CoroutineContext.Key<RunningNode>
 }
