@@ -51,8 +51,9 @@ Some things are never tried again:
 
 What to know:
 
-- **The node starts again from its first line.** Make its side effects safe to repeat: a node that
-  charges a card and then fails would charge it again.
+- **The node starts again from its first line.** A node that charges a card and then fails would
+  charge it again. Run such a side effect with [`effect`](side-effects.md), which saves its result
+  and does not repeat it, or make it safe to repeat.
 - **Nothing is saved between two tries.** They all belong to one step. A run that fails after its
   last try is continued with `resume`, as before, and the node then has all of its tries again.
 - **The other nodes of the step go on** while one node waits for its next try. When a node fails

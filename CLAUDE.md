@@ -45,6 +45,10 @@ made under that name keep it. The repository is `deeptelar/telar` and the demo i
 - **`telar-serialization`** (KMP): `KotlinxStateSerializer` for `@Serializable` states,
   `CheckpointCodec` (the shared checkpoint format, also used by `FileCheckpointer`)
 - **`telar-checkpoint-file`** (KMP): `FileCheckpointer` on kotlinx-io
+- **`telar-checkpoint-sqldelight`** (KMP): `SqlDelightCheckpointer` on a `SqlDriver` of SQLDelight
+  (runtime only, no Gradle plugin): a SQLite table with a row per step, created on first use. Reads
+  the results of blocking and asynchronous (web worker) drivers. Tests: JDBC in `jvmTest` (with
+  `AsyncDriver`, which answers like the browser's driver), the native driver in `appleTest`
 - **`telar-checkpoint-browser`** (JS and Wasm, browser only, code in `webMain`):
   `LocalStorageCheckpointer` on `localStorage`. Its tests run in headless Chrome
 - **`telar-agent`** (KMP): `ChatModel` (the provider-neutral model interface), `ChatMessage`,
@@ -109,6 +113,9 @@ made under that name keep it. The repository is `deeptelar/telar` and the demo i
    Continue a paused run with `resume(config) { state -> ... }` / `streamResume`.
    `lastResult(config)` reads where a thread stopped without running it. `GraphConfig.observers`
    takes `GraphObserver`s, which are told when runs, nodes and steps start and end; they never get the state.
+4. **Show it on a screen** with `GraphSession(graph, config, scope)`: `snapshot` is a
+   `StateFlow<GraphSnapshot<State>>` and `start` / `resume` / `restore` / `cancel` run one command
+   at a time in the scope (`viewModelScope`). A failure becomes `GraphSnapshot.Stopped`.
 
 The engine (`CompiledGraph.kt`) runs in steps: all active nodes run in parallel on the same input
 state, their results are combined (the `Reducer` merges whole states, then the updates of
@@ -121,7 +128,7 @@ next active nodes. A checkpoint is saved after every step when a checkpointer is
 |------|---------|
 | `NodeAction<State>` | `suspend (State) -> State`, a node's transformation |
 | `EdgeCondition<State>` | `suspend (State) -> String`, routes to the next node name or `END` |
-| `Reducer<State>` | `fun interface` with a suspend `reduce`; merges whole states of parallel nodes; not needed for work/update nodes. `mergeRules { append(...); replace(...); merge(...) }` builds one from a rule per property |
+| `Reducer<State>` | `fun interface` with a suspend `reduce`; merges whole states of parallel nodes; not needed for work/update nodes. `mergeRules { append(...); replace(...); merge(...) }` builds one from a rule per property; `compile(rules = mergeRules { ... })` makes the rules hold for work/update nodes too (each node reads the state from before the step) |
 | `GraphConfig<State>` | `threadId`, `checkpointer`, `interruptBefore/After` (sets), `maxIterations`, `observers` |
 | `GraphObserver` | Told when a run, a node or a step starts and ends, and when a checkpoint is saved; never gets the state. `nodeContext` adds to the coroutine context of a node |
 | `GraphResult<State>` / `GraphEvent<State>` | Outcome of `invoke`/`resume`, and events from `stream` (per node and per step) |

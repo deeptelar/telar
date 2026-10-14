@@ -54,6 +54,7 @@ Chrome. Install Chrome or Chromium, and set `CHROME_BIN` to its path if it is no
 | `telar-core` | Graph builder, execution engine, checkpoint interfaces (multiplatform, depends only on kotlinx-coroutines) |
 | `telar-serialization` | `KotlinxStateSerializer` (multiplatform) |
 | `telar-checkpoint-file` | `FileCheckpointer` on kotlinx-io (multiplatform) |
+| `telar-checkpoint-sqldelight` | `SqlDelightCheckpointer`: checkpoints in SQLite through SQLDelight (multiplatform) |
 | `telar-checkpoint-browser` | `LocalStorageCheckpointer` for web apps (JS and Wasm in a browser) |
 | `telar-agent` | `ChatModel`, tools and the tool-calling agent loop (multiplatform) |
 | `telar-anthropic` | `AnthropicChatModel`, Claude through Ktor (multiplatform) |

@@ -12,7 +12,7 @@ what is already released.
 To ask for a feature or to move one up, add a 👍 to its issue or
 [start a discussion](https://github.com/deeptelar/telar/discussions).
 
-Last updated: 2026-10-12.
+Last updated: 2026-10-14.
 
 ## Where the project is
 
@@ -70,7 +70,7 @@ These change how a graph runs or what a message holds, so they come before the b
 
 | | Feature | What you get | State | Issue |
 |---|---|---|---|---|
-| 7 | One rule for parallel nodes that write the same property | You decide what happens, and the rule is the same for both ways to write a node. Today a node with `work` and `update` overwrites without a word, and a node that returns a whole state follows the `mergeRules`. | Planned | [#101] |
+| 7 | One rule for parallel nodes that write the same property | You decide what happens, and the rule is the same for both ways to write a node: `compile(rules = mergeRules { ... })` merges every node of a step, so a node with `work` and `update` no longer overwrites another without a word. | In progress | [#101] |
 | 8 | Fan-out over a list | One node runs once per item of a list, all at the same time, when the number of items is only known at run time. Today the edges fix how many nodes run in parallel. | Planned | [#82] |
 | 9 | Images and files in messages | Send a model a picture or a PDF with the question, and let a tool return one. A `ChatMessage` holds text only today. | Planned | [#103] |
 | 10 | Subgraphs | A compiled graph becomes a node of another graph, with a mapping between the two states and one thread for both. Released: `subgraph`, a run that pauses inside a subgraph and resumes there, the events of a subgraph in the stream of the graph around it, and the subgraph in `topology`. Still to come: `interruptBefore` for a node of a subgraph, and a retry after a failure that continues inside the subgraph. | In progress | [#34] |
@@ -83,7 +83,7 @@ time by someone who needs it.
 | | Feature | What you get | State | Issue |
 |---|---|---|---|---|
 | 11 | Tracing | Hooks in the engine that report every node, edge, tool call and token count, and a module that sends them to OpenTelemetry. Released: `GraphObserver` for runs, nodes, steps and checkpoints, and `telar-otel`. Still to come: a span for each call to a model and each tool call, with its token count. | In progress | [#38] |
-| 12 | Database checkpointer | Saves runs in a SQL database, for servers and for Android apps. | Planned | [#84] |
+| 12 | Database checkpointer | Saves runs in a SQL database. SQLite through SQLDelight, for Android, iOS, desktop and the browser, is being written; a database server such as PostgreSQL comes after it. | In progress | [#84] |
 | 13 | Long conversations | A conversation that is kept short for the model, by dropping or summarizing old messages, and that pays less for what the provider already read. Today every request sends everything. | Planned | [#105] |
 | 14 | One version for all modules | `telar-bom`: a bill of materials. An app names the version of Telar once, and every module it adds uses that version. | Planned | [#79] |
 

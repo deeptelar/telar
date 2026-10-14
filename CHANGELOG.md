@@ -9,6 +9,31 @@ breaking changes.
 
 ### Added
 
+- `telar-checkpoint-sqldelight`, a new module: `SqlDelightCheckpointer` saves runs in a SQLite
+  database through SQLDelight, with the same code on Android, iOS and the other native targets, the
+  JVM and the browser; only the driver changes. One row per step, so `history` and `fork` work, and
+  a save is one transaction. The table is created on first use, so it can live in the database the
+  app already has; `SqlDelightCheckpointer.Schema` is the schema of a database that only holds
+  checkpoints. The guide
+  [Human-in-the-loop](https://deeptelar.github.io/telar/guides/human-in-the-loop#in-a-database-on-every-platform)
+  shows it, and the sample `AppRestart` brings a run back after the app was closed.
+- `GraphSession` in `telar-core`: one thread of a graph for a screen. It runs in a scope such as
+  `viewModelScope`, its `snapshot` is a `StateFlow<GraphSnapshot>` that a screen draws with a
+  `when` (`Idle`, `Restoring`, `Running`, `Interrupted`, `Completed`, `Stopped`), and `start`,
+  `resume`, `restore` and `cancel` are plain function calls. `restore()` reads the last checkpoint,
+  so that a screen comes back where the run stopped after the operating system ended the app. A
+  failure becomes a `Stopped` snapshot instead of crashing the app, and `events` has every event of
+  the run, such as the text a model writes. The guide
+  [Apps with a screen](https://deeptelar.github.io/telar/guides/apps-with-a-screen) shows it.
+- `effect` runs a side effect, such as a payment or an email, once for the step of its node:
+  `val receipt = effect("charge") { payments.charge(order) }`. Its result is saved in the checkpoint
+  as soon as the block returns, and when the step runs again (a `retry`, a `resume` after a failed
+  step, a `resume` after `interrupt`) the call returns that result instead of running the block.
+  The nodes of a parallel step that had already finished no longer repeat what they did when
+  another node of the step fails. `effect(key) { ... }` with a `@Serializable` result, a basic
+  type or `Unit` is in `telar-serialization`; `telar-core` has `effect(key, serializer) { ... }`.
+  The guide [Side effects](https://deeptelar.github.io/telar/guides/side-effects) shows it.
+
 - `ChatModel.ask` in `telar-agent`: ask a model for a `@Serializable` class and get an instance of
   it, `model.ask<Verdict>("Classify this email: ...")`. The model gets the schema of the class, which
   is built as the input schema of a tool is. An answer that cannot be read goes back to the model
@@ -62,13 +87,35 @@ breaking changes.
   failures, retries, steps and checkpoints, and makes the span of a node current while it runs, so
   the spans of the HTTP calls a node makes are inside it. The guide
   [Tracing](https://deeptelar.github.io/telar/guides/tracing) shows it.
+- `compile(rules = mergeRules { ... })`: one policy for parallel nodes, whatever form they have.
+  Each node of a step gets the state from before the step, the `update` of a node with a `work`
+  too, and the rules merge what all of them return, in the order the nodes were added. Two nodes
+  that `replace` a property with different values then fail the run in both forms, where a node
+  with a `work` and an `update` used to overwrite the other without a word. Without `rules`, nothing
+  changes. The guide [Parallel branches](https://deeptelar.github.io/telar/guides/parallel-branches#one-rule-for-both-forms)
+  shows it. ([#101](https://github.com/deeptelar/telar/issues/101))
+- `graph.test(input) { ... }` in `telar-test` checks the path of a run, one step after the other:
+  `expectNode("check")`, `expectStep("web", "papers")`, `expectInterruptBefore("pay") { state -> ... }`,
+  `resumeWith { it.copy(approved = true) }`, `expectFinished { ... }` and `expectFailure { ... }`.
+  The test fails with the path of the run when a check does not hold, and when the run did more than
+  the test checked. `graph.replay(checkpoint) { ... }` has the same checks for a run that continues
+  from a saved checkpoint: read the checkpoint of a run that failed in production with
+  `CheckpointCodec`, and run it again with a scripted model or a fixed node.
 
 ### Changed
 
 - `GraphConfig` has a new property, `observers`, with an empty list as its default.
 - `GraphEvent` has a new subclass, `NodeRetry`. A `when` over all events needs a branch for it.
+- `mergeRules` returns `MergeRules`, a `Reducer`, and its block is a `MergeRulesBuilder`, the class
+  that was called `MergeRules`. `compile()` has a new first parameter, `rules`: give a reducer by
+  name, `compile(reducer = ...)`, or as a trailing lambda.
+- When a reducer built with `mergeRules` fails in a run, its error names the node, `Node 'docs'`,
+  in place of its position in the step.
 - `TokenUsage` is `@Serializable`, so that a state with a count can be saved. `AgentState` is saved
   with its `tokens`; a state saved by an earlier version is read with a count of zero.
+- `Checkpoint` has a new property, `effects`. A `Checkpointer` of your own has to store it; one
+  built on `CheckpointCodec` does. The codec writes a checkpoint with effects as version 3 of its
+  format, which earlier versions refuse to read.
 
 ### Fixed
 

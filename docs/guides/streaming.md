@@ -37,7 +37,9 @@ done: Hi Ana, your refund is on its way. It takes 3 to 5 days.
 ```
 
 For a UI that only renders the latest state, `graph.stream(input).states()` is a `Flow` with just
-the state after each step.
+the state after each step. A screen with buttons to start, approve and retry a run uses a
+`GraphSession`, which also brings the run back after the app was killed: see
+[Apps with a screen](apps-with-a-screen.md).
 
 A node can report what it is doing while it runs. `reportProgress(value)` sends any value to the
 stream, where it arrives as a `GraphEvent.NodeProgress` before the node finishes:

@@ -53,10 +53,13 @@ Runnable version: [`HumanInTheLoop`](https://github.com/deeptelar/telar/blob/mai
   `resume` still pauses before an `interruptBefore` node; only a run that already paused there
   continues past it.
 - A step that fails is not saved, so `resume` runs all of its nodes again, including the ones that
-  had already finished. Make side effects such as sending an email safe to repeat.
+  had already finished. Run side effects such as sending an email with
+  [`effect`](side-effects.md), which saves them and does not repeat them, or make them safe to
+  repeat.
 - `interruptAfter` pauses after a node instead of before it.
 - `MemoryCheckpointer` keeps checkpoints in memory, which is what tests want. `FileCheckpointer`
-  keeps them in files, and `LocalStorageCheckpointer` in the storage of a browser.
+  keeps them in files, `SqlDelightCheckpointer` in a SQLite database on every platform, and
+  `LocalStorageCheckpointer` in the storage of a browser.
 
 ## Approve or send back
 
@@ -148,7 +151,8 @@ Runnable version: [`AskFromANode`](https://github.com/deeptelar/telar/blob/main/
 - `resume` runs the node again from its first line, and the node reads the state to see whether it
   has an answer. Here `approved` is `null` until a person has decided.
 - What the node did before `interrupt` happens a second time. Call `interrupt` before a side effect
-  such as a payment, or make the side effect safe to repeat.
+  such as a payment, or run the side effect with [`effect`](side-effects.md), which saves its result
+  and does not repeat it.
 - When other nodes run in the same step, they are cancelled, and `resume` runs the whole step again.
 - Do not put the call inside `runCatching` or a `catch (e: Throwable)`: the node would go on instead
   of pausing. A `catch (e: Exception)` is fine.
@@ -202,7 +206,54 @@ val rejected = graph.fork(atReview, config.copy(threadId = "ticket-42-rejected")
 - `MemoryCheckpointer` and `FileCheckpointer` keep every step. Give them a `maxHistory` for a thread
   that runs for hundreds of steps. `LocalStorageCheckpointer` keeps only the latest checkpoint
   unless you give it one, because a browser has little room.
+- The new thread runs the [effects](side-effects.md) of its first step again, also the ones the
+  checkpoint already has: they belong to the thread it comes from.
 - `streamFork` is `fork` with the events of the run.
+- In a test, `graph.replay(checkpoint) { ... }` of `telar-test` continues from a checkpoint and
+  checks the path the run takes from there, also from the checkpoints of a run that failed in
+  production. See [Testing](testing.md#a-run-that-failed-run-again).
+
+## In a database, on every platform
+
+`SqlDelightCheckpointer`, from `telar-checkpoint-sqldelight`, keeps the checkpoints in a SQLite
+database through [SQLDelight](https://sqldelight.github.io/sqldelight/). The checkpointer is the
+same on every platform, and only the driver changes:
+
+| Platform | Driver, from SQLDelight |
+|---|---|
+| Android | `AndroidSqliteDriver` of `app.cash.sqldelight:android-driver` |
+| iOS, macOS, Linux, Windows | `NativeSqliteDriver` of `app.cash.sqldelight:native-driver` |
+| Desktop and servers (JVM) | `JdbcSqliteDriver` of `app.cash.sqldelight:sqlite-driver` |
+| Browser (JS and Wasm) | `WebWorkerDriver` of `app.cash.sqldelight:web-worker-driver` |
+
+```kotlin
+// In the Android part of the app. In the iOS part: NativeSqliteDriver(SqlDelightCheckpointer.Schema, "runs.db")
+val driver = AndroidSqliteDriver(SqlDelightCheckpointer.Schema, context, "runs.db")
+
+// In common code.
+val config = GraphConfig(
+    threadId = "refund-42",
+    checkpointer = SqlDelightCheckpointer(driver, KotlinxStateSerializer<RefundState>()),
+    interruptBefore = setOf("pay"),
+)
+```
+
+- The table is created the first time it is needed, so the database can also be the one the app
+  already has, with its own schema: pass the driver of that database. `SqlDelightCheckpointer.Schema`
+  is for a database that only holds checkpoints. `table` changes the name of the table, which is
+  `telar_checkpoints` by default.
+- The table has one row for each step of a thread, so `history` and `fork` work. A thread keeps
+  every step unless you give it a `maxHistory`.
+- A save is one transaction, so a crash in the middle of one leaves the checkpoints as they were.
+- The calls of Android and the other drivers that block run on `Dispatchers.IO`, so the main thread
+  of a screen can save and load.
+- The module only needs the runtime of SQLDelight, not its Gradle plugin. An app that uses
+  SQLDelight for its own tables keeps its setup as it is.
+
+With a [`GraphSession`](apps-with-a-screen.md), this brings a screen back where the run stopped
+after the operating system ended the app. The sample
+[`AppRestart`](https://github.com/deeptelar/telar/blob/main/samples/src/main/kotlin/dev/deeptelar/telar/samples/AppRestart.kt)
+shows it: quit while a draft waits for approval, start again, and the draft is still there.
 
 ## In a browser
 
@@ -228,13 +279,13 @@ browser can read `localStorage`, so do not keep secrets in the state.
 
 ## Storing checkpoints somewhere else
 
-To store checkpoints in a database, in the preferences of a phone or on a server, implement the
-`Checkpointer` interface. `CheckpointCodec` turns the checkpoints of a thread into a string and
+To store checkpoints in another database, in the preferences of a phone or on a server, implement
+the `Checkpointer` interface. `CheckpointCodec` turns the checkpoints of a thread into a string and
 back, so only the storage calls are left to write:
 
 ```kotlin
 class DatabaseCheckpointer<State>(private val runs: RunTable, private val codec: CheckpointCodec<State>) : Checkpointer<State> {
-    // Called after every step. append() adds the checkpoint to the history that is stored.
+    // Called after every step, and when an effect finished. append() adds the checkpoint to the history that is stored.
     override suspend fun save(threadId: String, checkpoint: Checkpoint<State>) =
         runs.upsert(threadId, codec.append(runs.find(threadId), checkpoint, maxHistory = 50))
 

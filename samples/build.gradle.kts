@@ -19,6 +19,9 @@ dependencies {
     implementation(project(":telar-core"))
     implementation(project(":telar-serialization"))
     implementation(project(":telar-checkpoint-file"))
+    implementation(project(":telar-checkpoint-sqldelight"))
+    // The SQLite driver of SQLDelight for the JVM, for AppRestart.
+    implementation(libs.sqldelight.sqlite.driver)
     implementation(project(":telar-typesafe"))
     implementation(project(":telar-langchain4j"))
     implementation(project(":telar-agent"))
@@ -45,6 +48,7 @@ listOf(
     "QuickStart",
     "DecisionRouter",
     "HumanInTheLoop",
+    "AppRestart",
     "ReviewLoop",
     "AskFromANode",
     "Subgraph",
