@@ -1,0 +1,19 @@
+public final class dev/deeptelar/telar/checkpoint/sqldelight/SqlDelightCheckpointer : dev/deeptelar/telar/Checkpointer {
+	public static final field DEFAULT_TABLE Ljava/lang/String;
+	public fun <init> (Lapp/cash/sqldelight/db/SqlDriver;Ldev/deeptelar/telar/StateSerializer;Ljava/lang/String;I)V
+	public synthetic fun <init> (Lapp/cash/sqldelight/db/SqlDriver;Ldev/deeptelar/telar/StateSerializer;Ljava/lang/String;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun delete (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun history (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun load (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun save (Ljava/lang/String;Ldev/deeptelar/telar/Checkpoint;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class dev/deeptelar/telar/checkpoint/sqldelight/SqlDelightCheckpointer$Schema : app/cash/sqldelight/db/SqlSchema {
+	public static final field INSTANCE Ldev/deeptelar/telar/checkpoint/sqldelight/SqlDelightCheckpointer$Schema;
+	public synthetic fun create (Lapp/cash/sqldelight/db/SqlDriver;)Lapp/cash/sqldelight/db/QueryResult;
+	public fun create-0iQ1-z0 (Lapp/cash/sqldelight/db/SqlDriver;)Ljava/lang/Object;
+	public fun getVersion ()J
+	public synthetic fun migrate (Lapp/cash/sqldelight/db/SqlDriver;JJ[Lapp/cash/sqldelight/db/AfterVersion;)Lapp/cash/sqldelight/db/QueryResult;
+	public fun migrate-zeHU3Mk (Lapp/cash/sqldelight/db/SqlDriver;JJ[Lapp/cash/sqldelight/db/AfterVersion;)Ljava/lang/Object;
+}
+
