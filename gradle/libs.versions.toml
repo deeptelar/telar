@@ -7,6 +7,10 @@ ktor = "3.6.0"
 langchain4j = "1.21.0"
 mcp = "0.15.0"
 sqldelight = "2.4.1"
+# The worker of SQLDelight for the browser runs SQLite compiled to WebAssembly by sql.js.
+sqljs = "1.14.2"
+# The DOM of Kotlin/Wasm, in the version the web worker driver of SQLDelight is built with.
+kotlinx-browser = "0.3"
 opentelemetry = "1.66.0"
 dokka = "2.2.0"
 kover = "0.9.11"
@@ -27,6 +31,8 @@ mcp-client = { module = "io.modelcontextprotocol:kotlin-sdk-client", version.ref
 mcp-server = { module = "io.modelcontextprotocol:kotlin-sdk-server", version.ref = "mcp" }
 sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight" }
 sqldelight-sqlite-driver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight" }
+sqldelight-web-worker-driver = { module = "app.cash.sqldelight:web-worker-driver", version.ref = "sqldelight" }
+kotlinx-browser = { module = "org.jetbrains.kotlinx:kotlinx-browser", version.ref = "kotlinx-browser" }
 sqldelight-native-driver = { module = "app.cash.sqldelight:native-driver", version.ref = "sqldelight" }
 mcp-testing = { module = "io.modelcontextprotocol:kotlin-sdk-testing", version.ref = "mcp" }
 opentelemetry-api = { module = "io.opentelemetry:opentelemetry-api", version.ref = "opentelemetry" }
