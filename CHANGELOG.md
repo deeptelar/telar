@@ -9,6 +9,14 @@ breaking changes.
 
 ### Added
 
+- `GraphSession` in `telar-core`: one thread of a graph for a screen. It runs in a scope such as
+  `viewModelScope`, its `snapshot` is a `StateFlow<GraphSnapshot>` that a screen draws with a
+  `when` (`Idle`, `Restoring`, `Running`, `Interrupted`, `Completed`, `Stopped`), and `start`,
+  `resume`, `restore` and `cancel` are plain function calls. `restore()` reads the last checkpoint,
+  so that a screen comes back where the run stopped after the operating system ended the app. A
+  failure becomes a `Stopped` snapshot instead of crashing the app, and `events` has every event of
+  the run, such as the text a model writes. The guide
+  [Apps with a screen](https://deeptelar.github.io/telar/guides/apps-with-a-screen) shows it.
 - `effect` runs a side effect, such as a payment or an email, once for the step of its node:
   `val receipt = effect("charge") { payments.charge(order) }`. Its result is saved in the checkpoint
   as soon as the block returns, and when the step runs again (a `retry`, a `resume` after a failed

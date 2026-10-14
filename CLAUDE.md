@@ -105,6 +105,9 @@ made under that name keep it. The repository is `deeptelar/telar` and the demo i
    from inside with `interrupt(state)`: the state it passes is saved and its step runs again.
    Continue a paused run with `resume(config) { state -> ... }` / `streamResume`.
    `lastResult(config)` reads where a thread stopped without running it.
+4. **Show it on a screen** with `GraphSession(graph, config, scope)`: `snapshot` is a
+   `StateFlow<GraphSnapshot<State>>` and `start` / `resume` / `restore` / `cancel` run one command
+   at a time in the scope (`viewModelScope`). A failure becomes `GraphSnapshot.Stopped`.
 
 The engine (`CompiledGraph.kt`) runs in steps: all active nodes run in parallel on the same input
 state, their results are combined (the `Reducer` merges whole states, then the updates of

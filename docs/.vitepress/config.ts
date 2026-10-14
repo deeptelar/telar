@@ -79,6 +79,7 @@ export default withMermaid(
             { text: 'Overview', link: '/guides/' },
             { text: 'Streaming', link: '/guides/streaming' },
             { text: 'Human-in-the-loop', link: '/guides/human-in-the-loop' },
+            { text: 'Apps with a screen', link: '/guides/apps-with-a-screen' },
             { text: 'Parallel branches', link: '/guides/parallel-branches' },
             { text: 'Loops', link: '/guides/loops' },
             { text: 'Subgraphs', link: '/guides/subgraphs' },

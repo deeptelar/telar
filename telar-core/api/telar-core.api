@@ -289,6 +289,89 @@ public final class dev/deeptelar/telar/GraphResult$Interrupted : dev/deeptelar/t
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class dev/deeptelar/telar/GraphSession {
+	public fun <init> (Ldev/deeptelar/telar/CompiledGraph;Ldev/deeptelar/telar/GraphConfig;Lkotlinx/coroutines/CoroutineScope;)V
+	public final fun cancel ()Lkotlinx/coroutines/Job;
+	public final fun getEvents ()Lkotlinx/coroutines/flow/SharedFlow;
+	public final fun getSnapshot ()Lkotlinx/coroutines/flow/StateFlow;
+	public final fun restore ()Lkotlinx/coroutines/Job;
+	public final fun resume (Lkotlin/jvm/functions/Function2;)Lkotlinx/coroutines/Job;
+	public static synthetic fun resume$default (Ldev/deeptelar/telar/GraphSession;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/Job;
+	public final fun start (Ljava/lang/Object;)Lkotlinx/coroutines/Job;
+}
+
+public abstract interface class dev/deeptelar/telar/GraphSnapshot {
+	public abstract fun getState ()Ljava/lang/Object;
+}
+
+public final class dev/deeptelar/telar/GraphSnapshot$Completed : dev/deeptelar/telar/GraphSnapshot {
+	public fun <init> (Ljava/lang/Object;)V
+	public final fun component1 ()Ljava/lang/Object;
+	public final fun copy (Ljava/lang/Object;)Ldev/deeptelar/telar/GraphSnapshot$Completed;
+	public static synthetic fun copy$default (Ldev/deeptelar/telar/GraphSnapshot$Completed;Ljava/lang/Object;ILjava/lang/Object;)Ldev/deeptelar/telar/GraphSnapshot$Completed;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getState ()Ljava/lang/Object;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/deeptelar/telar/GraphSnapshot$Idle : dev/deeptelar/telar/GraphSnapshot {
+	public static final field INSTANCE Ldev/deeptelar/telar/GraphSnapshot$Idle;
+	public fun equals (Ljava/lang/Object;)Z
+	public synthetic fun getState ()Ljava/lang/Object;
+	public fun getState ()Ljava/lang/Void;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/deeptelar/telar/GraphSnapshot$Interrupted : dev/deeptelar/telar/GraphSnapshot {
+	public fun <init> (Ljava/lang/Object;Ljava/util/List;)V
+	public final fun component1 ()Ljava/lang/Object;
+	public final fun component2 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/Object;Ljava/util/List;)Ldev/deeptelar/telar/GraphSnapshot$Interrupted;
+	public static synthetic fun copy$default (Ldev/deeptelar/telar/GraphSnapshot$Interrupted;Ljava/lang/Object;Ljava/util/List;ILjava/lang/Object;)Ldev/deeptelar/telar/GraphSnapshot$Interrupted;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getNextNodes ()Ljava/util/List;
+	public fun getState ()Ljava/lang/Object;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/deeptelar/telar/GraphSnapshot$Restoring : dev/deeptelar/telar/GraphSnapshot {
+	public static final field INSTANCE Ldev/deeptelar/telar/GraphSnapshot$Restoring;
+	public fun equals (Ljava/lang/Object;)Z
+	public synthetic fun getState ()Ljava/lang/Object;
+	public fun getState ()Ljava/lang/Void;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/deeptelar/telar/GraphSnapshot$Running : dev/deeptelar/telar/GraphSnapshot {
+	public fun <init> (Ljava/lang/Object;Ljava/util/List;)V
+	public final fun component1 ()Ljava/lang/Object;
+	public final fun component2 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/Object;Ljava/util/List;)Ldev/deeptelar/telar/GraphSnapshot$Running;
+	public static synthetic fun copy$default (Ldev/deeptelar/telar/GraphSnapshot$Running;Ljava/lang/Object;Ljava/util/List;ILjava/lang/Object;)Ldev/deeptelar/telar/GraphSnapshot$Running;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getNodes ()Ljava/util/List;
+	public fun getState ()Ljava/lang/Object;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/deeptelar/telar/GraphSnapshot$Stopped : dev/deeptelar/telar/GraphSnapshot {
+	public fun <init> (Ljava/lang/Object;Ljava/lang/Throwable;)V
+	public final fun component1 ()Ljava/lang/Object;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/Object;Ljava/lang/Throwable;)Ldev/deeptelar/telar/GraphSnapshot$Stopped;
+	public static synthetic fun copy$default (Ldev/deeptelar/telar/GraphSnapshot$Stopped;Ljava/lang/Object;Ljava/lang/Throwable;ILjava/lang/Object;)Ldev/deeptelar/telar/GraphSnapshot$Stopped;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public fun getState ()Ljava/lang/Object;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class dev/deeptelar/telar/GraphTopology {
 	public fun <init> (Ljava/util/List;Ljava/util/List;Ljava/util/Set;Ljava/util/Map;)V
 	public synthetic fun <init> (Ljava/util/List;Ljava/util/List;Ljava/util/Set;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
