@@ -203,6 +203,9 @@ val rejected = graph.fork(atReview, config.copy(threadId = "ticket-42-rejected")
   that runs for hundreds of steps. `LocalStorageCheckpointer` keeps only the latest checkpoint
   unless you give it one, because a browser has little room.
 - `streamFork` is `fork` with the events of the run.
+- In a test, `graph.replay(checkpoint) { ... }` of `telar-test` continues from a checkpoint and
+  checks the path the run takes from there, also from the checkpoints of a run that failed in
+  production. See [Testing](testing.md#a-run-that-failed-run-again).
 
 ## In a browser
 
