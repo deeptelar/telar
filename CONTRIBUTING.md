@@ -61,6 +61,7 @@ Chrome. Install Chrome or Chromium, and set `CHROME_BIN` to its path if it is no
 | `telar-langchain4j` | LangChain4j integration (JVM) |
 | `telar-typesafe` | `TypeSafeDecisionModel`, the Jev decision model of TypeSafe AI through Ktor (multiplatform) |
 | `telar-mcp` | `mcpTools`, the tools of a Model Context Protocol server as tools of an agent, on the Kotlin SDK of MCP (multiplatform) |
+| `telar-otel` | `OpenTelemetryObserver`, the runs of a graph as OpenTelemetry traces (JVM) |
 | `telar-test` | `ScriptedChatModel`, `ScriptedDecisionModel` and `record()`, for the tests of an app (multiplatform) |
 | `samples` | Runnable examples, not published. `samples/.../tutorial` holds the code of the tutorial |
 | `docs` | The [documentation site](https://deeptelar.github.io/telar/), built with VitePress: `index.md` is its home page, `docs/guides` has a page per feature and `docs/tutorial` a page per level. Its menu is in `docs/.vitepress/config.ts`, and its look (colors, typefaces, the home banner) in `docs/.vitepress/theme`. `docs/brand` holds the logo and banners |

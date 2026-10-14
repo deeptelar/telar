@@ -68,6 +68,9 @@ made under that name keep it. The repository is `deeptelar/telar` and the demo i
   (`io.modelcontextprotocol:kotlin-sdk-client`, an `api` dependency): the app connects and closes
   the SDK's `Client`. Its tests talk to `FakeMcpServer`, a server over channels in `commonTest`,
   because the server side of the SDK has no iOS targets
+- **`telar-otel`** (JVM): `OpenTelemetryObserver`, a `GraphObserver` that sends runs and nodes
+  to OpenTelemetry as spans, and makes the span of a node current while it runs. It never records
+  the state
 - **`telar-test`** (KMP, no test framework): helpers for the tests of an app. `ScriptedChatModel`
   and `ScriptedDecisionModel` give the answers of a script in order and keep their requests; a
   script that is too short throws an `AssertionError`, which the engine passes on. `record()`
@@ -104,7 +107,8 @@ made under that name keep it. The repository is `deeptelar/telar` and the demo i
    subgraph arrive wrapped in `GraphEvent.SubgraphEvent`. A node pauses the run
    from inside with `interrupt(state)`: the state it passes is saved and its step runs again.
    Continue a paused run with `resume(config) { state -> ... }` / `streamResume`.
-   `lastResult(config)` reads where a thread stopped without running it.
+   `lastResult(config)` reads where a thread stopped without running it. `GraphConfig.observers`
+   takes `GraphObserver`s, which are told when runs, nodes and steps start and end; they never get the state.
 
 The engine (`CompiledGraph.kt`) runs in steps: all active nodes run in parallel on the same input
 state, their results are combined (the `Reducer` merges whole states, then the updates of
@@ -118,7 +122,8 @@ next active nodes. A checkpoint is saved after every step when a checkpointer is
 | `NodeAction<State>` | `suspend (State) -> State`, a node's transformation |
 | `EdgeCondition<State>` | `suspend (State) -> String`, routes to the next node name or `END` |
 | `Reducer<State>` | `fun interface` with a suspend `reduce`; merges whole states of parallel nodes; not needed for work/update nodes. `mergeRules { append(...); replace(...); merge(...) }` builds one from a rule per property |
-| `GraphConfig<State>` | `threadId`, `checkpointer`, `interruptBefore/After` (sets), `maxIterations` |
+| `GraphConfig<State>` | `threadId`, `checkpointer`, `interruptBefore/After` (sets), `maxIterations`, `observers` |
+| `GraphObserver` | Told when a run, a node or a step starts and ends, and when a checkpoint is saved; never gets the state. `nodeContext` adds to the coroutine context of a node |
 | `GraphResult<State>` / `GraphEvent<State>` | Outcome of `invoke`/`resume`, and events from `stream` (per node and per step) |
 | `GraphTopology` | Nodes and edges of a compiled graph, from `CompiledGraph.topology` |
 | `Checkpointer<State>` | `save` / `load` / `delete` per thread, and `history` (one checkpoint per step; the default returns only the latest). `CompiledGraph.history` reads it and `fork` continues from an earlier checkpoint on a new thread |

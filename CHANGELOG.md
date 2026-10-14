@@ -52,9 +52,20 @@ breaking changes.
   `ScriptedDecisionModel { chooses("refund"); no() }` is the same for a `DecisionModel`. `record()`
   collects the stream of a run and returns its `nodes`, `steps`, `text` and `result`. The guide
   [Testing](https://deeptelar.github.io/telar/guides/testing) shows it.
+- `GraphObserver` in `telar-core`: give it to a run with `GraphConfig(observers = listOf(...))`,
+  and it is told when the run starts and how it ends, when each node starts, retries and ends,
+  which nodes the edges chose after each step, and when a checkpoint is saved, also for the runs of
+  subgraphs and for `invoke`. It never gets the state, which can hold personal data. `nodeContext`
+  adds to the coroutine context of a node, for example the trace span of the node.
+- `telar-otel`, a new module for the JVM and Android: `OpenTelemetryObserver` sends each run to
+  OpenTelemetry as a `telar.run` span with a `telar.node <name>` span for each node, records
+  failures, retries, steps and checkpoints, and makes the span of a node current while it runs, so
+  the spans of the HTTP calls a node makes are inside it. The guide
+  [Tracing](https://deeptelar.github.io/telar/guides/tracing) shows it.
 
 ### Changed
 
+- `GraphConfig` has a new property, `observers`, with an empty list as its default.
 - `GraphEvent` has a new subclass, `NodeRetry`. A `when` over all events needs a branch for it.
 - `TokenUsage` is `@Serializable`, so that a state with a count can be saved. `AgentState` is saved
   with its `tokens`; a state saved by an earlier version is read with a count of zero.

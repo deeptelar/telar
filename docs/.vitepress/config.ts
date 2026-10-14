@@ -88,6 +88,7 @@ export default withMermaid(
             { text: 'Tools from MCP servers', link: '/guides/mcp' },
             { text: 'Inspecting a graph', link: '/guides/inspecting-a-graph' },
             { text: 'Retries and time limits', link: '/guides/retries' },
+            { text: 'Tracing', link: '/guides/tracing' },
             { text: 'Testing', link: '/guides/testing' },
             { text: 'Errors', link: '/guides/errors' },
           ],
