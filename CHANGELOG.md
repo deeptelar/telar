@@ -9,6 +9,14 @@ breaking changes.
 
 ### Added
 
+- `telar-checkpoint-sqldelight`, a new module: `SqlDelightCheckpointer` saves runs in a SQLite
+  database through SQLDelight, with the same code on Android, iOS and the other native targets, the
+  JVM and the browser; only the driver changes. One row per step, so `history` and `fork` work, and
+  a save is one transaction. The table is created on first use, so it can live in the database the
+  app already has; `SqlDelightCheckpointer.Schema` is the schema of a database that only holds
+  checkpoints. The guide
+  [Human-in-the-loop](https://deeptelar.github.io/telar/guides/human-in-the-loop#in-a-database-on-every-platform)
+  shows it, and the sample `AppRestart` brings a run back after the app was closed.
 - `GraphSession` in `telar-core`: one thread of a graph for a screen. It runs in a scope such as
   `viewModelScope`, its `snapshot` is a `StateFlow<GraphSnapshot>` that a screen draws with a
   `when` (`Idle`, `Restoring`, `Running`, `Interrupted`, `Completed`, `Stopped`), and `start`,

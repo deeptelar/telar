@@ -45,6 +45,10 @@ made under that name keep it. The repository is `deeptelar/telar` and the demo i
 - **`telar-serialization`** (KMP): `KotlinxStateSerializer` for `@Serializable` states,
   `CheckpointCodec` (the shared checkpoint format, also used by `FileCheckpointer`)
 - **`telar-checkpoint-file`** (KMP): `FileCheckpointer` on kotlinx-io
+- **`telar-checkpoint-sqldelight`** (KMP): `SqlDelightCheckpointer` on a `SqlDriver` of SQLDelight
+  (runtime only, no Gradle plugin): a SQLite table with a row per step, created on first use. Reads
+  the results of blocking and asynchronous (web worker) drivers. Tests: JDBC in `jvmTest` (with
+  `AsyncDriver`, which answers like the browser's driver), the native driver in `appleTest`
 - **`telar-checkpoint-browser`** (JS and Wasm, browser only, code in `webMain`):
   `LocalStorageCheckpointer` on `localStorage`. Its tests run in headless Chrome
 - **`telar-agent`** (KMP): `ChatModel` (the provider-neutral model interface), `ChatMessage`,

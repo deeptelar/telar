@@ -12,7 +12,7 @@ what is already released.
 To ask for a feature or to move one up, add a 👍 to its issue or
 [start a discussion](https://github.com/deeptelar/telar/discussions).
 
-Last updated: 2026-10-12.
+Last updated: 2026-10-14.
 
 ## Where the project is
 
@@ -83,7 +83,7 @@ time by someone who needs it.
 | | Feature | What you get | State | Issue |
 |---|---|---|---|---|
 | 11 | Tracing | Hooks in the engine that report every node, edge, tool call and token count, and a module that sends them to OpenTelemetry. | Planned | [#38] |
-| 12 | Database checkpointer | Saves runs in a SQL database, for servers and for Android apps. | Planned | [#84] |
+| 12 | Database checkpointer | Saves runs in a SQL database. SQLite through SQLDelight, for Android, iOS, desktop and the browser, is being written; a database server such as PostgreSQL comes after it. | In progress | [#84] |
 | 13 | Long conversations | A conversation that is kept short for the model, by dropping or summarizing old messages, and that pays less for what the provider already read. Today every request sends everything. | Planned | [#105] |
 | 14 | One version for all modules | `telar-bom`: a bill of materials. An app names the version of Telar once, and every module it adds uses that version. | Planned | [#79] |
 

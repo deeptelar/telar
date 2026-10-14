@@ -9,6 +9,7 @@ dependencies {
     implementation("dev.deeptelar:telar-serialization:0.1.0-alpha09")      // save @Serializable states
     implementation("dev.deeptelar:telar-checkpoint-file:0.1.0-alpha09")    // save runs as JSON files
     implementation("dev.deeptelar:telar-checkpoint-browser:0.1.0-alpha09") // save runs in a browser's localStorage (JS and Wasm)
+    implementation("dev.deeptelar:telar-checkpoint-sqldelight:<version>")  // save runs in SQLite through SQLDelight, on every platform
     implementation("dev.deeptelar:telar-agent:0.1.0-alpha09")              // chat models, tools and the tool-calling agent
     implementation("dev.deeptelar:telar-anthropic:0.1.0-alpha09")          // call Claude, on every platform
     implementation("dev.deeptelar:telar-openai:0.1.0-alpha09")             // call OpenAI, Ollama and compatible servers, on every platform
@@ -26,6 +27,7 @@ dependencies {
 | `telar-serialization` | same as core | `KotlinxStateSerializer` for `@Serializable` states, `CheckpointCodec` for custom checkpointers |
 | `telar-checkpoint-file` | same as core (Node.js only for JS/Wasm) | `FileCheckpointer`, one JSON file per thread |
 | `telar-checkpoint-browser` | JS and Wasm in a browser | `LocalStorageCheckpointer`, runs that survive a page reload |
+| `telar-checkpoint-sqldelight` | same as core | `SqlDelightCheckpointer`: runs in a SQLite database through SQLDelight, on Android, iOS, desktop, servers and the browser. Not released yet: it comes with the version after `0.1.0-alpha09`. |
 | `telar-agent` | same as core | `ChatModel`, `Tool`, and the tool-calling agent: `toolAgent` / `toolLoop` |
 | `telar-anthropic` | same as core | `AnthropicChatModel`, Claude through Ktor |
 | `telar-openai` | same as core | `OpenAiChatModel`: OpenAI, Ollama and other servers with the Chat Completions API, through Ktor |
