@@ -14,6 +14,7 @@ dependencies {
     dokka(project(":telar-typesafe"))
     dokka(project(":telar-test"))
     dokka(project(":telar-mcp"))
+    dokka(project(":telar-otel"))
     kover(project(":telar-core"))
     kover(project(":telar-serialization"))
     kover(project(":telar-checkpoint-file"))
@@ -24,4 +25,5 @@ dependencies {
     kover(project(":telar-typesafe"))
     kover(project(":telar-test"))
     kover(project(":telar-mcp"))
+    kover(project(":telar-otel"))
 }
