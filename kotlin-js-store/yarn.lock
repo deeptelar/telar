@@ -2,6 +2,11 @@
 # yarn lockfile v1
 
 
+"@cashapp/sqldelight-sqljs-worker@2.4.1":
+  version "2.4.1"
+  resolved "https://registry.yarnpkg.com/@cashapp/sqldelight-sqljs-worker/-/sqldelight-sqljs-worker-2.4.1.tgz#39969b4f7b1f506a0a753674ea38afdde95e2f68"
+  integrity sha512-gk2I6YtVQ5YElygOCB+FJYubloo1U8JbSFP5KRGkEOL1qiUzx2bmFCvtE2cUcTLNqAqRGGV4osIPA1f1zoJmwA==
+
 "@colors/colors@1.5.0":
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/@colors/colors/-/colors-1.5.0.tgz#bb504579c1cae923e6576a4f5da43d25f97bdbd9"
@@ -1774,6 +1779,11 @@ source-map@^0.6.0, source-map@^0.6.1:
   version "0.6.1"
   resolved "https://registry.yarnpkg.com/source-map/-/source-map-0.6.1.tgz#74722af32e9614e9c287a8d0bbde48b5e2f1a263"
   integrity sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==
+
+sql.js@1.14.2:
+  version "1.14.2"
+  resolved "https://registry.yarnpkg.com/sql.js/-/sql.js-1.14.2.tgz#01088911d183482b6f961b3563233df69edc9ab5"
+  integrity sha512-3ZGPovObMFrdw79zrUHbfdE/DLIsy8jdNdssmMSQuRAymedU6q84asPt0kgiqrdMYlPegDItiIMfmIXzZnYFcw==
 
 statuses@~1.5.0:
   version "1.5.0"

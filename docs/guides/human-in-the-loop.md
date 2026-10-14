@@ -247,6 +247,22 @@ val config = GraphConfig(
 - A save is one transaction, so a crash in the middle of one leaves the checkpoints as they were.
 - The calls of Android and the other drivers that block run on `Dispatchers.IO`, so the main thread
   of a screen can save and load.
+- In a browser, the driver talks to SQLite in a web worker. With the worker that SQLDelight ships,
+  the database is **in memory**: it is gone when the page is closed or reloaded. For runs that
+  survive a reload, use [`LocalStorageCheckpointer`](#in-a-browser), or a worker of your own that
+  keeps SQLite in the origin private file system of the browser. The setup:
+
+  ```kotlin
+  // build.gradle.kts, in the dependencies of jsMain or wasmJsMain
+  implementation("app.cash.sqldelight:web-worker-driver:2.4.1")
+  implementation(npm("@cashapp/sqldelight-sqljs-worker", "2.4.1"))
+  implementation(npm("sql.js", "1.14.2"))
+
+  // Kotlin/JS. The worker loads /sql-wasm.wasm: copy node_modules/sql.js/dist/sql-wasm.wasm to the root of the site.
+  val driver = WebWorkerDriver(Worker(js("""new URL("@cashapp/sqldelight-sqljs-worker/sqljs.worker.js", import.meta.url)""")))
+  ```
+
+  `SqlDelightCheckpointer.Schema` does not work with this driver, which needs no schema.
 - The module only needs the runtime of SQLDelight, not its Gradle plugin. An app that uses
   SQLDelight for its own tables keeps its setup as it is.
 

@@ -11,7 +11,9 @@ breaking changes.
 
 - `telar-checkpoint-sqldelight`, a new module: `SqlDelightCheckpointer` saves runs in a SQLite
   database through SQLDelight, with the same code on Android, iOS and the other native targets, the
-  JVM and the browser; only the driver changes. One row per step, so `history` and `fork` work, and
+  JVM and the browser (where the worker of SQLDelight keeps the database in memory); only the
+  driver changes. Its tests run on every kind of driver: JDBC, the native driver on Apple targets,
+  and the web worker driver in headless Chrome for JS and Wasm. One row per step, so `history` and `fork` work, and
   a save is one transaction. The table is created on first use, so it can live in the database the
   app already has; `SqlDelightCheckpointer.Schema` is the schema of a database that only holds
   checkpoints. The guide
