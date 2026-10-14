@@ -90,6 +90,36 @@ class TutorialTest {
         }
 
     @Test
+    fun `level 2 draws the diagram shown in the guide Inspecting a graph`() {
+        val config = GraphConfig<Ticket2>(checkpointer = MemoryCheckpointer(), interruptBefore = setOf("refund"))
+        val diagram =
+            helpDesk2().toMermaid(
+                config = config,
+                edgeLabels = mapOf(("read" to "track") to "delivery", ("read" to "refund") to "refund"),
+            )
+
+        assertEquals(
+            """
+            stateDiagram-v2
+                state "read" as n0
+                state "track" as n1
+                state "⏸ refund" as n2
+                state "answer" as n3
+                [*] --> n0
+                n0 --> n1 : delivery
+                n0 --> n2 : refund
+                n0 --> n3 : ?
+                n1 --> [*]
+                n2 --> [*]
+                n3 --> [*]
+                classDef interrupt fill:#fff4e5,stroke:#e8590c,stroke-width:2px,stroke-dasharray:4 3
+                class n2 interrupt
+            """.trimIndent(),
+            diagram,
+        )
+    }
+
+    @Test
     fun `level 3 rewrites the reply until it passes the check`() =
         runTest {
             val state = helpDesk3().invoke(Ticket3("Ana", "My pizza is late!")).state

@@ -9,6 +9,11 @@ breaking changes.
 
 ### Added
 
+- `CompiledGraph.toMermaid()` (and `GraphTopology.toMermaid()`) draws a graph as a Mermaid state
+  diagram to paste into a README or a pull request: conditional edges get the labels of
+  `edgeLabels`, nodes of `interruptBefore` and `interruptAfter` are marked with ⏸, and a subgraph is
+  a state that holds its own diagram. The guide
+  [Inspecting a graph](https://deeptelar.github.io/telar/guides/inspecting-a-graph#draw-it) shows it.
 - `telar-checkpoint-sqldelight`, a new module: `SqlDelightCheckpointer` saves runs in a SQLite
   database through SQLDelight, with the same code on Android, iOS and the other native targets, the
   JVM and the browser (where the worker of SQLDelight keeps the database in memory); only the
