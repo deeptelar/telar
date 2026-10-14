@@ -61,6 +61,13 @@ breaking changes.
   `ScriptedDecisionModel { chooses("refund"); no() }` is the same for a `DecisionModel`. `record()`
   collects the stream of a run and returns its `nodes`, `steps`, `text` and `result`. The guide
   [Testing](https://deeptelar.github.io/telar/guides/testing) shows it.
+- `graph.test(input) { ... }` in `telar-test` checks the path of a run, one step after the other:
+  `expectNode("check")`, `expectStep("web", "papers")`, `expectInterruptBefore("pay") { state -> ... }`,
+  `resumeWith { it.copy(approved = true) }`, `expectFinished { ... }` and `expectFailure { ... }`.
+  The test fails with the path of the run when a check does not hold, and when the run did more than
+  the test checked. `graph.replay(checkpoint) { ... }` has the same checks for a run that continues
+  from a saved checkpoint: read the checkpoint of a run that failed in production with
+  `CheckpointCodec`, and run it again with a scripted model or a fixed node.
 
 ### Changed
 

@@ -11,6 +11,7 @@ kotlin {
             api(project(":telar-agent"))
         }
         commonTest.dependencies {
+            implementation(project(":telar-serialization"))
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)
         }

@@ -197,6 +197,8 @@ agent.invoke(state.withUserMessage("And two?"))  // the next turn of the convers
 | The tools of an MCP server | `mcpTools(server)` from `telar-mcp`, with `server` a connected `Client` of the MCP SDK |
 | A model for a test | `ScriptedChatModel { calls("menu_price", MenuLookup("cola")); says("2 euros.") }` from `telar-test` |
 | What a run did, in a test | `agent.stream(input).record()`, then `run.nodes`, `run.text`, `run.state` |
+| The path of a run, in a test | `graph.test(input) { expectNode("check"); expectInterruptBefore("pay"); resumeWith { it.copy(approved = true) }; expectNode("pay"); expectFinished() }` |
+| A failed run again, in a test | `graph.replay(CheckpointCodec<State>().decodeHistory(thread, file).last()) { ... }` |
 
 ## Rules
 

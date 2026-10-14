@@ -2,7 +2,8 @@
 
 A graph is plain Kotlin, so a test runs it like any other code: `graph.invoke(input)`, then compare
 the state. A graph that asks a model needs one more thing, a model that answers the same way every
-time, without an API key and without a network. `telar-test` has it:
+time, without an API key and without a network. `telar-test` has it, and checks for the path a
+run takes and for a run that failed in production, run again from its checkpoints:
 
 ```kotlin
 dependencies {
@@ -89,6 +90,120 @@ assertEquals("Your pizza is 5 minutes away.", run.state.answer)
 A scripted model writes a streamed answer word by word, so `text` and
 [`textDelta`](streaming.md) are tested with several pieces and no setup.
 
+## The path of a run
+
+`graph.test(input) { ... }` runs a graph and checks, one after the other, what it did: which nodes
+finished, where it paused, how it ended. A test of a person who approves a refund reads like the
+run:
+
+```kotlin
+@Test
+fun `a refund waits for a person and is issued on approval`() = runTest {
+    val config = GraphConfig<RefundState>(checkpointer = MemoryCheckpointer(), interruptBefore = setOf("issue_refund"))
+
+    refundGraph().test(RefundState(orderId = "1001", amount = 250), config) {
+        expectNode("prepare")
+        expectInterruptBefore("issue_refund") { state ->
+            assertEquals("Prepared refund of 250 for order 1001", state.log.last())
+        }
+        resumeWith { it.copy(approved = true) }
+        expectNode("issue_refund")
+        expectFinished { state ->
+            assertEquals("Refund issued", state.log.last())
+        }
+    }
+}
+```
+
+| Check | What happened next |
+|---|---|
+| `expectNode("prepare")` | the node `prepare` finished |
+| `expectNodes("model", "tools", "model")` | these nodes finished, one after another |
+| `expectStep("web", "papers")` | a step ran these nodes, in any order. Use it for [parallel branches](parallel-branches.md) |
+| `expectInterruptBefore("issue_refund")` | the run paused, and `issue_refund` runs when it is resumed |
+| `expectFinished()` | the run completed |
+| `expectFailure()` | the run failed, usually with a `NodeExecutionException` |
+| `resumeWith { it.copy(approved = true) }` | not a check: continues the paused run, like `resume` |
+
+Each check takes a function that gets the state at that point, and also returns that state:
+`val state = expectFinished()`.
+
+What to know:
+
+- **The checks are strict.** Each one is about what happened right after the one before it, and
+  after the last check, the test fails if the run did more: every node that finished, and the pause
+  or the end of the run, has to be checked. A check that does not hold fails with the path of the
+  run, the part not checked yet in brackets:
+  `Expected node "pay" next, but the next was node "check" in step 1. The run so far: [node "check" in step 1], [node "pay" in step 2], [the end of the run]`.
+- **A pause is a pause, wherever it comes from.** `expectInterruptBefore("pay")` holds when the run
+  paused before `pay` because of `interruptBefore`, after the node before it because of
+  `interruptAfter`, or in `pay` because the node called [`interrupt`](human-in-the-loop.md).
+- **The test has a checkpointer.** When the config has none, the test adds a `MemoryCheckpointer`,
+  so a node can pause the run and `resumeWith` can continue it.
+- **The run goes to its next pause or end before the first check.** A check after `expectNode` sees
+  everything a scripted model was asked up to that pause, not only up to that node.
+- **Not checked:** the events inside a [subgraph](subgraphs.md), retries and progress. Read them
+  with `record()`.
+- **An `AssertionError` is not a failure of the run.** The error of a scripted model whose script
+  is too short fails the test, also in a test that expects a failure.
+
+## A run that failed, run again
+
+The checkpoints of a run are what a test needs to run it again: the state after a step and the
+nodes that come next. Copy the checkpoints of a run that went wrong in production into the
+resources of the tests, and `graph.replay(checkpoint) { ... }` continues from one of them, with the
+same checks as `test`:
+
+```kotlin
+@Test
+fun `the ticket that failed in production is answered when it runs again`() = runTest {
+    val file = checkNotNull(javaClass.getResource("/checkpoints/ticket-42.json")).readText()
+    val history = CheckpointCodec<AgentState>().decodeHistory("ticket-42", file)
+    val model = ScriptedChatModel { says("Your pizza is 5 minutes away.") }
+
+    helpDeskAgent(model).replay(history.last()) {
+        expectNode("model")
+        expectFinished { state ->
+            assertEquals("Your pizza is 5 minutes away.", state.answer)
+        }
+    }
+
+    // The model was asked with the conversation of the production run, tool result included.
+    val result = model.requests.single().messages.last() as ChatMessage.ToolResult
+    assertEquals("The pizza for Ana left the oven and the driver is 5 minutes away.", result.text)
+}
+```
+
+In production, the model asked for `order_status`, the tool answered, and the second call to the
+model failed. A step that fails is not saved, so the last checkpoint is the one after step 2, and
+the replay starts with the step that failed. The other checkpoints go back further:
+`history.first { it.step == 1 }` runs the tool again.
+
+Where the checkpoints come from:
+
+- **A `FileCheckpointer`** writes a file per thread, `<thread>.json`. Copy it as it is.
+- **Another checkpointer** that is built on `CheckpointCodec`, like `LocalStorageCheckpointer`,
+  stores the same text.
+- **Any checkpointer:** write the history of the thread with the codec, and read it in the test as
+  above:
+  ```kotlin
+  val codec = CheckpointCodec<AgentState>()
+  val text = graph.history(config).fold(null as String?) { stored, checkpoint -> codec.append(stored, checkpoint) }
+  ```
+
+`replay` runs the graph you give it, which only has to have the nodes of the checkpoint. That is
+where the test changes what it needs:
+
+- **The model:** build the graph with a scripted one, as above.
+- **A node:** build the graph with the node you fixed, or with a fake for a node that talks to
+  another system. A function that builds the graph from what its nodes use, like
+  `helpDeskAgent(model)`, makes both a parameter.
+- **The state:** `replay(checkpoint, update = { it.copy(approved = true) }) { ... }` changes the
+  state of the checkpoint before the run continues.
+
+The run continues like [`fork`](human-in-the-loop.md#going-back-to-an-earlier-step) does, with the step numbers of the run that
+saved the checkpoint.
+
 ## Failures, retries and budgets
 
 The script says when a call fails, so a test can check a [retry](retries.md):
@@ -156,4 +271,6 @@ A decision of another kind than the question, such as `yes()` for a choice, fail
 `ChatModel` and `DecisionModel` are one function each, so a model for a single test is also a
 lambda: `ChatModel { request -> ChatResponse(ChatMessage.Assistant("Hello!")) }`.
 
-Runnable version: [`TestingAnAgentTest`](https://github.com/deeptelar/telar/blob/main/samples/src/test/kotlin/dev/deeptelar/telar/samples/TestingAnAgentTest.kt).
+Runnable versions: [`TestingAnAgentTest`](https://github.com/deeptelar/telar/blob/main/samples/src/test/kotlin/dev/deeptelar/telar/samples/TestingAnAgentTest.kt)
+and [`TestingAGraphTest`](https://github.com/deeptelar/telar/blob/main/samples/src/test/kotlin/dev/deeptelar/telar/samples/TestingAGraphTest.kt),
+with the checkpoint file it replays.

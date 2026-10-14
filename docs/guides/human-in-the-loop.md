@@ -208,6 +208,9 @@ val rejected = graph.fork(atReview, config.copy(threadId = "ticket-42-rejected")
 - The new thread runs the [effects](side-effects.md) of its first step again, also the ones the
   checkpoint already has: they belong to the thread it comes from.
 - `streamFork` is `fork` with the events of the run.
+- In a test, `graph.replay(checkpoint) { ... }` of `telar-test` continues from a checkpoint and
+  checks the path the run takes from there, also from the checkpoints of a run that failed in
+  production. See [Testing](testing.md#a-run-that-failed-run-again).
 
 ## In a browser
 
