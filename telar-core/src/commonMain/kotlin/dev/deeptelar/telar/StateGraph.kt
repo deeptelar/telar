@@ -95,7 +95,9 @@ public class StateGraph<State> {
      * When several nodes run in the same step, their [work] runs in parallel on the same state.
      * Their updates are then applied one after another, in the order the nodes were added to the
      * graph, each to the state that the previous one produced. No change is lost, and if two nodes
-     * write the same property, the node that was added later wins.
+     * write the same property, the node that was added later wins. A graph compiled with `rules`
+     * works differently: each update gets the state from before the step, and the rules merge the
+     * results (see [compile]).
      *
      * [update] must only build the new state. The engine may call it more than once for one run of
      * the node.
@@ -275,13 +277,37 @@ public class StateGraph<State> {
     /**
      * Validates the graph and returns an executable [CompiledGraph].
      *
+     * Give [reducer] or [rules], not both. With [rules], each node of a step gets the state from
+     * before the step, the [update][node] of a node with a `work` too, and the rules merge what all
+     * of them return, in the order the nodes were added to the graph. Two nodes that set a property
+     * to different values then fail the run as [replace][MergeRulesBuilder.replace] says, whatever
+     * form the nodes have:
+     *
+     * ```kotlin
+     * val graph = StateGraph<Job> {
+     *     START then node("web", work = { searchWeb() }) { job, found -> job.copy(notes = job.notes + found) }
+     *     START then node("docs", work = { searchDocs() }) { job, found -> job.copy(notes = job.notes + found) }
+     * }.compile(
+     *     rules = mergeRules {
+     *         append(Job::notes) { copy(notes = it) }
+     *         replace(Job::status) { copy(status = it) }
+     *     },
+     * )
+     * ```
+     *
+     * Without [rules], the updates are applied one after another, each to the state that the update
+     * before it returned, and the node added later wins.
+     *
+     * @param rules merge the results of all nodes that ran in the same step, whatever form they
+     * have.
      * @param reducer merges the states of nodes that ran in the same step and each returned a whole
-     * state. Required when two such nodes can run in the same step. Nodes added with a `work` and an
-     * `update` do not need it.
+     * state. Required when two such nodes can run in the same step, unless [rules] are given. Nodes
+     * added with a `work` and an `update` do not need it. It comes last so that it can be written as
+     * a trailing lambda; give it by name otherwise.
      * @throws GraphValidationException listing every problem found in the graph definition.
      */
-    public fun compile(reducer: Reducer<State>? = null): CompiledGraph<State> {
-        val problems = validate(reducer)
+    public fun compile(rules: MergeRules<State>? = null, reducer: Reducer<State>? = null): CompiledGraph<State> {
+        val problems = validate(reducer, rules)
         if (problems.isNotEmpty()) {
             throw GraphValidationException(
                 if (problems.size == 1) problems.single() else "Invalid graph:\n" + problems.joinToString("\n") { "- $it" },
@@ -293,11 +319,16 @@ public class StateGraph<State> {
             edges = edges.groupBy({ it.from }, { it.to }),
             conditionalEdges = conditionalEdges.associateBy { it.from },
             reducer = reducer,
+            rules = rules,
         )
     }
 
-    private fun validate(reducer: Reducer<State>?): List<String> {
+    private fun validate(given: Reducer<State>?, rules: MergeRules<State>?): List<String> {
         val problems = mutableListOf<String>()
+        if (given != null && rules != null) {
+            problems += "compile() takes a reducer or rules, not both: rules merge the nodes that return a whole state too"
+        }
+        val reducer = given ?: rules
         val sources = nodes.keys + START
         val destinations = nodes.keys + END
 

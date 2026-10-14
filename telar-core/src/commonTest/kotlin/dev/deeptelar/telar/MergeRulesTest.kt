@@ -166,6 +166,129 @@ class MergeRulesTest {
         }
 
     @Test
+    fun `a run with a reducer from rules names the node that changed a property without a rule`() =
+        runTest {
+            val graph =
+                StateGraph<Findings> {
+                    START then node("web") { it.copy(status = "found") }
+                    START then node("docs") { it.copy(topic = "js") }
+                }.compile(reducer = rules)
+
+            val failure = assertFailsWith<ReducerException> { graph.invoke(before) }
+
+            assertEquals(
+                "Node 'docs' changed a property that has no merge rule. The rules cover: notes, status, score.",
+                failure.cause?.message,
+            )
+        }
+
+    @Test
+    fun `graph rules merge nodes with a work and an update`() =
+        runTest {
+            val graph =
+                StateGraph<Findings> {
+                    val web = node("web", work = { "web" }) { state, found -> state.copy(notes = state.notes + found, score = 3) }
+                    val docs = node("docs", work = { "docs" }) { state, found -> state.copy(notes = state.notes + found, score = 2) }
+
+                    START then web then END
+                    START then docs then END
+                }.compile(rules = rules)
+
+            assertEquals(Findings(notes = listOf("start", "web", "docs"), status = "new", score = 3), graph.invoke(before).state)
+        }
+
+    @Test
+    fun `graph rules report two updates that set a property to different values`() =
+        runTest {
+            val graph =
+                StateGraph<Findings> {
+                    START then node("web", work = { "web" }) { state, found -> state.copy(status = "$found done") }
+                    START then node("docs", work = { "docs" }) { state, found -> state.copy(status = "$found done") }
+                }.compile(rules = rules)
+
+            val failure = assertFailsWith<ReducerException> { graph.invoke(before) }
+
+            assertEquals(listOf("web", "docs"), failure.nodes)
+            assertEquals(
+                "Property 'status' was set to different values by nodes of the same step: [web done, docs done]. " +
+                    "Use merge to say how they combine.",
+                failure.cause?.message,
+            )
+        }
+
+    @Test
+    fun `with graph rules an update reads the state from before the step`() =
+        runTest {
+            val graph =
+                StateGraph<Findings> {
+                    // Without rules, "count" would read the status that "mark" wrote.
+                    START then node("mark", work = { "found" }) { state, status -> state.copy(status = status) }
+                    START then node("count", work = { }) { state, _ -> state.copy(notes = state.notes + "status was ${state.status}") }
+                }.compile(rules = rules)
+
+            assertEquals(Findings(notes = listOf("start", "status was new"), status = "found", score = 1), graph.invoke(before).state)
+        }
+
+    @Test
+    fun `graph rules merge both forms of node in the order the nodes were added`() =
+        runTest {
+            val graph =
+                StateGraph<Findings> {
+                    val web = node("web") { it.copy(notes = it.notes + "web") }
+                    val docs = node("docs", work = { "docs" }) { state, found -> state.copy(notes = state.notes + found) }
+                    val code = node("code") { it.copy(notes = it.notes + "code") }
+
+                    // The edges are written in another order than the nodes were added.
+                    START then code then END
+                    START then docs then END
+                    START then web then END
+                }.compile(rules = rules)
+
+            assertEquals(listOf("start", "web", "docs", "code"), graph.invoke(before).state.notes)
+        }
+
+    @Test
+    fun `graph rules name the node that changed a property without a rule`() =
+        runTest {
+            val graph =
+                StateGraph<Findings> {
+                    START then node("web") { it.copy(status = "found") }
+                    START then node("docs", work = { "js" }) { state, topic -> state.copy(topic = topic) }
+                }.compile(rules = rules)
+
+            val failure = assertFailsWith<ReducerException> { graph.invoke(before) }
+
+            assertEquals(
+                "Node 'docs' changed a property that has no merge rule. The rules cover: notes, status, score.",
+                failure.cause?.message,
+            )
+        }
+
+    @Test
+    fun `a node that runs alone may change any property under graph rules`() =
+        runTest {
+            val graph =
+                StateGraph<Findings> {
+                    START then node("topic", work = { "js" }) { state, topic -> state.copy(topic = topic) } then END
+                }.compile(rules = rules)
+
+            assertEquals("js", graph.invoke(before).state.topic)
+        }
+
+    @Test
+    fun `compile takes a reducer or rules but not both`() {
+        val failure =
+            assertFailsWith<GraphValidationException> {
+                StateGraph<Findings> { START then node("web") { it } then END }.compile(reducer = rules, rules = rules)
+            }
+
+        assertEquals(
+            "compile() takes a reducer or rules, not both: rules merge the nodes that return a whole state too",
+            failure.message,
+        )
+    }
+
+    @Test
     fun `rules are checked when they are built`() {
         val none = assertFailsWith<GraphValidationException> { mergeRules<Findings> { } }
         val twice =

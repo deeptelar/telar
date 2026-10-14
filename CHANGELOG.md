@@ -61,6 +61,13 @@ breaking changes.
   `ScriptedDecisionModel { chooses("refund"); no() }` is the same for a `DecisionModel`. `record()`
   collects the stream of a run and returns its `nodes`, `steps`, `text` and `result`. The guide
   [Testing](https://deeptelar.github.io/telar/guides/testing) shows it.
+- `compile(rules = mergeRules { ... })`: one policy for parallel nodes, whatever form they have.
+  Each node of a step gets the state from before the step, the `update` of a node with a `work`
+  too, and the rules merge what all of them return, in the order the nodes were added. Two nodes
+  that `replace` a property with different values then fail the run in both forms, where a node
+  with a `work` and an `update` used to overwrite the other without a word. Without `rules`, nothing
+  changes. The guide [Parallel branches](https://deeptelar.github.io/telar/guides/parallel-branches#one-rule-for-both-forms)
+  shows it. ([#101](https://github.com/deeptelar/telar/issues/101))
 - `graph.test(input) { ... }` in `telar-test` checks the path of a run, one step after the other:
   `expectNode("check")`, `expectStep("web", "papers")`, `expectInterruptBefore("pay") { state -> ... }`,
   `resumeWith { it.copy(approved = true) }`, `expectFinished { ... }` and `expectFailure { ... }`.
@@ -72,6 +79,11 @@ breaking changes.
 ### Changed
 
 - `GraphEvent` has a new subclass, `NodeRetry`. A `when` over all events needs a branch for it.
+- `mergeRules` returns `MergeRules`, a `Reducer`, and its block is a `MergeRulesBuilder`, the class
+  that was called `MergeRules`. `compile()` has a new first parameter, `rules`: give a reducer by
+  name, `compile(reducer = ...)`, or as a trailing lambda.
+- When a reducer built with `mergeRules` fails in a run, its error names the node, `Node 'docs'`,
+  in place of its position in the step.
 - `TokenUsage` is `@Serializable`, so that a state with a count can be saved. `AgentState` is saved
   with its `tokens`; a state saved by an earlier version is read with a count of zero.
 - `Checkpoint` has a new property, `effects`. A `Checkpointer` of your own has to store it; one
