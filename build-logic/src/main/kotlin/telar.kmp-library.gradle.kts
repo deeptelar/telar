@@ -12,6 +12,13 @@ plugins {
     id("telar.quality")
 }
 
+/*
+ * How long one test may take on Node.js. Mocha's default of 2 seconds is too short for the first test
+ * of a module on a slow CI runner, which also loads the libraries of the module: the first test of
+ * telar-mcp took 3 seconds on macOS and failed. `runTest` keeps its own limit inside.
+ */
+val NODE_TEST_TIMEOUT = "30s"
+
 kotlin {
     explicitApi()
     jvmToolchain(17)
@@ -23,12 +30,16 @@ kotlin {
     }
 
     js {
-        nodejs()
+        nodejs {
+            testTask { useMocha { timeout = NODE_TEST_TIMEOUT } }
+        }
     }
 
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
-        nodejs()
+        nodejs {
+            testTask { useMocha { timeout = NODE_TEST_TIMEOUT } }
+        }
     }
 
     iosArm64()
