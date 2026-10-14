@@ -64,6 +64,8 @@ public final class dev/deeptelar/telar/CompiledGraph {
 	public static synthetic fun streamFork$default (Ldev/deeptelar/telar/CompiledGraph;Ldev/deeptelar/telar/Checkpoint;Ldev/deeptelar/telar/GraphConfig;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
 	public final fun streamResume (Ldev/deeptelar/telar/GraphConfig;Lkotlin/jvm/functions/Function2;)Lkotlinx/coroutines/flow/Flow;
 	public static synthetic fun streamResume$default (Ldev/deeptelar/telar/CompiledGraph;Ldev/deeptelar/telar/GraphConfig;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
+	public final fun toMermaid (Ldev/deeptelar/telar/GraphConfig;Ljava/util/Map;)Ljava/lang/String;
+	public static synthetic fun toMermaid$default (Ldev/deeptelar/telar/CompiledGraph;Ldev/deeptelar/telar/GraphConfig;Ljava/util/Map;ILjava/lang/Object;)Ljava/lang/String;
 }
 
 public final class dev/deeptelar/telar/ConstantsKt {
@@ -422,6 +424,8 @@ public final class dev/deeptelar/telar/GraphTopology {
 	public final fun getSubgraphs ()Ljava/util/Map;
 	public fun hashCode ()I
 	public final fun successors (Ljava/lang/String;)Ljava/util/List;
+	public final fun toMermaid (Ljava/util/Set;Ljava/util/Set;Ljava/util/Map;)Ljava/lang/String;
+	public static synthetic fun toMermaid$default (Ldev/deeptelar/telar/GraphTopology;Ljava/util/Set;Ljava/util/Set;Ljava/util/Map;ILjava/lang/Object;)Ljava/lang/String;
 	public fun toString ()Ljava/lang/String;
 }
 
