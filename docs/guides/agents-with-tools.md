@@ -60,7 +60,8 @@ What to know:
 - **Text before a failure is not an answer.** When a model call fails or the model declines in the
   middle of its answer, the run fails after the pieces that already arrived. Clear them.
 - **Tools of one answer run at the same time.** If a tool throws, or the model sends input that does
-  not fit, the run goes on: the model gets the error as the result and can try again. For tools
+  not fit, the run goes on: the model gets the error as the result and can try again. Input that is
+  not JSON at all does not reach the tool: the error quotes what the model sent. For tools
   that depend on each other, `toolAgent(model, tools, inOrder = true)` runs them one after the
   other, in the order the model wrote them.
 - **Every round of tools is two steps.** Raise `GraphConfig.maxIterations` (25 by default) for an

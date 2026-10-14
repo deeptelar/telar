@@ -6,7 +6,7 @@ extends `TelarException`:
 
 | Exception | When |
 |---|---|
-| `GraphValidationException` | The graph or `GraphConfig` is invalid. Thrown by `compile()` or when a run starts, and when a node calls `interrupt` in a run without a checkpointer. |
+| `GraphValidationException` | The graph or `GraphConfig` is invalid. Thrown by `compile()` or when a run starts, when a node calls `interrupt` in a run without a checkpointer, and when it calls `effect` twice with the same key. |
 | `NodeExecutionException` | A node threw, or a `withTimeout` inside it expired. `nodeName` and the original `cause` are available, and `attempts` says how often the node ran. Every exception is wrapped, also one of this table that a graph inside the node threw. |
 | `NodeTimeoutException` | A try of a node took longer than the `timeout` of the node. A run reports it as the `cause` of a `NodeExecutionException`. |
 | `EdgeConditionException` | The function of a conditional edge threw. `from` and the original `cause` are available. |
@@ -15,7 +15,7 @@ extends `TelarException`:
 | `MaxIterationsExceededException` | The run took more steps than `GraphConfig.maxIterations` (default 25). |
 | `CheckpointNotFoundException`, `GraphAlreadyCompletedException` | `resume` had nothing to continue. |
 | `ThreadAlreadyExistsException` | `fork` was given a thread that already has a checkpoint. |
-| `CheckpointCorruptedException` | A stored checkpoint could not be read. |
+| `CheckpointCorruptedException` | A stored checkpoint could not be read, or the saved result of an `effect` no longer matches its type. |
 | `LocalStorageException` | The browser refused to read or write `localStorage`: it is full, or the page may not use it. From `telar-checkpoint-browser`. |
 | `ChatModelException` | A call to a `ChatModel` failed, or the model declined to answer. From `telar-agent`. A run reports it as the `cause` of a `NodeExecutionException`. |
 

@@ -263,6 +263,23 @@ class ToolTest {
         }
 
     @Test
+    fun `an input that is not JSON gives an error result that quotes it and does not run the tool`() =
+        runTest {
+            var ran = false
+            val lookup =
+                Tool<Unit>("menu_price", "Returns the price of an item.") {
+                    ran = true
+                    "2 euros"
+                }
+
+            val call = ToolCall("a", "menu_price", noInput, invalidInput = "{item: cola")
+            val result = listOf(lookup).execute(listOf(call)).single()
+
+            assertEquals(ChatMessage.ToolResult("a", "menu_price", "The input is not a JSON object: {item: cola", isError = true), result)
+            assertFalse(ran)
+        }
+
+    @Test
     fun `a call to a tool that does not exist gives an error result`() =
         runTest {
             val result = listOf(menuPrice).execute(listOf(ToolCall("a", "order_status", noInput))).single()

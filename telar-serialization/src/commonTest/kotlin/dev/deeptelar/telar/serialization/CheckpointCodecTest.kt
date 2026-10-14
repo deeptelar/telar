@@ -59,6 +59,17 @@ class CheckpointCodecTest {
     }
 
     @Test
+    fun `round-trips the results of effects`() {
+        val checkpoint = Checkpoint(ChatState(turn = 4), listOf("pay"), step = 3, effects = mapOf("pay/charge" to """{"id":"r-1"}"""))
+
+        val encoded = codec.encode(checkpoint)
+
+        // An older library would leave the effects out and run them again, so it must not read this one.
+        assertTrue(encoded.startsWith("""{"version":3,"""))
+        assertEquals(checkpoint, codec.decode("t", encoded))
+    }
+
+    @Test
     fun `reads a checkpoint that lacks the optional fields`() {
         val decoded = codec.decode("t", """{"state":"{\"turn\":4}","nextNodes":["a"]}""")
 

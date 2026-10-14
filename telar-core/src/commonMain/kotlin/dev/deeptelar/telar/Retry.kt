@@ -30,7 +30,8 @@ import kotlin.time.Duration.Companion.seconds
  * What is no failure of a node is never retried: a cancelled run, a pause with [interrupt], and an
  * error of the program such as an `AssertionError`.
  *
- * A node with a `retry` runs more than once, so make its side effects safe to repeat.
+ * A node with a `retry` runs more than once. Run its side effects with [effect], which does not
+ * repeat them, or make them safe to repeat.
  *
  * @property attempts how often the node runs at most, with its first try.
  * @property pause how long the engine waits before the second try.

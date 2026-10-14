@@ -219,6 +219,27 @@ class OpenAiStreamTest {
         }
 
     @Test
+    fun `a streamed call whose input is not a JSON object keeps the text`() =
+        runTest {
+            val model =
+                model(
+                    chunks(
+                        callDelta(0, "{item: ", id = "call_a", name = "menu_price"),
+                        callDelta(0, "cola}"),
+                        finish("tool_calls"),
+                        done,
+                    ),
+                )
+
+            val message = assertIs<ChatEvent.Completed>(model.stream(hello).toList().single()).response.message
+
+            assertEquals(
+                listOf(ToolCall("call_a", "menu_price", JsonObject(emptyMap()), invalidInput = "{item: cola}")),
+                message.toolCalls,
+            )
+        }
+
+    @Test
     fun `a call without an id and without an index is still a call`() =
         runTest {
             val model =
@@ -282,7 +303,10 @@ class OpenAiStreamTest {
 
             assertTrue(message.truncated)
             assertEquals("Once upon a", message.text)
-            assertEquals(ToolCall("call_1", "menu_price", JsonObject(emptyMap())), message.toolCalls.single())
+            assertEquals(
+                ToolCall("call_1", "menu_price", JsonObject(emptyMap()), invalidInput = "{\"item\": \"co"),
+                message.toolCalls.single(),
+            )
         }
 
     @Test

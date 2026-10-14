@@ -27,7 +27,8 @@ import kotlin.coroutines.CoroutineContext
  *
  * What to know:
  * - **The node starts again from its first line.** What it did before the call happens a second
- *   time, so call `interrupt` before a side effect, or make the side effect safe to repeat.
+ *   time, so call `interrupt` before a side effect, or run the side effect with [effect], which
+ *   saves its result and does not repeat it.
  * - **The step is not saved.** When other nodes run in the same step, they are cancelled, and
  *   `resume` runs all of them again with [state] as their input. If two nodes of a step call
  *   `interrupt`, the first one pauses the run and the other one asks after the next `resume`.
@@ -54,6 +55,9 @@ public suspend fun <State> interrupt(state: State): Nothing {
  *
  * @property canPause `true` when the run is saved by a checkpointer, so that it can pause.
  * @property position where the run stands inside the subgraph of this node, when it paused there.
+ * @property effects where [effect] records what finished in this step.
+ * @property effectPath names this node in [effects]: its name, and for a node of a subgraph the
+ * nodes and steps around it.
  */
 internal class RunningNode(
     val name: String,
@@ -61,7 +65,12 @@ internal class RunningNode(
     val canPause: Boolean,
     val maxIterations: Int,
     val position: SubgraphPosition?,
+    val effects: EffectLog,
+    val effectPath: String,
 ) : AbstractCoroutineContextElement(Key) {
+    /** The paths of the effects this try of the node has called. [effects] guards it. */
+    val effectsUsed: MutableSet<String> = mutableSetOf()
+
     companion object Key : CoroutineContext.Key<RunningNode>
 }
 

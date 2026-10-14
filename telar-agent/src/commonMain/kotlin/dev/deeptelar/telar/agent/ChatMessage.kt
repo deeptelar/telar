@@ -66,12 +66,16 @@ public sealed interface ChatMessage {
  *
  * @property id identifies the call, so its [ChatMessage.ToolResult] can refer to it.
  * @property input the arguments, in the shape of the tool's [ToolSpec.inputSchema].
+ * @property invalidInput the text the model sent as the arguments when it is not a JSON object, and
+ * `null` when it is one. [input] is then empty, and [List.execute] answers the call with an error
+ * that quotes this text instead of running the tool, so the model can send the call again.
  */
 @Serializable
 public data class ToolCall(
     val id: String,
     val name: String,
     val input: JsonObject,
+    val invalidInput: String? = null,
 )
 
 /**
