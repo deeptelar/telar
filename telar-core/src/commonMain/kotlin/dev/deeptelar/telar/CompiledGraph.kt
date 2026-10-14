@@ -119,10 +119,8 @@ public class CompiledGraph<State> internal constructor(
      * @throws GraphValidationException if [config] or [edgeLabels] name nodes or edges that are not
      * in the graph.
      */
-    public fun toMermaid(
-        config: GraphConfig<State> = GraphConfig(),
-        edgeLabels: Map<Pair<String, String>, String> = emptyMap(),
-    ): String = topology.toMermaid(config.interruptBefore, config.interruptAfter, edgeLabels)
+    public fun toMermaid(config: GraphConfig<State> = GraphConfig(), edgeLabels: Map<Pair<String, String>, String> = emptyMap()): String =
+        topology.toMermaid(config.interruptBefore, config.interruptAfter, edgeLabels)
 
     /**
      * Runs the graph from [START] with [input] until it completes or reaches an interrupt.
