@@ -6,9 +6,11 @@ import dev.deeptelar.telar.END
 import dev.deeptelar.telar.GraphConfig
 import dev.deeptelar.telar.GraphResult
 import dev.deeptelar.telar.GraphValidationException
+import dev.deeptelar.telar.NodeExecutionException
 import dev.deeptelar.telar.START
 import dev.deeptelar.telar.StateGraph
 import dev.deeptelar.telar.serialization.KotlinxStateSerializer
+import dev.deeptelar.telar.serialization.effect
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
@@ -52,6 +54,32 @@ class FileCheckpointerTest {
 
             assertEquals(listOf("thread-x.json"), files())
             assertEquals(checkpoint, checkpointer.load("thread-x"))
+        }
+
+    @Test
+    fun `an effect that finished is not repeated after a restart`() =
+        runTest {
+            var charges = 0
+            var crash = true
+            val graph =
+                StateGraph<SerializableState> {
+                    START then
+                        node("pay") { state ->
+                            val receipt = effect("charge") { ++charges }
+                            if (crash) error("The process stops here.")
+                            state.copy(count = receipt)
+                        } then END
+                }.compile()
+
+            assertFailsWith<NodeExecutionException> {
+                graph.invoke(SerializableState(), GraphConfig(threadId = "t", checkpointer = newCheckpointer()))
+            }
+            crash = false
+            // A new checkpointer reads the files, as one in a new process would.
+            val finished = graph.resume(GraphConfig(threadId = "t", checkpointer = newCheckpointer()))
+
+            assertEquals(GraphResult.Completed(SerializableState(count = 1)), finished)
+            assertEquals(1, charges)
         }
 
     @Test
