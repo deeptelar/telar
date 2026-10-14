@@ -53,7 +53,9 @@ Runnable version: [`HumanInTheLoop`](https://github.com/deeptelar/telar/blob/mai
   `resume` still pauses before an `interruptBefore` node; only a run that already paused there
   continues past it.
 - A step that fails is not saved, so `resume` runs all of its nodes again, including the ones that
-  had already finished. Make side effects such as sending an email safe to repeat.
+  had already finished. Run side effects such as sending an email with
+  [`effect`](side-effects.md), which saves them and does not repeat them, or make them safe to
+  repeat.
 - `interruptAfter` pauses after a node instead of before it.
 - `MemoryCheckpointer` keeps checkpoints in memory, which is what tests want. `FileCheckpointer`
   keeps them in files, and `LocalStorageCheckpointer` in the storage of a browser.
@@ -148,7 +150,8 @@ Runnable version: [`AskFromANode`](https://github.com/deeptelar/telar/blob/main/
 - `resume` runs the node again from its first line, and the node reads the state to see whether it
   has an answer. Here `approved` is `null` until a person has decided.
 - What the node did before `interrupt` happens a second time. Call `interrupt` before a side effect
-  such as a payment, or make the side effect safe to repeat.
+  such as a payment, or run the side effect with [`effect`](side-effects.md), which saves its result
+  and does not repeat it.
 - When other nodes run in the same step, they are cancelled, and `resume` runs the whole step again.
 - Do not put the call inside `runCatching` or a `catch (e: Throwable)`: the node would go on instead
   of pausing. A `catch (e: Exception)` is fine.
@@ -202,6 +205,8 @@ val rejected = graph.fork(atReview, config.copy(threadId = "ticket-42-rejected")
 - `MemoryCheckpointer` and `FileCheckpointer` keep every step. Give them a `maxHistory` for a thread
   that runs for hundreds of steps. `LocalStorageCheckpointer` keeps only the latest checkpoint
   unless you give it one, because a browser has little room.
+- The new thread runs the [effects](side-effects.md) of its first step again, also the ones the
+  checkpoint already has: they belong to the thread it comes from.
 - `streamFork` is `fork` with the events of the run.
 
 ## In a browser
@@ -234,7 +239,7 @@ back, so only the storage calls are left to write:
 
 ```kotlin
 class DatabaseCheckpointer<State>(private val runs: RunTable, private val codec: CheckpointCodec<State>) : Checkpointer<State> {
-    // Called after every step. append() adds the checkpoint to the history that is stored.
+    // Called after every step, and when an effect finished. append() adds the checkpoint to the history that is stored.
     override suspend fun save(threadId: String, checkpoint: Checkpoint<State>) =
         runs.upsert(threadId, codec.append(runs.find(threadId), checkpoint, maxHistory = 50))
 

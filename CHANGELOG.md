@@ -9,6 +9,15 @@ breaking changes.
 
 ### Added
 
+- `effect` runs a side effect, such as a payment or an email, once for the step of its node:
+  `val receipt = effect("charge") { payments.charge(order) }`. Its result is saved in the checkpoint
+  as soon as the block returns, and when the step runs again (a `retry`, a `resume` after a failed
+  step, a `resume` after `interrupt`) the call returns that result instead of running the block.
+  The nodes of a parallel step that had already finished no longer repeat what they did when
+  another node of the step fails. `effect(key) { ... }` with a `@Serializable` result, a basic
+  type or `Unit` is in `telar-serialization`; `telar-core` has `effect(key, serializer) { ... }`.
+  The guide [Side effects](https://deeptelar.github.io/telar/guides/side-effects) shows it.
+
 - `ChatModel.ask` in `telar-agent`: ask a model for a `@Serializable` class and get an instance of
   it, `model.ask<Verdict>("Classify this email: ...")`. The model gets the schema of the class, which
   is built as the input schema of a tool is. An answer that cannot be read goes back to the model
@@ -58,6 +67,9 @@ breaking changes.
 - `GraphEvent` has a new subclass, `NodeRetry`. A `when` over all events needs a branch for it.
 - `TokenUsage` is `@Serializable`, so that a state with a count can be saved. `AgentState` is saved
   with its `tokens`; a state saved by an earlier version is read with a count of zero.
+- `Checkpoint` has a new property, `effects`. A `Checkpointer` of your own has to store it; one
+  built on `CheckpointCodec` does. The codec writes a checkpoint with effects as version 3 of its
+  format, which earlier versions refuse to read.
 
 ## [0.1.0-alpha09] - 2026-10-10
 

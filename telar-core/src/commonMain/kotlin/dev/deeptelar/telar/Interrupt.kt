@@ -27,7 +27,8 @@ import kotlin.coroutines.CoroutineContext
  *
  * What to know:
  * - **The node starts again from its first line.** What it did before the call happens a second
- *   time, so call `interrupt` before a side effect, or make the side effect safe to repeat.
+ *   time, so call `interrupt` before a side effect, or run the side effect with [effect], which
+ *   saves its result and does not repeat it.
  * - **The step is not saved.** When other nodes run in the same step, they are cancelled, and
  *   `resume` runs all of them again with [state] as their input. If two nodes of a step call
  *   `interrupt`, the first one pauses the run and the other one asks after the next `resume`.
