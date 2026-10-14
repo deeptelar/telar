@@ -36,8 +36,9 @@ import kotlinx.serialization.json.Json
  *
  * The format is versioned and shared by every checkpointer built on this class, including
  * `FileCheckpointer`. A checkpoint is one line of JSON, and a history is its checkpoints, one on
- * each line, oldest first. A checkpoint of a run that paused inside a subgraph is written as
- * version 2, which a library before subgraphs refuses to read. Every other checkpoint is still
+ * each line, oldest first. A checkpoint with the results of effects is written as version 3,
+ * and one of a run that paused inside a subgraph as version 2, so that a library without that
+ * feature refuses to read them instead of losing what they hold. Every other checkpoint is still
  * version 1.
  *
  * @param serializer converts the graph state to and from a string.
@@ -49,12 +50,18 @@ public class CheckpointCodec<State>(
     public fun encode(checkpoint: Checkpoint<State>): String =
         format.encodeToString(
             SerializedCheckpoint(
-                version = if (checkpoint.subgraphs.isEmpty()) 1 else SerializedCheckpoint.FORMAT_VERSION,
+                version =
+                    when {
+                        checkpoint.effects.isNotEmpty() -> 3
+                        checkpoint.subgraphs.isNotEmpty() -> 2
+                        else -> 1
+                    },
                 state = serializer.serialize(checkpoint.state),
                 nextNodes = checkpoint.nextNodes,
                 step = checkpoint.step,
                 interruptedBefore = checkpoint.interruptedBefore,
                 subgraphs = checkpoint.subgraphs.mapValues { it.value.serialized() },
+                effects = checkpoint.effects,
             ),
         )
 
@@ -126,6 +133,7 @@ public class CheckpointCodec<State>(
             envelope.subgraphs.mapValues {
                 it.value.position()
             },
+            envelope.effects,
         )
     }
 
@@ -147,6 +155,7 @@ public inline fun <reified State> CheckpointCodec(json: Json = Json): Checkpoint
  * Envelope around the serialized state. [version] allows the format to evolve.
  *
  * @property subgraphs left out when it is empty, so that a checkpoint without it reads as before.
+ * @property effects the same.
  */
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
@@ -157,10 +166,11 @@ internal data class SerializedCheckpoint(
     val step: Int = 0,
     val interruptedBefore: Boolean = false,
     @EncodeDefault(EncodeDefault.Mode.NEVER) val subgraphs: Map<String, SerializedPosition> = emptyMap(),
+    @EncodeDefault(EncodeDefault.Mode.NEVER) val effects: Map<String, String> = emptyMap(),
 ) {
     companion object {
-        /** Version 2 added [subgraphs]. */
-        const val FORMAT_VERSION = 2
+        /** Version 2 added [subgraphs], version 3 [effects]. */
+        const val FORMAT_VERSION = 3
     }
 }
 
