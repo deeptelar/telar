@@ -68,6 +68,13 @@ breaking changes.
   with a `work` and an `update` used to overwrite the other without a word. Without `rules`, nothing
   changes. The guide [Parallel branches](https://deeptelar.github.io/telar/guides/parallel-branches#one-rule-for-both-forms)
   shows it. ([#101](https://github.com/deeptelar/telar/issues/101))
+- `graph.test(input) { ... }` in `telar-test` checks the path of a run, one step after the other:
+  `expectNode("check")`, `expectStep("web", "papers")`, `expectInterruptBefore("pay") { state -> ... }`,
+  `resumeWith { it.copy(approved = true) }`, `expectFinished { ... }` and `expectFailure { ... }`.
+  The test fails with the path of the run when a check does not hold, and when the run did more than
+  the test checked. `graph.replay(checkpoint) { ... }` has the same checks for a run that continues
+  from a saved checkpoint: read the checkpoint of a run that failed in production with
+  `CheckpointCodec`, and run it again with a scripted model or a fixed node.
 
 ### Changed
 
