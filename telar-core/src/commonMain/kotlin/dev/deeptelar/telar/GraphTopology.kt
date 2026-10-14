@@ -20,6 +20,29 @@ public data class GraphTopology(
 ) {
     /** The nodes (or [END]) that [node] can lead to according to [edges]. */
     public fun successors(node: String): List<String> = edges.filter { it.from == node }.map { it.to }
+
+    /**
+     * Draws this graph as a [Mermaid](https://mermaid.js.org) state diagram, which GitHub, GitLab and
+     * most documentation sites show as a picture in a code block of the language `mermaid`.
+     *
+     * [START] and [END] are the `[*]` of the diagram, and a subgraph is a state that holds the
+     * diagram of its graph. A conditional edge is labeled with its entry in [edgeLabels], or `?`. A
+     * node in [dynamicRoutes] gets a note that it routes to any node.
+     *
+     * @param interruptBefore nodes the run pauses before, usually [GraphConfig.interruptBefore]. Their
+     * names start with ⏸ and their states are highlighted.
+     * @param interruptAfter nodes the run pauses after, usually [GraphConfig.interruptAfter]. Their
+     * names end with ⏸ and their states are highlighted.
+     * @param edgeLabels a label for an edge, by the names of its two ends, such as
+     * `("read" to "refund") to "refund request"`. Use [START] and [END] for those ends.
+     * @throws GraphValidationException if [interruptBefore] or [interruptAfter] name a node that is
+     * not in [nodes], or [edgeLabels] an edge that is not in [edges].
+     */
+    public fun toMermaid(
+        interruptBefore: Set<String> = emptySet(),
+        interruptAfter: Set<String> = emptySet(),
+        edgeLabels: Map<Pair<String, String>, String> = emptyMap(),
+    ): String = mermaid(this, interruptBefore, interruptAfter, edgeLabels)
 }
 
 /**

@@ -109,6 +109,22 @@ public class CompiledGraph<State> internal constructor(
         )
 
     /**
+     * Draws this graph as a Mermaid state diagram, to paste into a README or a pull request. See
+     * [GraphTopology.toMermaid].
+     *
+     * @param config marks the nodes of its [GraphConfig.interruptBefore] and
+     * [GraphConfig.interruptAfter] as the nodes where a run pauses. Defaults to no pauses.
+     * @param edgeLabels a label for an edge, by the names of its two ends, such as
+     * `("read" to "refund") to "refund request"`. A conditional edge without one is labeled `?`.
+     * @throws GraphValidationException if [config] or [edgeLabels] name nodes or edges that are not
+     * in the graph.
+     */
+    public fun toMermaid(
+        config: GraphConfig<State> = GraphConfig(),
+        edgeLabels: Map<Pair<String, String>, String> = emptyMap(),
+    ): String = topology.toMermaid(config.interruptBefore, config.interruptAfter, edgeLabels)
+
+    /**
      * Runs the graph from [START] with [input] until it completes or reaches an interrupt.
      *
      * A call always starts a new run: if [config] has a checkpointer, any earlier checkpoint of the
