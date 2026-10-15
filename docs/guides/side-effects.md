@@ -63,7 +63,8 @@ of a step keeps what the step already did.
 - **A block that throws saves nothing**, and runs again the next time. The node may also catch the
   failure and call `effect` with the same key again.
 - **Between the end of the block and the save, a crash can still repeat the effect.** The window is
-  short, but where a service takes an idempotency key, such as a payment provider, pass it one too.
+  short. For an effect that must never happen twice, give it a `reconcile`, as the next section
+  shows.
 - **The result is saved with the run.** It is serialized into the checkpoint, so keep it small: the
   id of an email rather than its text. A result whose type changed after it was saved cannot be
   read, and the node fails with a `CheckpointCorruptedException`.
@@ -74,6 +75,50 @@ of a step keeps what the step already did.
 - **Without a checkpointer** the results are kept in memory, for the tries of a `retry`.
 - **Call it in a node**: in the action, or in the `work` of a node with a `work` and an `update`.
   Outside a running node the block runs every time.
+
+## Effects that must not happen twice
+
+The result of `effect` is saved after the block returns. A process that stops after the payment
+provider charged the card, but before that save, charges it again when the step runs again. No
+order of the two writes avoids it: they go to two systems. What closes the gap is a key the
+provider knows, and a way to ask it what happened. Give the effect a `reconcile`:
+
+```kotlin
+val pay = node("pay") { order ->
+    val receipt = effect(
+        "charge",
+        reconcile = { id -> payments.findByIdempotencyKey(id) }, // null when there is no such charge
+    ) { id -> payments.charge(order.id, order.amount, idempotencyKey = id) }
+    order.copy(receipt = receipt)
+}
+```
+
+Before the block runs, the effect saves that it started, with a new id, and the block gets that
+id. Pass it to the service as its idempotency key. When the step runs again and finds the effect
+started but without a result, `reconcile` is asked with the same id:
+
+| `reconcile` | What happens |
+|---|---|
+| returns a result | The work was done. The result is saved, and the block does not run. |
+| returns `null` | The work was not done. The block runs again, with the same id. |
+| throws, or calls `interrupt` | The run stops, and the next `resume` asks again. Let a person check. |
+
+For a service that takes idempotency keys, `reconcile = { null }` is enough: the block runs again
+with the same key, and the service answers with what it did the first time instead of doing it
+again. For a service without them, `reconcile` looks for the work some other way, for example by
+an id you stored in its metadata.
+
+- **It saves twice**: once before the block, once after. The first save is what keeps the id the
+  same when the step runs again.
+- **A block that throws leaves the effect started.** A timeout can come after the service did the
+  work, so the next call with the key, in this run of the node or when its step runs again, asks
+  `reconcile`.
+- **The id is new for each run.** Another key, another step, another `invoke` of the thread and a
+  `fork` all get new ids. Do not build a key from the thread and a step number or the id of a tool
+  call instead: both repeat across runs of a thread, and a provider would answer a new payment with
+  an old one.
+- **`effectId()` returns the id** to code that the block or `reconcile` calls, such as a
+  [tool](agents-with-tools.md).
 
 ## Without kotlinx.serialization
 
@@ -88,6 +133,8 @@ object ReceiptId : StateSerializer<String> {
 
 val receiptId = effect("charge", ReceiptId) { payments.charge(order.id, order.amount).id }
 ```
+
+The `effect` with a `reconcile` takes one as well: `effect("charge", ReceiptId, reconcile = { ... }) { id -> ... }`.
 
 ## Where the results are
 

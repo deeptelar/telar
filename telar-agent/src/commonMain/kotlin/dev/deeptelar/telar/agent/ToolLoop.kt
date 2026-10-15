@@ -133,6 +133,11 @@ import kotlinx.serialization.json.Json
  * again. A [StateTool] is not saved this way, because it changes the state: call [effect] in it
  * for what it does outside the run.
  *
+ * A process can still stop between the end of a tool and that save. For a tool that must not run
+ * twice, such as a payment, give it a `reconcile` (see [Tool]): the call then also saves that it
+ * started, with an id for the service's idempotency key, and when its step runs again without its
+ * result, `reconcile` tells whether it did its work.
+ *
  * A call to the model that fails ends the run. Give the loop a [retry] to ask the model again
  * first. Tools need none: a tool that fails returns an error to the model, which can call it again.
  *
@@ -323,18 +328,32 @@ public fun toolAgent(
 /**
  * Runs [call] on these tools as an [effect] named [key] of the running node, so that when the step
  * runs again a call that succeeded returns its saved result and the tool does not run again. An
- * error result is not saved: the call runs again, as it would without the effect.
+ * error result is not saved: the call runs again, as it would without the effect. A tool with a
+ * [Tool.reconcile] runs as an `effect` with one, which also saves that the call started.
  */
-internal suspend fun List<Tool>.executeOnce(call: ToolCall, key: String): ChatMessage.ToolResult =
-    try {
-        effect(key, ToolResultSerializer) {
+internal suspend fun List<Tool>.executeOnce(call: ToolCall, key: String): ChatMessage.ToolResult {
+    val run =
+        suspend {
             val result = execute(listOf(call)).single()
             if (result.isError) throw ErrorResult(result)
             result
         }
+    val reconcile = firstOrNull { it.spec.name == call.name }?.reconcile?.takeIf { call.invalidInput == null }
+    return try {
+        if (reconcile == null) {
+            effect(key, ToolResultSerializer, run)
+        } else {
+            // An exception of reconcile is no failure of the tool: what the call did is unknown, so the run stops.
+            effect(
+                key,
+                ToolResultSerializer,
+                reconcile = { reconcile(call.input)?.let { ChatMessage.ToolResult(call.id, call.name, it) } },
+            ) { run() }
+        }
     } catch (e: ErrorResult) {
         e.result
     }
+}
 
 /**
  * Returns the name of the [effect] of each call: its id, so that it stays the same when the step

@@ -1,6 +1,7 @@
 package dev.deeptelar.telar.agent
 
 import dev.deeptelar.telar.GraphValidationException
+import dev.deeptelar.telar.effectId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -55,16 +56,25 @@ public data class ToolSpec(
  * }
  * ```
  *
- * Use this constructor when you write the schema by hand.
+ * A tool that charges, books or sends something can also say how to find out whether a call that
+ * started did its work, with a `reconcile`. See the overload that takes one.
+ *
+ * Use these constructors when you write the schema by hand.
  *
  * @property spec what the model is told about the tool.
+ * @property reconcile tells whether a call whose step stopped after the tool started did its work:
+ * the text the model gets back if it did, `null` if it did not. `null` for a tool without one.
  * @property execute runs the tool with the input the model sent and returns the text the model gets
  * back. An exception it throws reaches the model as an error result; see [List.execute].
  */
 public class Tool(
     public val spec: ToolSpec,
+    public val reconcile: (suspend (JsonObject) -> String?)?,
     public val execute: suspend (JsonObject) -> String,
-)
+) {
+    /** Creates a tool without a [reconcile]. */
+    public constructor(spec: ToolSpec, execute: suspend (JsonObject) -> String) : this(spec, null, execute)
+}
 
 /**
  * Creates a [Tool] whose input is the `@Serializable` type [Input]. The input schema is built from
@@ -88,6 +98,57 @@ public fun <Input> Tool(name: String, description: String, serializer: KSerializ
     Tool(ToolSpec(name, description, inputSchema(serializer.descriptor))) { input ->
         execute(modelJson.decodeFromJsonElement(serializer, input))
     }
+
+/**
+ * Creates a [Tool] whose input is the `@Serializable` type [Input], for a tool that does something
+ * that must not happen twice, such as a payment.
+ *
+ * [toolLoop] saves that a call of this tool started before it runs, with an id that [effectId]
+ * returns while the tool runs. Pass that id to the service as its idempotency key. When the step
+ * runs again and finds the call started but without a result, because the process stopped or
+ * another tool of the step failed, [reconcile] is asked first, with the same id from [effectId]:
+ * it returns the text for the model when the work was done, and `null` when it was not, and the
+ * tool runs again with the same id.
+ *
+ * ```kotlin
+ * val charge = Tool<Charge>(
+ *     "charge_card",
+ *     "Charges the card of the customer.",
+ *     reconcile = { input -> payments.findByIdempotencyKey(effectId()!!)?.let { "Charged ${it.amount}." } },
+ * ) { input -> "Charged ${payments.charge(input.amount, idempotencyKey = effectId()!!).amount}." }
+ * ```
+ *
+ * For a service that takes idempotency keys, `reconcile = { null }` is enough: the tool runs again
+ * with the same key, and the service answers with what it did the first time. A [reconcile] that
+ * cannot tell throws: the run fails, and a person who checked resumes it with a
+ * [ChatMessage.ToolResult] for the call, which is then not run.
+ *
+ * @param name how the model refers to the tool: 1 to 64 letters, digits, `_` or `-`.
+ * @param description tells the model what the tool does and when to use it.
+ * @param reconcile tells whether a call that started before did its work.
+ * @param execute runs the tool and returns the text the model gets back.
+ * @throws GraphValidationException if [name] is not valid, or [Input] cannot be described.
+ */
+public inline fun <reified Input> Tool(
+    name: String,
+    description: String,
+    noinline reconcile: suspend (Input) -> String?,
+    noinline execute: suspend (Input) -> String,
+): Tool = Tool(name, description, serializer<Input>(), reconcile, execute)
+
+/** Creates a [Tool] with a reconcile whose input is read with [serializer]. See the overload with a reified type. */
+public fun <Input> Tool(
+    name: String,
+    description: String,
+    serializer: KSerializer<Input>,
+    reconcile: suspend (Input) -> String?,
+    execute: suspend (Input) -> String,
+): Tool =
+    Tool(
+        ToolSpec(name, description, inputSchema(serializer.descriptor)),
+        reconcile = { input -> reconcile(modelJson.decodeFromJsonElement(serializer, input)) },
+        execute = { input -> execute(modelJson.decodeFromJsonElement(serializer, input)) },
+    )
 
 /**
  * Describes a property to the model: of the input class of a [Tool], or of the class a model is

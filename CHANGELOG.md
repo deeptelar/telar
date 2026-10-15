@@ -9,6 +9,18 @@ breaking changes.
 
 ### Added
 
+- `effect(key, serializer, reconcile) { id -> ... }` (and `effect(key, reconcile = ...) { id -> ... }`
+  in `telar-serialization`) for a side effect that must never happen twice. Before the block runs,
+  the effect saves that it started, with a new id for the service's idempotency key, which the block
+  gets and `effectId()` returns. When the step runs again and finds the effect started without a
+  result, because the process stopped after the work and before its save, `reconcile` is asked with
+  the same id: it returns the result when the work was done, `null` to run the block again with the
+  same id, or throws to stop the run. The guide
+  [Side effects](https://deeptelar.github.io/telar/guides/side-effects#effects-that-must-not-happen-twice)
+  shows it.
+- A `Tool` takes a `reconcile` as well: `Tool<Charge>(name, description, reconcile = { ... }) { ... }`.
+  `toolLoop` then runs its calls as an effect with a reconcile, and the tool reads the idempotency
+  key with `effectId()`.
 - `CompiledGraph.toMermaid()` (and `GraphTopology.toMermaid()`) draws a graph as a Mermaid state
   diagram to paste into a README or a pull request: conditional edges get the labels of
   `edgeLabels`, nodes of `interruptBefore` and `interruptAfter` are marked with ⏸, and a subgraph is

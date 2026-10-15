@@ -4,11 +4,13 @@ import dev.deeptelar.telar.GraphConfig
 import dev.deeptelar.telar.MemoryCheckpointer
 import dev.deeptelar.telar.START
 import dev.deeptelar.telar.StateGraph
+import dev.deeptelar.telar.effectId
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
+import kotlin.test.assertNull
 
 /** What happens to the tool calls of a step that runs again. */
 class ToolReplayTest {
@@ -150,4 +152,98 @@ class ToolReplayTest {
             effectKeys(calls),
         )
     }
+
+    /** A provider with idempotency keys: the charges, by their key, and every key it was sent. */
+    private val provider = mutableMapOf<String, String>()
+    private val keys = mutableListOf<String>()
+
+    /** Stops the process after the provider charged the card, before the result is saved. */
+    private var stopsAfterCharge = true
+
+    private fun reconciledCharge(reconcile: suspend (Unit) -> String?) =
+        Tool<Unit>("charge_card", "Charges the card.", reconcile = reconcile) {
+            val key = effectId()!!
+            keys += key
+            val text = provider.getOrPut(key) { "Charged 20 euros (charge ${provider.size + 1})." }
+            if (stopsAfterCharge) throw AssertionError("The process stopped.")
+            text
+        }
+
+    @Test
+    fun `a tool with a reconcile is not run again when the reconcile finds its work`() =
+        runTest {
+            val asked = mutableListOf<String?>()
+            val model = ScriptedModel(calls(chargeCall), says("Paid."))
+            val agent =
+                toolAgent(
+                    model,
+                    listOf(
+                        reconciledCharge {
+                            asked += effectId()
+                            provider[effectId()!!]
+                        },
+                    ),
+                )
+            val config = config()
+
+            assertFails { agent.invoke(AgentState("Pay my order"), config) }
+            stopsAfterCharge = false
+            val state = agent.resume(config).state
+
+            assertEquals("Paid.", state.answer)
+            assertEquals(1, keys.size)
+            assertEquals<List<String?>>(keys, asked)
+            assertEquals(
+                listOf(ChatMessage.ToolResult("call-1", "charge_card", "Charged 20 euros (charge 1).")),
+                model.requests[1].messages.filterIsInstance<ChatMessage.ToolResult>(),
+            )
+        }
+
+    @Test
+    fun `a tool whose reconcile returns null runs again with the same key`() =
+        runTest {
+            val model = ScriptedModel(calls(chargeCall), says("Paid."))
+            val agent = toolAgent(model, listOf(reconciledCharge { null }))
+            val config = config()
+
+            assertFails { agent.invoke(AgentState("Pay my order"), config) }
+            stopsAfterCharge = false
+            agent.resume(config)
+
+            assertEquals(2, keys.size)
+            assertEquals(keys[0], keys[1])
+            assertEquals(1, provider.size)
+        }
+
+    @Test
+    fun `a call whose reconcile cannot tell waits for a person, who answers it with a result`() =
+        runTest {
+            val model = ScriptedModel(calls(chargeCall), says("Paid."))
+            val agent = toolAgent(model, listOf(reconciledCharge { error("The provider does not answer.") }))
+            val config = config()
+
+            assertFails { agent.invoke(AgentState("Pay my order"), config) }
+            stopsAfterCharge = false
+            assertFails { agent.resume(config) }
+            val checked = ChatMessage.ToolResult("call-1", "charge_card", "Charged 20 euros, checked by a person.")
+            val state = agent.resume(config) { it.copy(messages = it.messages + checked) }.state
+
+            assertEquals("Paid.", state.answer)
+            assertEquals(1, keys.size)
+        }
+
+    @Test
+    fun `a tool without a reconcile has no effect id`() =
+        runTest {
+            var seen: String? = "not run"
+            val lookup =
+                Tool<Unit>("lookup", "Looks something up.") {
+                    seen = effectId()
+                    "Found it."
+                }
+
+            toolAgent(ScriptedModel(calls(ToolCall("call-3", "lookup", noInput)), says("Done.")), listOf(lookup)).invoke(AgentState("Look"))
+
+            assertNull(seen)
+        }
 }
