@@ -33,7 +33,7 @@ features:
     link: /guides/human-in-the-loop
     linkText: Human-in-the-loop
   - title: Every Kotlin platform
-    details: JVM, Android, iOS, macOS, Linux, Windows, JS and Wasm. Agents, models and checkpoints work there too, down to runs saved in a browser.
+    details: JVM, Android, iOS, macOS, Linux, Windows, JS and Wasm. Agents, models and checkpoints work there too, down to runs saved in SQLite on a phone or in a browser.
     link: /installation
     linkText: Modules and targets
   - title: Coroutines all the way
@@ -41,7 +41,7 @@ features:
     link: /guides/parallel-branches
     linkText: Parallel branches
   - title: Any model, small surface
-    details: Claude, OpenAI, Gemini, Ollama and every server with the API of OpenAI, plus any LangChain4j model on the JVM. A model of your own takes a few lines.
+    details: Claude, OpenAI, Gemini, Ollama and every server with the API of OpenAI, plus any LangChain4j model on the JVM. Tools of your own or of any MCP server, and typed answers with ask.
     link: /guides/ai-models
     linkText: AI models
 ---
