@@ -95,9 +95,9 @@ public class StateGraph<State> {
      * When several nodes run in the same step, their [work] runs in parallel on the same state.
      * Their updates are then applied one after another, in the order the nodes were added to the
      * graph, each to the state that the previous one produced. No change is lost, and if two nodes
-     * write the same property, the node that was added later wins. A graph compiled with `rules`
-     * works differently: each update gets the state from before the step, and the rules merge the
-     * results (see [compile]).
+     * write the same property, the node that was added later wins. A graph compiled with
+     * [mergeRules], given as `rules` or as `reducer`, works differently: each update gets the state
+     * from before the step, and the rules merge the results (see [compile]).
      *
      * [update] must only build the new state. The engine may call it more than once for one run of
      * the node.
@@ -295,15 +295,19 @@ public class StateGraph<State> {
      * )
      * ```
      *
-     * Without [rules], the updates are applied one after another, each to the state that the update
+     * [MergeRules] given as [reducer] work the same way as [rules], so that the rules hold for both
+     * forms of node however they are given.
+     *
+     * Without rules, the updates are applied one after another, each to the state that the update
      * before it returned, and the node added later wins.
      *
      * @param rules merge the results of all nodes that ran in the same step, whatever form they
      * have.
      * @param reducer merges the states of nodes that ran in the same step and each returned a whole
      * state. Required when two such nodes can run in the same step, unless [rules] are given. Nodes
-     * added with a `work` and an `update` do not need it. It comes last so that it can be written as
-     * a trailing lambda; give it by name otherwise.
+     * added with a `work` and an `update` do not need it, unless it is a [MergeRules], which then
+     * merges them too, as [rules] do. It comes last so that it can be written as a trailing lambda;
+     * give it by name otherwise.
      * @throws GraphValidationException listing every problem found in the graph definition.
      */
     public fun compile(rules: MergeRules<State>? = null, reducer: Reducer<State>? = null): CompiledGraph<State> {
@@ -314,12 +318,14 @@ public class StateGraph<State> {
             )
         }
 
+        // Rules given as the reducer hold for every node of a step, as if they were given as rules.
+        val graphRules = rules ?: reducer as? MergeRules<State>
         return CompiledGraph(
             nodes = nodes.toMap(),
             edges = edges.groupBy({ it.from }, { it.to }),
             conditionalEdges = conditionalEdges.associateBy { it.from },
-            reducer = reducer,
-            rules = rules,
+            reducer = reducer.takeIf { graphRules == null },
+            rules = graphRules,
         )
     }
 

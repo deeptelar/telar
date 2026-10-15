@@ -30,8 +30,9 @@ import kotlin.time.Duration
  * input state. When there is more than one, their results are combined: the [Reducer] merges the
  * nodes that returned a whole state, and the updates of the nodes that were added with a `work` and
  * an `update` are then applied one after another, in the order those nodes were added to the graph.
- * In a graph compiled with `rules`, each node instead gets the state from before the step, its
- * `update` too, and the [MergeRules] merge all results in the order the nodes were added.
+ * In a graph compiled with [MergeRules], given as `rules` or as `reducer`, each node instead gets
+ * the state from before the step, its `update` too, and the rules merge all results in the order
+ * the nodes were added.
  * The outgoing edges of the nodes then decide which nodes are active in the next step. A branch
  * that routes to [END] simply stops; the run completes when no nodes are active.
  *
@@ -599,6 +600,7 @@ public class CompiledGraph<State> internal constructor(
      * none, the state of the only one, or what the reducer makes of several. The updates of the
      * other nodes are then applied to it one after another, in the order those nodes were added to
      * the graph. In a graph with [rules], they merge the results of all nodes instead.
+     * [StateGraph.compile] passes a [MergeRules] reducer as [rules].
      */
     private suspend fun combine(state: State, outputs: List<Pair<String, NodeOutput<State>>>): State {
         if (rules != null) return merge(rules, state, outputs.sortedBy { nodeOrder.getValue(it.first) })
@@ -611,11 +613,7 @@ public class CompiledGraph<State> internal constructor(
                     val reducer =
                         checkNotNull(reducer) { "compile() guarantees a reducer when two nodes that return a state can run together" }
                     val names = states.map { it.first }
-                    if (reducer is MergeRules) {
-                        merge(reducer, state, states)
-                    } else {
-                        wrapFailure({ cause -> ReducerException(names, cause) }) { reducer.reduce(state, states.map { it.second.state }) }
-                    }
+                    wrapFailure({ cause -> ReducerException(names, cause) }) { reducer.reduce(state, states.map { it.second.state }) }
                 }
             }
         for ((name, output) in outputs.sortedBy { nodeOrder.getValue(it.first) }) {

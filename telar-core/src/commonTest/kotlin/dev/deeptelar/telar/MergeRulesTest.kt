@@ -116,7 +116,7 @@ class MergeRulesTest {
         }
 
     @Test
-    fun `a rule gets the values in the order the edges reach the nodes and not the order the nodes were added`() =
+    fun `a rule gets the values in the order the nodes were added and not the order the edges reach them`() =
         runTest {
             val lastWins =
                 mergeRules<Findings> {
@@ -133,7 +133,7 @@ class MergeRulesTest {
                     START then web then END
                 }.compile(reducer = lastWins)
 
-            assertEquals(Findings(notes = listOf("start", "docs", "web"), status = "web", score = 1), graph.invoke(before).state)
+            assertEquals(Findings(notes = listOf("start", "web", "docs"), status = "docs", score = 1), graph.invoke(before).state)
         }
 
     @Test
@@ -273,6 +273,54 @@ class MergeRulesTest {
                 }.compile(rules = rules)
 
             assertEquals("js", graph.invoke(before).state.topic)
+        }
+
+    @Test
+    fun `rules given as the reducer merge nodes with a work and an update`() =
+        runTest {
+            val graph =
+                StateGraph<Findings> {
+                    START then node("web", work = { "web" }) { state, found -> state.copy(status = "$found done") }
+                    START then node("docs", work = { "docs" }) { state, found -> state.copy(status = "$found done") }
+                }.compile(reducer = rules)
+
+            val failure = assertFailsWith<ReducerException> { graph.invoke(before) }
+
+            assertEquals(listOf("web", "docs"), failure.nodes)
+            assertEquals(
+                "Property 'status' was set to different values by nodes of the same step: [web done, docs done]. " +
+                    "Use merge to say how they combine.",
+                failure.cause?.message,
+            )
+        }
+
+    @Test
+    fun `rules given as the reducer merge both forms of node and each update reads the state from before the step`() =
+        runTest {
+            val graph =
+                StateGraph<Findings> {
+                    START then node("web") { it.copy(notes = it.notes + "web") }
+                    START then node("docs", work = { "docs" }) { state, found -> state.copy(notes = state.notes + found) }
+                    START then node("mark", work = { "found" }) { state, status -> state.copy(status = status) }
+                    START then node("count", work = { }) { state, _ -> state.copy(notes = state.notes + "status was ${state.status}") }
+                }.compile(reducer = rules)
+
+            assertEquals(
+                Findings(notes = listOf("start", "web", "docs", "status was new"), status = "found", score = 1),
+                graph.invoke(before).state,
+            )
+        }
+
+    @Test
+    fun `a reducer of your own leaves the updates applied one after another`() =
+        runTest {
+            val graph =
+                StateGraph<Findings> {
+                    START then node("web", work = { "web" }) { state, found -> state.copy(status = "$found done") }
+                    START then node("docs", work = { "docs" }) { state, found -> state.copy(status = "$found done") }
+                }.compile { current, _ -> current }
+
+            assertEquals("docs done", graph.invoke(before).state.status)
         }
 
     @Test

@@ -130,7 +130,7 @@ next active nodes. A checkpoint is saved after every step when a checkpointer is
 |------|---------|
 | `NodeAction<State>` | `suspend (State) -> State`, a node's transformation |
 | `EdgeCondition<State>` | `suspend (State) -> String`, routes to the next node name or `END` |
-| `Reducer<State>` | `fun interface` with a suspend `reduce`; merges whole states of parallel nodes; not needed for work/update nodes. `mergeRules { append(...); replace(...); merge(...) }` builds one from a rule per property; `compile(rules = mergeRules { ... })` makes the rules hold for work/update nodes too (each node reads the state from before the step) |
+| `Reducer<State>` | `fun interface` with a suspend `reduce`; merges whole states of parallel nodes; not needed for work/update nodes. `mergeRules { append(...); replace(...); merge(...) }` builds one from a rule per property; given to `compile()` as `rules` or as `reducer`, the rules hold for work/update nodes too (each node reads the state from before the step) |
 | `GraphConfig<State>` | `threadId`, `checkpointer`, `interruptBefore/After` (sets), `maxIterations`, `observers` |
 | `GraphObserver` | Told when a run, a node or a step starts and ends, and when a checkpoint is saved; never gets the state. `nodeContext` adds to the coroutine context of a node |
 | `GraphResult<State>` / `GraphEvent<State>` | Outcome of `invoke`/`resume`, and events from `stream` (per node and per step) |
