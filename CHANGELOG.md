@@ -89,6 +89,13 @@ breaking changes.
   which nodes the edges chose after each step, and when a checkpoint is saved, also for the runs of
   subgraphs and for `invoke`. It never gets the state, which can hold personal data. `nodeContext`
   adds to the coroutine context of a node, for example the trace span of the node.
+- `AgentObserver` in `telar-agent`: a `GraphObserver` that is also told when a node calls a model,
+  with the tokens of the answer, and when it runs a tool, with whether the tool returned an error.
+  It covers `toolLoop`, `toolAgent`, `chatWithProgress` and `List<Tool>.execute`, and like every
+  observer it never gets the conversation. `forEachNodeObserver` in `telar-core` is how a library
+  reaches the observers of a run from inside a node. The guide
+  [Tracing](https://deeptelar.github.io/telar/guides/tracing#calls-to-models-and-tools) shows it.
+  ([#38](https://github.com/deeptelar/telar/issues/38))
 - `telar-otel`, a new module for the JVM and Android: `OpenTelemetryObserver` sends each run to
   OpenTelemetry as a `telar.run` span with a `telar.node <name>` span for each node, records
   failures, retries, steps and checkpoints, and makes the span of a node current while it runs, so

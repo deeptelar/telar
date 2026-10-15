@@ -115,3 +115,41 @@ What to keep in mind:
 - **Be safe for threads.** The nodes of a step run in parallel and call the observer at the same
   time, maybe on different threads.
 - **Do not throw.** What an observer throws fails the run.
+
+## Calls to models and tools
+
+An `AgentObserver`, from `telar-agent`, is a `GraphObserver` that is also told about every call to
+a model and every tool call inside the nodes of a run. That is enough to count what a run costs, to
+log which tools the model used, or to show the calls in a debugger:
+
+```kotlin
+val cost =
+    object : AgentObserver {
+        private val tokens = ConcurrentHashMap<String, Int>()
+
+        override fun onModelCallCompleted(call: ObservedModelCall, usage: TokenUsage?) {
+            tokens.merge(call.node.run.threadId, usage?.total ?: 0, Int::plus)
+        }
+
+        override fun onToolCallCompleted(call: ObservedToolCall, isError: Boolean) {
+            if (isError) log.warn("${call.name} returned an error in ${call.node}")
+        }
+    }
+
+agent.invoke(AgentState("Where is my pizza?"), GraphConfig(observers = listOf(cost)))
+```
+
+| Function | When |
+|---|---|
+| `onModelCallStarted` | A node asks a model. A node with a `retry` asks again as a new call |
+| `onModelCallCompleted`, `onModelCallFailed` | The model answered, with the tokens its provider reported, or failed. Exactly one of them |
+| `onToolCallStarted` | A node runs a tool the model called |
+| `onToolCallCompleted`, `onToolCallFailed` | The tool returned a result, or an error for the model (`isError`); or the call ended without one: cancelled, or paused by `interrupt`. Exactly one of them |
+
+The calls of `toolLoop` and `toolAgent` are reported, and those of `chatWithProgress` and
+`List<Tool>.execute` in a node of your own. A call straight to `ChatModel.chat`, or outside a
+node, is not. As for the rest of an observer, the conversation is never given: not the messages,
+the input of a tool or its result.
+
+A library can tell observers of its own kind about what happens in a node the same way, with
+`forEachNodeObserver` from `telar-core`.

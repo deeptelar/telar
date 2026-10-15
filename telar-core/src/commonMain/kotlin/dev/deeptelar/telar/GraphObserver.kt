@@ -1,5 +1,6 @@
 package dev.deeptelar.telar
 
+import kotlinx.coroutines.currentCoroutineContext
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.time.Duration
@@ -137,12 +138,31 @@ public class ObservedNode internal constructor(
     override fun toString(): String = "node '$name' in step $step"
 }
 
+/**
+ * Calls [notify] with each observer of the run and the node that runs this code, so that a library
+ * can tell observers of its own kind about what happens inside a node. `telar-agent` tells its
+ * `AgentObserver`s about the calls to models and tools this way:
+ *
+ * ```kotlin
+ * forEachNodeObserver { observer, node -> (observer as? CacheObserver)?.onCacheHit(node) }
+ * ```
+ *
+ * The rules of [GraphObserver] hold for what the observers are told. Does nothing outside a running
+ * node. In a subgraph, the node is the node of the subgraph that runs this code.
+ */
+public suspend fun forEachNodeObserver(notify: (observer: GraphObserver, node: ObservedNode) -> Unit) {
+    val running = currentCoroutineContext()[RunningNode] ?: return
+    val observer = running.observer
+    val observers = if (observer is ObserverGroup) observer.observers else listOf(observer)
+    observers.forEach { notify(it, running.observed) }
+}
+
 /** The observers of a config, told about everything as one. */
 internal fun GraphConfig<*>.observer(): GraphObserver = observers.singleOrNull() ?: ObserverGroup(observers)
 
 /** Tells each of [observers] in turn. */
 private class ObserverGroup(
-    private val observers: List<GraphObserver>,
+    val observers: List<GraphObserver>,
 ) : GraphObserver {
     override fun onRunStarted(run: ObservedRun) = observers.forEach { it.onRunStarted(run) }
 

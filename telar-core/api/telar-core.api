@@ -297,6 +297,10 @@ public final class dev/deeptelar/telar/GraphObserver$DefaultImpls {
 	public static fun onStepCompleted (Ldev/deeptelar/telar/GraphObserver;Ldev/deeptelar/telar/ObservedRun;ILjava/util/List;Ljava/util/List;)V
 }
 
+public final class dev/deeptelar/telar/GraphObserverKt {
+	public static final fun forEachNodeObserver (Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
 public abstract interface class dev/deeptelar/telar/GraphResult {
 	public abstract fun getState ()Ljava/lang/Object;
 }

@@ -22,6 +22,15 @@ abstract fun interface dev.deeptelar.telar.agent/DecisionModel { // dev.deeptela
     abstract suspend fun decide(dev.deeptelar.telar.agent/DecisionRequest): dev.deeptelar.telar.agent/DecisionResponse // dev.deeptelar.telar.agent/DecisionModel.decide|decide(dev.deeptelar.telar.agent.DecisionRequest){}[0]
 }
 
+abstract interface dev.deeptelar.telar.agent/AgentObserver : dev.deeptelar.telar/GraphObserver { // dev.deeptelar.telar.agent/AgentObserver|null[0]
+    open fun onModelCallCompleted(dev.deeptelar.telar.agent/ObservedModelCall, dev.deeptelar.telar.agent/TokenUsage?) // dev.deeptelar.telar.agent/AgentObserver.onModelCallCompleted|onModelCallCompleted(dev.deeptelar.telar.agent.ObservedModelCall;dev.deeptelar.telar.agent.TokenUsage?){}[0]
+    open fun onModelCallFailed(dev.deeptelar.telar.agent/ObservedModelCall, kotlin/Throwable) // dev.deeptelar.telar.agent/AgentObserver.onModelCallFailed|onModelCallFailed(dev.deeptelar.telar.agent.ObservedModelCall;kotlin.Throwable){}[0]
+    open fun onModelCallStarted(dev.deeptelar.telar.agent/ObservedModelCall) // dev.deeptelar.telar.agent/AgentObserver.onModelCallStarted|onModelCallStarted(dev.deeptelar.telar.agent.ObservedModelCall){}[0]
+    open fun onToolCallCompleted(dev.deeptelar.telar.agent/ObservedToolCall, kotlin/Boolean) // dev.deeptelar.telar.agent/AgentObserver.onToolCallCompleted|onToolCallCompleted(dev.deeptelar.telar.agent.ObservedToolCall;kotlin.Boolean){}[0]
+    open fun onToolCallFailed(dev.deeptelar.telar.agent/ObservedToolCall, kotlin/Throwable) // dev.deeptelar.telar.agent/AgentObserver.onToolCallFailed|onToolCallFailed(dev.deeptelar.telar.agent.ObservedToolCall;kotlin.Throwable){}[0]
+    open fun onToolCallStarted(dev.deeptelar.telar.agent/ObservedToolCall) // dev.deeptelar.telar.agent/AgentObserver.onToolCallStarted|onToolCallStarted(dev.deeptelar.telar.agent.ObservedToolCall){}[0]
+}
+
 sealed interface dev.deeptelar.telar.agent/Answer { // dev.deeptelar.telar.agent/Answer|null[0]
     final class Choice : dev.deeptelar.telar.agent/Answer { // dev.deeptelar.telar.agent/Answer.Choice|null[0]
         constructor <init>(kotlin/String, kotlin.collections/Map<kotlin/String, kotlin/Double> = ..., kotlin/Double = ...) // dev.deeptelar.telar.agent/Answer.Choice.<init>|<init>(kotlin.String;kotlin.collections.Map<kotlin.String,kotlin.Double>;kotlin.Double){}[0]
@@ -430,6 +439,26 @@ final class dev.deeptelar.telar.agent/DecisionResponse { // dev.deeptelar.telar.
     final fun equals(kotlin/Any?): kotlin/Boolean // dev.deeptelar.telar.agent/DecisionResponse.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // dev.deeptelar.telar.agent/DecisionResponse.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // dev.deeptelar.telar.agent/DecisionResponse.toString|toString(){}[0]
+}
+
+final class dev.deeptelar.telar.agent/ObservedModelCall { // dev.deeptelar.telar.agent/ObservedModelCall|null[0]
+    final val model // dev.deeptelar.telar.agent/ObservedModelCall.model|{}model[0]
+        final fun <get-model>(): dev.deeptelar.telar.agent/ChatModel // dev.deeptelar.telar.agent/ObservedModelCall.model.<get-model>|<get-model>(){}[0]
+    final val node // dev.deeptelar.telar.agent/ObservedModelCall.node|{}node[0]
+        final fun <get-node>(): dev.deeptelar.telar/ObservedNode // dev.deeptelar.telar.agent/ObservedModelCall.node.<get-node>|<get-node>(){}[0]
+
+    final fun toString(): kotlin/String // dev.deeptelar.telar.agent/ObservedModelCall.toString|toString(){}[0]
+}
+
+final class dev.deeptelar.telar.agent/ObservedToolCall { // dev.deeptelar.telar.agent/ObservedToolCall|null[0]
+    final val id // dev.deeptelar.telar.agent/ObservedToolCall.id|{}id[0]
+        final fun <get-id>(): kotlin/String // dev.deeptelar.telar.agent/ObservedToolCall.id.<get-id>|<get-id>(){}[0]
+    final val name // dev.deeptelar.telar.agent/ObservedToolCall.name|{}name[0]
+        final fun <get-name>(): kotlin/String // dev.deeptelar.telar.agent/ObservedToolCall.name.<get-name>|<get-name>(){}[0]
+    final val node // dev.deeptelar.telar.agent/ObservedToolCall.node|{}node[0]
+        final fun <get-node>(): dev.deeptelar.telar/ObservedNode // dev.deeptelar.telar.agent/ObservedToolCall.node.<get-node>|<get-node>(){}[0]
+
+    final fun toString(): kotlin/String // dev.deeptelar.telar.agent/ObservedToolCall.toString|toString(){}[0]
 }
 
 final class dev.deeptelar.telar.agent/TokenUsage { // dev.deeptelar.telar.agent/TokenUsage|null[0]

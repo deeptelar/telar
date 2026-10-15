@@ -91,19 +91,22 @@ public sealed interface ChatEvent {
  * the run's flow as a `GraphEvent.NodeProgress`; [textDelta] reads it there. Anywhere else nobody
  * would see the pieces, and the model is asked with [ChatModel.chat].
  *
+ * In a node, the [AgentObserver]s of the run are told about the call.
+ *
  * @throws ChatModelException when the call fails or the model declines to answer.
  */
-public suspend fun ChatModel.chatWithProgress(request: ChatRequest): ChatResponse {
-    if (!isProgressCollected()) return chat(request)
-    var response: ChatResponse? = null
-    stream(request).collect { event ->
-        when (event) {
-            is ChatEvent.TextDelta -> reportProgress(event)
-            is ChatEvent.Completed -> response = event.response
+public suspend fun ChatModel.chatWithProgress(request: ChatRequest): ChatResponse =
+    observeModelCall(this) {
+        if (!isProgressCollected()) return@observeModelCall chat(request)
+        var response: ChatResponse? = null
+        stream(request).collect { event ->
+            when (event) {
+                is ChatEvent.TextDelta -> reportProgress(event)
+                is ChatEvent.Completed -> response = event.response
+            }
         }
+        response ?: throw ChatModelException("The model's stream ended before the answer was complete.")
     }
-    return response ?: throw ChatModelException("The model's stream ended before the answer was complete.")
-}
 
 /**
  * Sends [prompt] as a single user message and returns the text of the answer, like [chat] with a

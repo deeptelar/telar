@@ -1,3 +1,34 @@
+public abstract interface class dev/deeptelar/telar/agent/AgentObserver : dev/deeptelar/telar/GraphObserver {
+	public fun onModelCallCompleted (Ldev/deeptelar/telar/agent/ObservedModelCall;Ldev/deeptelar/telar/agent/TokenUsage;)V
+	public fun onModelCallFailed (Ldev/deeptelar/telar/agent/ObservedModelCall;Ljava/lang/Throwable;)V
+	public fun onModelCallStarted (Ldev/deeptelar/telar/agent/ObservedModelCall;)V
+	public fun onToolCallCompleted (Ldev/deeptelar/telar/agent/ObservedToolCall;Z)V
+	public fun onToolCallFailed (Ldev/deeptelar/telar/agent/ObservedToolCall;Ljava/lang/Throwable;)V
+	public fun onToolCallStarted (Ldev/deeptelar/telar/agent/ObservedToolCall;)V
+}
+
+public final class dev/deeptelar/telar/agent/AgentObserver$DefaultImpls {
+	public static fun nodeContext (Ldev/deeptelar/telar/agent/AgentObserver;Ldev/deeptelar/telar/ObservedNode;)Lkotlin/coroutines/CoroutineContext;
+	public static fun onCheckpointSaved (Ldev/deeptelar/telar/agent/AgentObserver;Ldev/deeptelar/telar/ObservedRun;ILjava/util/List;)V
+	public static fun onModelCallCompleted (Ldev/deeptelar/telar/agent/AgentObserver;Ldev/deeptelar/telar/agent/ObservedModelCall;Ldev/deeptelar/telar/agent/TokenUsage;)V
+	public static fun onModelCallFailed (Ldev/deeptelar/telar/agent/AgentObserver;Ldev/deeptelar/telar/agent/ObservedModelCall;Ljava/lang/Throwable;)V
+	public static fun onModelCallStarted (Ldev/deeptelar/telar/agent/AgentObserver;Ldev/deeptelar/telar/agent/ObservedModelCall;)V
+	public static fun onNodeCompleted (Ldev/deeptelar/telar/agent/AgentObserver;Ldev/deeptelar/telar/ObservedNode;)V
+	public static fun onNodeFailed (Ldev/deeptelar/telar/agent/AgentObserver;Ldev/deeptelar/telar/ObservedNode;Ljava/lang/Throwable;)V
+	public static fun onNodeInterrupted (Ldev/deeptelar/telar/agent/AgentObserver;Ldev/deeptelar/telar/ObservedNode;)V
+	public static fun onNodeProgress (Ldev/deeptelar/telar/agent/AgentObserver;Ldev/deeptelar/telar/ObservedNode;Ljava/lang/Object;)V
+	public static fun onNodeRetry-Wn2Vu4Y (Ldev/deeptelar/telar/agent/AgentObserver;Ldev/deeptelar/telar/ObservedNode;ILjava/lang/Throwable;J)V
+	public static fun onNodeStarted (Ldev/deeptelar/telar/agent/AgentObserver;Ldev/deeptelar/telar/ObservedNode;)V
+	public static fun onRunCompleted (Ldev/deeptelar/telar/agent/AgentObserver;Ldev/deeptelar/telar/ObservedRun;)V
+	public static fun onRunFailed (Ldev/deeptelar/telar/agent/AgentObserver;Ldev/deeptelar/telar/ObservedRun;Ljava/lang/Throwable;)V
+	public static fun onRunInterrupted (Ldev/deeptelar/telar/agent/AgentObserver;Ldev/deeptelar/telar/ObservedRun;Ljava/util/List;)V
+	public static fun onRunStarted (Ldev/deeptelar/telar/agent/AgentObserver;Ldev/deeptelar/telar/ObservedRun;)V
+	public static fun onStepCompleted (Ldev/deeptelar/telar/agent/AgentObserver;Ldev/deeptelar/telar/ObservedRun;ILjava/util/List;Ljava/util/List;)V
+	public static fun onToolCallCompleted (Ldev/deeptelar/telar/agent/AgentObserver;Ldev/deeptelar/telar/agent/ObservedToolCall;Z)V
+	public static fun onToolCallFailed (Ldev/deeptelar/telar/agent/AgentObserver;Ldev/deeptelar/telar/agent/ObservedToolCall;Ljava/lang/Throwable;)V
+	public static fun onToolCallStarted (Ldev/deeptelar/telar/agent/AgentObserver;Ldev/deeptelar/telar/agent/ObservedToolCall;)V
+}
+
 public final class dev/deeptelar/telar/agent/AgentState {
 	public static final field Companion Ldev/deeptelar/telar/agent/AgentState$Companion;
 	public fun <init> ()V
@@ -330,6 +361,19 @@ public abstract interface annotation class dev/deeptelar/telar/agent/Description
 public final synthetic class dev/deeptelar/telar/agent/Description$Impl : dev/deeptelar/telar/agent/Description {
 	public fun <init> (Ljava/lang/String;)V
 	public final synthetic fun value ()Ljava/lang/String;
+}
+
+public final class dev/deeptelar/telar/agent/ObservedModelCall {
+	public final fun getModel ()Ldev/deeptelar/telar/agent/ChatModel;
+	public final fun getNode ()Ldev/deeptelar/telar/ObservedNode;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/deeptelar/telar/agent/ObservedToolCall {
+	public final fun getId ()Ljava/lang/String;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getNode ()Ldev/deeptelar/telar/ObservedNode;
+	public fun toString ()Ljava/lang/String;
 }
 
 public abstract interface class dev/deeptelar/telar/agent/Question {
