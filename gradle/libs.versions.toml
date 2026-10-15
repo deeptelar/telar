@@ -1,16 +1,16 @@
 [versions]
-kotlin = "2.4.20"
+kotlin = "2.4.21"
 coroutines = "1.11.0"
 serialization = "1.11.0"
 kotlinx-io = "0.9.1"
 ktor = "3.6.0"
-langchain4j = "1.21.0"
+langchain4j = "1.22.0"
 mcp = "0.15.0"
 sqldelight = "2.4.1"
 # The worker of SQLDelight for the browser runs SQLite compiled to WebAssembly by sql.js.
 sqljs = "1.14.2"
 # The DOM of Kotlin/Wasm, in the version the web worker driver of SQLDelight is built with.
-kotlinx-browser = "0.3"
+kotlinx-browser = "0.5.0"
 opentelemetry = "1.66.0"
 dokka = "2.2.0"
 kover = "0.9.11"
