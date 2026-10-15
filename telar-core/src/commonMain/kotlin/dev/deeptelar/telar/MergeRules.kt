@@ -32,9 +32,9 @@ import kotlin.reflect.KProperty1
  * A node that changes a property without a rule fails the run with a [ReducerException] instead of
  * losing the change. For that check the state needs `equals`, which a data class has.
  *
- * Given as `reducer`, the rules merge the nodes that return a whole state. Given as `rules` to
- * [StateGraph.compile], they merge every node of a step, the nodes with a `work` and an `update`
- * too.
+ * Given to [StateGraph.compile], as `rules` or as `reducer`, the rules merge every node of a step,
+ * the nodes with a `work` and an `update` too. Each node then gets the state from before the step,
+ * its `update` too, and the results are merged in the order the nodes were added to the graph.
  *
  * @throws GraphValidationException if there is no rule, or two rules for the same property.
  */
@@ -49,8 +49,8 @@ public fun <State> mergeRules(block: MergeRulesBuilder<State>.() -> Unit): Merge
 
 /**
  * A [Reducer] built by [mergeRules] from one rule for each property. Give it to
- * [StateGraph.compile] as `reducer` to merge the nodes that return a whole state, or as `rules` to
- * merge every node of a step.
+ * [StateGraph.compile], as `rules` or as `reducer`, to merge every node of a step, whatever form it
+ * has.
  */
 public class MergeRules<State> internal constructor(
     private val rules: List<MergeRule<State, *>>,

@@ -98,8 +98,8 @@ breaking changes.
   Each node of a step gets the state from before the step, the `update` of a node with a `work`
   too, and the rules merge what all of them return, in the order the nodes were added. Two nodes
   that `replace` a property with different values then fail the run in both forms, where a node
-  with a `work` and an `update` used to overwrite the other without a word. Without `rules`, nothing
-  changes. The guide [Parallel branches](https://deeptelar.github.io/telar/guides/parallel-branches#one-rule-for-both-forms)
+  with a `work` and an `update` used to overwrite the other without a word. Rules given as
+  `reducer = mergeRules { ... }` work the same way. Without `mergeRules`, nothing changes. The guide [Parallel branches](https://deeptelar.github.io/telar/guides/parallel-branches#one-rule-for-both-forms)
   shows it. ([#101](https://github.com/deeptelar/telar/issues/101))
 - `graph.test(input) { ... }` in `telar-test` checks the path of a run, one step after the other:
   `expectNode("check")`, `expectStep("web", "papers")`, `expectInterruptBefore("pay") { state -> ... }`,
@@ -116,6 +116,13 @@ breaking changes.
 - `mergeRules` returns `MergeRules`, a `Reducer`, and its block is a `MergeRulesBuilder`, the class
   that was called `MergeRules`. `compile()` has a new first parameter, `rules`: give a reducer by
   name, `compile(reducer = ...)`, or as a trailing lambda.
+- A `mergeRules` given to `compile()` as `reducer` now holds for every node of a step, as if given
+  as `rules`. The updates of nodes with a `work` and an `update` used to be applied after the rules,
+  one after another, so a `replace` rule did not catch two such nodes that set a property to
+  different values. Now each update reads the state from before the step, and the rules merge all
+  results in the order the nodes were added, where they used to get the whole states in the order
+  the edges reach the nodes. A reducer of your own works as before.
+  ([#101](https://github.com/deeptelar/telar/issues/101))
 - When a reducer built with `mergeRules` fails in a run, its error names the node, `Node 'docs'`,
   in place of its position in the step.
 - `TokenUsage` is `@Serializable`, so that a state with a count can be saved. `AgentState` is saved
