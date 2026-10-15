@@ -111,17 +111,21 @@ waits in a file and continues after a restart:
   another process. `history` and `fork` go back to any earlier step.
 - **Every Kotlin platform.** The core depends only on kotlinx-coroutines and runs on the JVM,
   Android, iOS, macOS, Linux, Windows, JS and Wasm. Agents, models and checkpoints work there too,
-  down to runs saved in the browser's `localStorage`.
+  down to runs saved in SQLite on a phone or in the browser's `localStorage`.
 - **Coroutines all the way.** Nodes, edges and models are `suspend` functions. Cancellation works
   as you expect, and parallel nodes use structured concurrency.
 - **Any model, small surface.** Claude, OpenAI, Gemini, Ollama and every server with the API of
   OpenAI, plus any LangChain4j model on the JVM. `ChatModel` is one function, so a model of your
-  own, or a fake one in a test, takes a few lines.
+  own, or a fake one in a test, takes a few lines. Tools are `suspend` functions of your own or the
+  tools of any MCP server, and `ask` returns a `@Serializable` class in place of text.
+- **Ready for production.** A node can be tried again and given a time limit, a payment in it runs
+  once even when its step runs again, a run reports its nodes to OpenTelemetry, and an agent stops
+  at a token budget. `telar-test` tests a graph with an agent without an API key.
 
 Choose Telar when the workflow itself is the hard part: several steps, branches that join, people
 who approve, runs that must survive a restart, and state you want to read as ordinary Kotlin. If you
-need a large set of ready-made integrations or a stable API today, Koog or LangChain4j are the
-safer choice. [Why Telar](https://deeptelar.github.io/telar/why-telar#telar-and-other-libraries) compares Telar with Koog,
+need a stable API today, many ready-made integrations, or runs saved in a database server, Koog,
+LangGraph4j or LangChain4j are the safer choice. [Why Telar](https://deeptelar.github.io/telar/why-telar#telar-and-other-libraries) compares Telar with Koog,
 LangGraph4j and LangChain4j.
 
 > Telar is an independent project inspired by [LangGraph](https://github.com/langchain-ai/langgraph).
