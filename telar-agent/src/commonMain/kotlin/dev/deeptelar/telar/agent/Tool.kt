@@ -178,13 +178,17 @@ public annotation class Description(
  *
  * Only two things are propagated: a cancellation of the caller, and an error of the program or of
  * its machine, which is a subclass of `Error` such as `OutOfMemoryError` or `AssertionError`.
+ *
+ * In a node, the [AgentObserver]s of the run are told about each call.
  */
 public suspend fun List<Tool>.execute(calls: List<ToolCall>): List<ChatMessage.ToolResult> =
     coroutineScope {
         calls.map { call -> async { execute(call) } }.awaitAll()
     }
 
-private suspend fun List<Tool>.execute(call: ToolCall): ChatMessage.ToolResult {
+private suspend fun List<Tool>.execute(call: ToolCall): ChatMessage.ToolResult = observeToolCall(call) { executeOne(call) }
+
+private suspend fun List<Tool>.executeOne(call: ToolCall): ChatMessage.ToolResult {
     val tool = firstOrNull { it.spec.name == call.name } ?: return call.failed("There is no tool named '${call.name}'.")
     call.invalidInput?.let { return call.failed("The input is not a JSON object: $it") }
     return try {

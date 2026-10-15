@@ -420,4 +420,31 @@ class GraphObserverTest {
 
             assertEquals(listOf("run started", "wait@1 started", "wait@1 failed: cancelled", "run failed: cancelled"), recorder.log)
         }
+
+    @Test
+    fun `a node reaches every observer of its run with itself and nothing outside a node`() =
+        runTest {
+            val second = Recorder()
+            val reached = mutableListOf<String>()
+            val inner =
+                StateGraph<TestState> {
+                    START then
+                        node("deep") {
+                            forEachNodeObserver { observer, node ->
+                                reached +=
+                                    "${if (observer === recorder) "first" else "second"} ${node.label}"
+                            }
+                            it
+                        } then END
+                }.compile()
+            val graph =
+                StateGraph<TestState> {
+                    START then subgraph("inner", inner) then END
+                }.compile()
+
+            forEachNodeObserver { _, _ -> reached += "outside" }
+            graph.invoke(TestState(1), GraphConfig(observers = listOf(recorder, second)))
+
+            assertEquals(listOf("first inner@1 > deep@1", "second inner@1 > deep@1"), reached)
+        }
 }

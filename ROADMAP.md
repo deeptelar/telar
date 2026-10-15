@@ -86,7 +86,7 @@ time by someone who needs it.
 
 | | Feature | What you get | State | Issue |
 |---|---|---|---|---|
-| 11 | Tracing | Hooks in the engine that report every node, edge, tool call and token count, and a module that sends them to OpenTelemetry. Released: `GraphObserver` for runs, nodes, steps and checkpoints, and `telar-otel`. Still to come: a span for each call to a model and each tool call, with its token count. | In progress | [#38] |
+| 11 | Tracing | Hooks in the engine that report every node, edge, tool call and token count, and a module that sends them to OpenTelemetry. Released: `GraphObserver` for runs, nodes, steps and checkpoints, `AgentObserver` for each call to a model and each tool call, with its token count, and `telar-otel`. Still to come: a span in `telar-otel` for each call to a model and each tool call. | In progress | [#38] |
 | 12 | Database checkpointer | Saves runs in a SQL database. Released: SQLite through SQLDelight, `telar-checkpoint-sqldelight`, for Android, iOS, desktop and the browser. Still to come: a database server such as PostgreSQL. | In progress | [#84] |
 | 13 | Long conversations | A conversation that is kept short for the model, by dropping or summarizing old messages, and that pays less for what the provider already read. Today every request sends everything. | Planned | [#105] |
 | 14 | One version for all modules | `telar-bom`: a bill of materials. An app names the version of Telar once, and every module it adds uses that version. | Planned | [#79] |
