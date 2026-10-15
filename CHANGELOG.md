@@ -111,6 +111,14 @@ breaking changes.
 
 ### Changed
 
+- The tools node of `toolLoop` and `toolAgent` saves the result of each tool call as an `effect`
+  as soon as the tool returns. When its step runs again, because another call of the same answer
+  called `interrupt`, another node of the step failed or the process stopped, `resume` gives the
+  calls that finished their saved results and runs only the others, so a `charge_card` that ran
+  before a `send_receipt` failed does not charge the card again. A call with an error result is
+  not saved and runs again, and a `StateTool` is not saved: call `effect` in it for what it does
+  outside the run. The guide
+  [Agents with tools](https://deeptelar.github.io/telar/guides/agents-with-tools) shows it.
 - `GraphConfig` has a new property, `observers`, with an empty list as its default.
 - `GraphEvent` has a new subclass, `NodeRetry`. A `when` over all events needs a branch for it.
 - `mergeRules` returns `MergeRules`, a `Reducer`, and its block is a `MergeRulesBuilder`, the class

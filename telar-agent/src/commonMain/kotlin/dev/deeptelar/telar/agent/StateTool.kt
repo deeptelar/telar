@@ -76,17 +76,19 @@ public data class ToolOutcome<out State>(
 
 /**
  * Runs [call] on [state] and returns the state after it with the result for the model. The call
- * goes to the state tool with its name, or else to the tool with its name.
+ * goes to the state tool with its name, or else to the tool with its name, which runs as the
+ * effect [key] (see [executeOnce]).
  *
  * A call that fails leaves [state] as it was and has an error result, as [List.execute] describes.
  */
 internal suspend fun <State> runOnState(
     call: ToolCall,
+    key: String,
     state: State,
     tools: List<Tool>,
     stateTools: List<StateTool<State>>,
 ): Pair<State, ChatMessage.ToolResult> {
-    val stateTool = stateTools.firstOrNull { it.spec.name == call.name } ?: return state to tools.execute(listOf(call)).single()
+    val stateTool = stateTools.firstOrNull { it.spec.name == call.name } ?: return state to tools.executeOnce(call, key)
     var after = state
     // As a tool of this one call, so that a failure is handled as the failure of any tool is.
     val onThisState = Tool(stateTool.spec) { input -> stateTool.execute(state, input).also { after = it.state }.text }

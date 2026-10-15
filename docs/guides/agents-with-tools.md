@@ -88,6 +88,30 @@ agent.resume(config) { state ->
 }
 ```
 
+A tool that pays, books or sends runs once for each call, also when its step runs again. The node
+that runs the tools saves the result of each call as soon as the tool returns, as an
+[`effect`](side-effects.md) named after the id of the call. When the model asks for `charge_card`
+and `send_receipt` in one answer, the card is charged, and then the step stops before it ends,
+because another tool called `interrupt`, another node of the step failed or the process stopped,
+`resume` gives `charge_card` its saved result and runs only `send_receipt`:
+
+```kotlin
+val config = GraphConfig(threadId = "order-7", checkpointer = FileCheckpointer(Path("checkpoints"), KotlinxStateSerializer<AgentState>()))
+
+agent.invoke(AgentState("Pay my order and send me the receipt."), config) // charges, then the process stops
+agent.resume(config) // sends the receipt; the card is not charged again
+```
+
+- **A call with an error result is not saved.** It runs again with the step, as a call that never
+  ran. A tool that can fail after it charged returns its text instead of throwing, so the model
+  learns what happened.
+- **A `StateTool` is not saved this way**, because what it did is in the state. Wrap what it does
+  outside the run, such as a call to a payment service, in `effect` inside the tool.
+- **The results belong to the step.** In the next round the tools node runs in a new step, and
+  new calls run as usual.
+- **A crash between the end of a tool and the save can still repeat it**, as for any `effect`.
+  Pass the id of the call to a service that takes an idempotency key.
+
 `toolAgent` is a whole graph. To make the agent one part of a larger graph, with the conversation
 in a state of your own, add the same loop with `toolLoop`:
 
