@@ -7,7 +7,13 @@ import dev.deeptelar.telar.NodeRef
 import dev.deeptelar.telar.Retry
 import dev.deeptelar.telar.START
 import dev.deeptelar.telar.StateGraph
+import dev.deeptelar.telar.StateSerializer
+import dev.deeptelar.telar.effect
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 /**
  * Adds the loop of a tool-calling agent to this graph and returns its first node.
@@ -119,6 +125,19 @@ import kotlinx.serialization.Serializable
  * its tokens ends up to one call above it. A loop that was stopped ends with the results of its
  * last tools, or with the message of the user, and not with an answer of the model.
  *
+ * The tools node saves the result of each call of a [Tool] that succeeded as soon as the tool
+ * returns, as an [effect] keyed by the [ToolCall.id]. When its step runs again, because another
+ * call of the same answer called `interrupt`, another node of the step failed or the process
+ * stopped, `resume` gives those calls their saved results and runs only the others: a tool that
+ * charged a card does not charge it twice. A call with an error result is not saved, and runs
+ * again. A [StateTool] is not saved this way, because it changes the state: call [effect] in it
+ * for what it does outside the run.
+ *
+ * A process can still stop between the end of a tool and that save. For a tool that must not run
+ * twice, such as a payment, give it a `reconcile` (see [Tool]): the call then also saves that it
+ * started, with an id for the service's idempotency key, and when its step runs again without its
+ * result, `reconcile` tells whether it did its work.
+ *
  * A call to the model that fails ends the run. Give the loop a [retry] to ask the model again
  * first. Tools need none: a tool that fails returns an error to the model, which can call it again.
  *
@@ -210,19 +229,26 @@ public fun <State> StateGraph<State>.toolLoop(
         when {
             stateTools.isNotEmpty() ->
                 node(toolsNode) { state ->
-                    messages(state).pendingToolCalls().fold(state) { current, call ->
-                        val (after, result) = runOnState(call, current, tools, stateTools)
+                    val calls = messages(state).pendingToolCalls()
+                    calls.zip(effectKeys(calls)).fold(state) { current, (call, key) ->
+                        val (after, result) = runOnState(call, key, current, tools, stateTools)
                         append(after, listOf(result))
                     }
                 }
             inOrder ->
                 node(toolsNode, work = { state ->
-                    messages(state).pendingToolCalls().map { tools.execute(listOf(it)).single() }
+                    val calls = messages(state).pendingToolCalls()
+                    calls.zip(effectKeys(calls)).map { (call, key) -> tools.executeOnce(call, key) }
                 }) { state, results ->
                     append(state, results)
                 }
             else ->
-                node(toolsNode, work = { state -> tools.execute(messages(state).pendingToolCalls()) }) { state, results ->
+                node(toolsNode, work = { state ->
+                    val calls = messages(state).pendingToolCalls()
+                    coroutineScope {
+                        calls.zip(effectKeys(calls)).map { (call, key) -> async { tools.executeOnce(call, key) } }.awaitAll()
+                    }
+                }) { state, results ->
                     append(state, results)
                 }
         }
@@ -297,6 +323,60 @@ public fun toolAgent(
                 retry = retry,
             )
     }.compile()
+}
+
+/**
+ * Runs [call] on these tools as an [effect] named [key] of the running node, so that when the step
+ * runs again a call that succeeded returns its saved result and the tool does not run again. An
+ * error result is not saved: the call runs again, as it would without the effect. A tool with a
+ * [Tool.reconcile] runs as an `effect` with one, which also saves that the call started.
+ */
+internal suspend fun List<Tool>.executeOnce(call: ToolCall, key: String): ChatMessage.ToolResult {
+    val run =
+        suspend {
+            val result = execute(listOf(call)).single()
+            if (result.isError) throw ErrorResult(result)
+            result
+        }
+    val reconcile = firstOrNull { it.spec.name == call.name }?.reconcile?.takeIf { call.invalidInput == null }
+    return try {
+        if (reconcile == null) {
+            effect(key, ToolResultSerializer, run)
+        } else {
+            // An exception of reconcile is no failure of the tool: what the call did is unknown, so the run stops.
+            effect(
+                key,
+                ToolResultSerializer,
+                reconcile = { reconcile(call.input)?.let { ChatMessage.ToolResult(call.id, call.name, it) } },
+            ) { run() }
+        }
+    } catch (e: ErrorResult) {
+        e.result
+    }
+}
+
+/**
+ * Returns the name of the [effect] of each call: its id, so that it stays the same when the step
+ * runs again with fewer pending calls. A model that sends the same id twice gets a number added.
+ */
+internal fun effectKeys(calls: List<ToolCall>): List<String> {
+    val seen = mutableMapOf<String, Int>()
+    return calls.map { call ->
+        val count = (seen[call.id] ?: 0) + 1
+        seen[call.id] = count
+        if (count == 1) "tool-call:${call.id}" else "tool-call:${call.id}#$count"
+    }
+}
+
+/** Carries an error result out of an [effect], so that it saves nothing. */
+private class ErrorResult(
+    val result: ChatMessage.ToolResult,
+) : Exception()
+
+private object ToolResultSerializer : StateSerializer<ChatMessage.ToolResult> {
+    override fun serialize(state: ChatMessage.ToolResult): String = Json.encodeToString(ChatMessage.ToolResult.serializer(), state)
+
+    override fun deserialize(data: String): ChatMessage.ToolResult = Json.decodeFromString(ChatMessage.ToolResult.serializer(), data)
 }
 
 /** What the model node of a [toolLoop] hands to its update: the messages to store and the tokens of the answer. */

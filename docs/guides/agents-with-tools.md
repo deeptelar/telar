@@ -88,6 +88,67 @@ agent.resume(config) { state ->
 }
 ```
 
+A tool that pays, books or sends runs once for each call, also when its step runs again. The node
+that runs the tools saves the result of each call as soon as the tool returns, as an
+[`effect`](side-effects.md) named after the id of the call. When the model asks for `charge_card`
+and `send_receipt` in one answer, the card is charged, and then the step stops before it ends,
+because another tool called `interrupt`, another node of the step failed or the process stopped,
+`resume` gives `charge_card` its saved result and runs only `send_receipt`:
+
+```kotlin
+val config = GraphConfig(threadId = "order-7", checkpointer = FileCheckpointer(Path("checkpoints"), KotlinxStateSerializer<AgentState>()))
+
+agent.invoke(AgentState("Pay my order and send me the receipt."), config) // charges, then the process stops
+agent.resume(config) // sends the receipt; the card is not charged again
+```
+
+- **A call with an error result is not saved.** It runs again with the step, as a call that never
+  ran. A tool that can fail after it charged returns its text instead of throwing, so the model
+  learns what happened.
+- **A `StateTool` is not saved this way**, because what it did is in the state. Wrap what it does
+  outside the run, such as a call to a payment service, in `effect` inside the tool.
+- **The results belong to the step.** In the next round the tools node runs in a new step, and
+  new calls run as usual.
+- **A crash between the end of a tool and the save can still repeat it**, as for any `effect`.
+  For a tool that must never run twice, give it a `reconcile`, as below.
+
+A tool with a `reconcile` also saves that its call started, with an id that `effectId()` (in
+`dev.deeptelar.telar`) returns
+while the tool runs. Pass that id to the service as its idempotency key. When the step runs again
+and finds the call started but without a result, `reconcile` is asked first: it returns the text
+for the model when the work was done, or `null` when it was not, and the tool runs again with the
+same id:
+
+```kotlin
+@Serializable
+data class Charge(val amount: Int)
+
+val charge = Tool<Charge>(
+    "charge_card",
+    "Charges the card of the customer.",
+    reconcile = { input -> payments.findByIdempotencyKey(effectId()!!)?.let { "Charged ${it.amount} euros." } },
+) { input ->
+    val receipt = payments.charge(input.amount, idempotencyKey = effectId()!!)
+    "Charged ${receipt.amount} euros."
+}
+```
+
+- **With an idempotency key, `reconcile = { null }` is enough.** The tool runs again with the same
+  key, and the provider answers with the first charge.
+- **A `reconcile` that cannot tell throws.** The run fails, and the next `resume` asks again. A
+  person who checked answers the call instead, and a call with a result is not run:
+
+  ```kotlin
+  agent.resume(config) { state ->
+      val call = state.messages.pendingToolCalls().single { it.name == "charge_card" }
+      state.copy(messages = state.messages + ChatMessage.ToolResult(call.id, call.name, "Charged 20 euros."))
+  }
+  ```
+
+- **Do not use the id of the call as the key.** Some providers number the calls of every answer
+  from `call_0`, and a thread that is invoked again starts its steps again, so the provider would
+  answer a new charge with an old one. The id of `effectId()` is new for every call that starts.
+
 `toolAgent` is a whole graph. To make the agent one part of a larger graph, with the conversation
 in a state of your own, add the same loop with `toolLoop`:
 

@@ -25,3 +25,32 @@ import kotlinx.serialization.serializer
  */
 public suspend inline fun <reified T> effect(key: String, json: Json = Json, noinline block: suspend () -> T): T =
     dev.deeptelar.telar.effect(key, KotlinxStateSerializer(serializer<T>(), json), block)
+
+/**
+ * Runs [block] once for the step of the node that calls it, with an id to pass to the service as
+ * its idempotency key, and asks [reconcile] when the step runs again after [block] started but
+ * before its result was saved. [T] is saved by a [Json] of [json], as for the `effect` without
+ * [reconcile].
+ *
+ * ```kotlin
+ * val pay = node("pay") { order ->
+ *     val receipt = effect("charge", reconcile = { id -> payments.findByIdempotencyKey(id) }) { id ->
+ *         payments.charge(order.id, order.amount, idempotencyKey = id)
+ *     }
+ *     order.copy(receipt = receipt)
+ * }
+ * ```
+ *
+ * See [dev.deeptelar.telar.effect] with a `reconcile`, which this calls, for the details.
+ *
+ * @param key names the effect, unique within one run of the node.
+ * @param reconcile tells, from the id, whether a [block] that started before did its work: its
+ * result if it did, `null` if it did not.
+ * @param block does the work, with the id as the idempotency key.
+ */
+public suspend inline fun <reified T> effect(
+    key: String,
+    json: Json = Json,
+    noinline reconcile: suspend (id: String) -> T?,
+    noinline block: suspend (id: String) -> T,
+): T = dev.deeptelar.telar.effect(key, KotlinxStateSerializer(serializer<T>(), json), reconcile, block)

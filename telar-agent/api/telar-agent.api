@@ -423,7 +423,9 @@ public final class dev/deeptelar/telar/agent/TokenUsage$Companion {
 
 public final class dev/deeptelar/telar/agent/Tool {
 	public fun <init> (Ldev/deeptelar/telar/agent/ToolSpec;Lkotlin/jvm/functions/Function2;)V
+	public fun <init> (Ldev/deeptelar/telar/agent/ToolSpec;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;)V
 	public final fun getExecute ()Lkotlin/jvm/functions/Function2;
+	public final fun getReconcile ()Lkotlin/jvm/functions/Function2;
 	public final fun getSpec ()Ldev/deeptelar/telar/agent/ToolSpec;
 }
 
@@ -463,6 +465,7 @@ public final class dev/deeptelar/telar/agent/ToolCall$Companion {
 
 public final class dev/deeptelar/telar/agent/ToolKt {
 	public static final fun Tool (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/KSerializer;Lkotlin/jvm/functions/Function2;)Ldev/deeptelar/telar/agent/Tool;
+	public static final fun Tool (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/KSerializer;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;)Ldev/deeptelar/telar/agent/Tool;
 	public static final fun execute (Ljava/util/List;Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 

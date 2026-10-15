@@ -53,4 +53,31 @@ class EffectTest {
             assertEquals(1, charges.size)
             assertEquals(1, emails)
         }
+
+    @Test
+    fun `an effect with a reconcile reads the result it finds and does not charge again`() =
+        runTest {
+            val charges = mutableMapOf<String, Receipt>()
+            var stops = true
+            val graph =
+                StateGraph<Payment> {
+                    START then
+                        node("pay") { payment ->
+                            val receipt =
+                                effect("charge", reconcile = { id -> charges[id] }) { id ->
+                                    val receipt = Receipt("r-${charges.size + 1}", payment.amount).also { charges[id] = it }
+                                    if (stops) error("The process stopped.")
+                                    receipt
+                                }
+                            payment.copy(receipt = receipt)
+                        } then END
+                }.compile()
+            val config = GraphConfig(threadId = "t", checkpointer = MemoryCheckpointer<Payment>())
+
+            assertFailsWith<NodeExecutionException> { graph.invoke(Payment(30), config) }
+            stops = false
+
+            assertEquals(GraphResult.Completed(Payment(30, Receipt("r-1", 30))), graph.resume(config))
+            assertEquals(1, charges.size)
+        }
 }
