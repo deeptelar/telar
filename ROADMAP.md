@@ -12,21 +12,24 @@ what is already released.
 To ask for a feature or to move one up, add a 👍 to its issue or
 [start a discussion](https://github.com/deeptelar/telar/discussions).
 
-Last updated: 2026-10-14.
+Last updated: 2026-10-15.
 
 ## Where the project is
 
-`0.1.0-alpha09` is on Maven Central. It has the graph builder and the engine: loops, parallel
-branches, subgraphs, streaming, checkpoints with the history of a run, and pausing for a person,
-before a node or in the middle of its work. Around the engine it has checkpointers for memory, files
-and the browser, a tool-calling agent for every platform, and model modules for Claude, for OpenAI,
-Ollama and the other servers with the Chat Completions API, for LangChain4j, and for Jev, a decision
-model. Any of the chat models can take the decisions of a workflow too. The API can still change in
+`0.1.0-alpha09` is the latest release on Maven Central, and `main` has more for the next one; the
+[changelog](CHANGELOG.md) says what. Telar has the graph builder and the engine: loops, parallel
+branches with rules for what they write, subgraphs, streaming, checkpoints with the history of a
+run, pausing for a person before a node or in the middle of its work, retries and time limits for a
+node, and side effects that run once per step. Around the engine it has checkpointers for memory,
+files, the browser and SQLite on every platform, a tool-calling agent for every platform with tools
+that change the state, typed answers, a token budget and the tools of MCP servers, model modules for
+Claude, for OpenAI, Ollama and the other servers with the Chat Completions API, for LangChain4j, and
+for Jev, a decision model, and modules for tests and for OpenTelemetry. The API can still change in
 any release.
 
-The engine is ahead of the agent that runs on it. A model answers with text only and reads text
-only, a tool cannot change the state of the run, nothing counts what a run costs, and a call that
-fails ends the run. The first sections of this page are about that.
+Section 1 is done. What is missing now is mostly in the messages and the engine: a message holds
+text only, the number of parallel nodes is fixed by the edges, and a long conversation is sent to
+the model in full every time. Sections 2 and 3 are about that.
 
 ## The way to 1.0
 
@@ -47,8 +50,9 @@ The features are numbered in the order they are worked on. Two rules decide it:
 The issues have the same order as labels: `priority: now` for section 1, `priority: next` for
 section 2 and `priority: later` for section 3.
 
-Each item has one of three states:
+Each item has one of four states:
 
+- **Done**: in `main`, and in the release the [changelog](CHANGELOG.md) names.
 - **In progress**: someone is writing it.
 - **Planned**: it will be in `1.0`.
 - **Exploring**: wanted, but the design is open. It may arrive after `1.0`.
@@ -57,12 +61,12 @@ Each item has one of three states:
 
 | | Feature | What you get | State | Issue |
 |---|---|---|---|---|
-| 1 | Typed answers from a model | Ask a model for a `@Serializable` class and get an instance of it, built on the schema generator that tools already use. | In progress | [#85] |
-| 2 | Tools that change the state | A tool of `toolLoop` reads the state of the run and writes to it, so that a checkpoint holds what the tool did. And calls that depend on each other run in order. Today a tool returns text, and the calls of one answer run in parallel. | Planned | [#98] |
-| 3 | Token count and budget | A run knows how many tokens its models used, and stops at a limit. Today `toolLoop` drops the count of each call. | Planned | [#99] |
-| 4 | Retry and time limit for a node | A node says how often it may be tried again and how long it may take. Today a failed run is retried by hand with `resume`. | Planned | [#83] |
-| 5 | Helpers for tests | `telar-test`: a model that gives the answers a test wrote down, so that a graph with an agent is tested without an API key and without a model of your own. | Planned | [#86] |
-| 6 | Tools from MCP servers | Use the tools of a Model Context Protocol server as `Tool`s, without writing each by hand. | Planned | [#104] |
+| 1 | Typed answers from a model | Ask a model for a `@Serializable` class and get an instance of it, built on the schema generator that tools already use: `ChatModel.ask`. | Done | [#85] |
+| 2 | Tools that change the state | A tool of `toolLoop` reads the state of the run and writes to it, so that a checkpoint holds what the tool did. And calls that depend on each other run in order. `StateTool`, and `inOrder` for `toolLoop`. | Done | [#98] |
+| 3 | Token count and budget | A run knows how many tokens its models used, and stops at a limit. `AgentState.tokens`, `tokenBudget`, and `countTokens` / `stopWhen` for `toolLoop`. | Done | [#99] |
+| 4 | Retry and time limit for a node | A node says how often it may be tried again and how long it may take. `retry = Retry(...)` and `timeout` on `node`. | Done | [#83] |
+| 5 | Helpers for tests | `telar-test`: a model that gives the answers a test wrote down, so that a graph with an agent is tested without an API key and without a model of your own. Also `graph.test { }` and `graph.replay { }` for the path of a run. | Done | [#86] |
+| 6 | Tools from MCP servers | Use the tools of a Model Context Protocol server as `Tool`s, without writing each by hand: `telar-mcp`. | Done | [#104] |
 
 ## 2. Finish the engine and the messages
 
@@ -70,7 +74,7 @@ These change how a graph runs or what a message holds, so they come before the b
 
 | | Feature | What you get | State | Issue |
 |---|---|---|---|---|
-| 7 | One rule for parallel nodes that write the same property | You decide what happens, and the rule is the same for both ways to write a node: `compile(rules = mergeRules { ... })`, or the same rules given as `reducer`, merges every node of a step, so a node with `work` and `update` no longer overwrites another without a word. | In progress | [#101] |
+| 7 | One rule for parallel nodes that write the same property | You decide what happens, and the rule is the same for both ways to write a node: `compile(rules = mergeRules { ... })`, or the same rules given as `reducer`, merges every node of a step, so a node with `work` and `update` no longer overwrites another without a word. Released: `compile(rules = mergeRules { ... })`, and `mergeRules` given as the reducer holds for every node too. Still open: the order of the reducer and the updates when no rules are given. | In progress | [#101] |
 | 8 | Fan-out over a list | One node runs once per item of a list, all at the same time, when the number of items is only known at run time. Today the edges fix how many nodes run in parallel. | Planned | [#82] |
 | 9 | Images and files in messages | Send a model a picture or a PDF with the question, and let a tool return one. A `ChatMessage` holds text only today. | Planned | [#103] |
 | 10 | Subgraphs | A compiled graph becomes a node of another graph, with a mapping between the two states and one thread for both. Released: `subgraph`, a run that pauses inside a subgraph and resumes there, the events of a subgraph in the stream of the graph around it, and the subgraph in `topology`. Still to come: `interruptBefore` for a node of a subgraph, and a retry after a failure that continues inside the subgraph. | In progress | [#34] |
@@ -83,7 +87,7 @@ time by someone who needs it.
 | | Feature | What you get | State | Issue |
 |---|---|---|---|---|
 | 11 | Tracing | Hooks in the engine that report every node, edge, tool call and token count, and a module that sends them to OpenTelemetry. Released: `GraphObserver` for runs, nodes, steps and checkpoints, `AgentObserver` for each call to a model and each tool call, with its token count, and `telar-otel`. Still to come: a span in `telar-otel` for each call to a model and each tool call. | In progress | [#38] |
-| 12 | Database checkpointer | Saves runs in a SQL database. SQLite through SQLDelight, for Android, iOS, desktop and the browser, is being written; a database server such as PostgreSQL comes after it. | In progress | [#84] |
+| 12 | Database checkpointer | Saves runs in a SQL database. Released: SQLite through SQLDelight, `telar-checkpoint-sqldelight`, for Android, iOS, desktop and the browser. Still to come: a database server such as PostgreSQL. | In progress | [#84] |
 | 13 | Long conversations | A conversation that is kept short for the model, by dropping or summarizing old messages, and that pays less for what the provider already read. Today every request sends everything. | Planned | [#105] |
 | 14 | One version for all modules | `telar-bom`: a bill of materials. An app names the version of Telar once, and every module it adds uses that version. | Planned | [#79] |
 
