@@ -4,7 +4,7 @@ coroutines = "1.11.0"
 serialization = "1.11.0"
 kotlinx-io = "0.9.1"
 ktor = "3.6.0"
-langchain4j = "1.21.0"
+langchain4j = "1.22.0"
 mcp = "0.15.0"
 sqldelight = "2.4.1"
 # The worker of SQLDelight for the browser runs SQLite compiled to WebAssembly by sql.js.
