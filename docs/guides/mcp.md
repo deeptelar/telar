@@ -7,11 +7,9 @@ into tools of an agent:
 
 ```kotlin
 dependencies {
-    implementation("dev.deeptelar:telar-mcp:<version>")
+    implementation("dev.deeptelar:telar-mcp:0.1.0-alpha10")
 }
 ```
-
-> `telar-mcp` is not released yet: it comes with the version after `0.1.0-alpha09`.
 
 ```kotlin
 // 1. Connect, with the Kotlin SDK of MCP. Over HTTP this works on every platform.

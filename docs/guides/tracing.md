@@ -9,12 +9,12 @@ as Jaeger, Grafana Tempo or Honeycomb.
 
 ```kotlin
 dependencies {
-    implementation("dev.deeptelar:telar-otel:<version>")
+    implementation("dev.deeptelar:telar-otel:0.1.0-alpha10")
 }
 ```
 
-> `telar-otel` is not released yet: it comes with the version after `0.1.0-alpha09`. It is for the
-> JVM and Android, because the OpenTelemetry API it is built on is a Java library.
+> `telar-otel` is for the JVM and Android, because the OpenTelemetry API it is built on is a Java
+> library.
 
 Give an `OpenTelemetryObserver` to the runs you want to trace:
 

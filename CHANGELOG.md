@@ -7,20 +7,10 @@ breaking changes.
 
 ## [Unreleased]
 
+## [0.1.0-alpha10] - 2026-10-15
+
 ### Added
 
-- `effect(key, serializer, reconcile) { id -> ... }` (and `effect(key, reconcile = ...) { id -> ... }`
-  in `telar-serialization`) for a side effect that must never happen twice. Before the block runs,
-  the effect saves that it started, with a new id for the service's idempotency key, which the block
-  gets and `effectId()` returns. When the step runs again and finds the effect started without a
-  result, because the process stopped after the work and before its save, `reconcile` is asked with
-  the same id: it returns the result when the work was done, `null` to run the block again with the
-  same id, or throws to stop the run. The guide
-  [Side effects](https://deeptelar.github.io/telar/guides/side-effects#effects-that-must-not-happen-twice)
-  shows it.
-- A `Tool` takes a `reconcile` as well: `Tool<Charge>(name, description, reconcile = { ... }) { ... }`.
-  `toolLoop` then runs its calls as an effect with a reconcile, and the tool reads the idempotency
-  key with `effectId()`.
 - `CompiledGraph.toMermaid()` (and `GraphTopology.toMermaid()`) draws a graph as a Mermaid state
   diagram to paste into a README or a pull request: conditional edges get the labels of
   `edgeLabels`, nodes of `interruptBefore` and `interruptAfter` are marked with ⏸, and a subgraph is
@@ -52,7 +42,18 @@ breaking changes.
   another node of the step fails. `effect(key) { ... }` with a `@Serializable` result, a basic
   type or `Unit` is in `telar-serialization`; `telar-core` has `effect(key, serializer) { ... }`.
   The guide [Side effects](https://deeptelar.github.io/telar/guides/side-effects) shows it.
-
+- `effect(key, serializer, reconcile) { id -> ... }` (and `effect(key, reconcile = ...) { id -> ... }`
+  in `telar-serialization`) for a side effect that must never happen twice. Before the block runs,
+  the effect saves that it started, with a new id for the service's idempotency key, which the block
+  gets and `effectId()` returns. When the step runs again and finds the effect started without a
+  result, because the process stopped after the work and before its save, `reconcile` is asked with
+  the same id: it returns the result when the work was done, `null` to run the block again with the
+  same id, or throws to stop the run. The guide
+  [Side effects](https://deeptelar.github.io/telar/guides/side-effects#effects-that-must-not-happen-twice)
+  shows it.
+- A `Tool` takes a `reconcile` as well: `Tool<Charge>(name, description, reconcile = { ... }) { ... }`.
+  `toolLoop` then runs its calls as an effect with a reconcile, and the tool reads the idempotency
+  key with `effectId()`.
 - `ChatModel.ask` in `telar-agent`: ask a model for a `@Serializable` class and get an instance of
   it, `model.ask<Verdict>("Classify this email: ...")`. The model gets the schema of the class, which
   is built as the input schema of a tool is. An answer that cannot be read goes back to the model
@@ -72,7 +73,6 @@ breaking changes.
   each answer to your state and `stopWhen` is asked before each call to the model: when it returns
   `true`, the loop ends and the graph continues at `then`. `TokenUsage` has `+` and `total`, and
   `TokenUsage()` is the start of a count.
-
 - A node can be tried again when it fails, and can have a time limit:
   `node("stock", retry = Retry(attempts = 3), timeout = 30.seconds) { ... }`, and the same for a
   node with a `work` and an `update`. A node with a `Retry` runs again on the same state, in the
@@ -469,7 +469,8 @@ First public release. Everything below is new compared with the unpublished beta
 - `START` counted toward `maxIterations`.
 - `FileCheckpointer` did not write the format version into its files.
 
-[Unreleased]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha09...HEAD
+[Unreleased]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha10...HEAD
+[0.1.0-alpha10]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha09...v0.1.0-alpha10
 [0.1.0-alpha09]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha08...v0.1.0-alpha09
 [0.1.0-alpha08]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha07...v0.1.0-alpha08
 [0.1.0-alpha07]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha06...v0.1.0-alpha07
