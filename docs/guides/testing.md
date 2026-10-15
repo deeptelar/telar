@@ -7,11 +7,9 @@ run takes and for a run that failed in production, run again from its checkpoint
 
 ```kotlin
 dependencies {
-    testImplementation("dev.deeptelar:telar-test:<version>")
+    testImplementation("dev.deeptelar:telar-test:0.1.0-alpha10")
 }
 ```
-
-> `telar-test` is not released yet: it comes with the version after `0.1.0-alpha09`.
 
 It depends on no test library, so it works with `kotlin-test`, JUnit and Kotest, and on every
 platform.

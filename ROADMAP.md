@@ -16,16 +16,15 @@ Last updated: 2026-10-15.
 
 ## Where the project is
 
-`0.1.0-alpha09` is the latest release on Maven Central, and `main` has more for the next one; the
-[changelog](CHANGELOG.md) says what. Telar has the graph builder and the engine: loops, parallel
-branches with rules for what they write, subgraphs, streaming, checkpoints with the history of a
-run, pausing for a person before a node or in the middle of its work, retries and time limits for a
-node, and side effects that run once per step. Around the engine it has checkpointers for memory,
-files, the browser and SQLite on every platform, a tool-calling agent for every platform with tools
-that change the state, typed answers, a token budget and the tools of MCP servers, model modules for
-Claude, for OpenAI, Ollama and the other servers with the Chat Completions API, for LangChain4j, and
-for Jev, a decision model, and modules for tests and for OpenTelemetry. The API can still change in
-any release.
+`0.1.0-alpha10` is the latest release on Maven Central. Telar has the graph builder and the engine:
+loops, parallel branches with rules for what they write, subgraphs, streaming, checkpoints with the
+history of a run, pausing for a person before a node or in the middle of its work, retries and time
+limits for a node, and side effects that run once per step. Around the engine it has checkpointers
+for memory, files, the browser and SQLite on every platform, a tool-calling agent for every platform
+with tools that change the state, typed answers, a token budget and the tools of MCP servers, model
+modules for Claude, for OpenAI, Ollama and the other servers with the Chat Completions API, for
+LangChain4j, and for Jev, a decision model, and modules for tests and for OpenTelemetry. The API can
+still change in any release.
 
 Section 1 is done. What is missing now is mostly in the messages and the engine: a message holds
 text only, the number of parallel nodes is fixed by the edges, and a long conversation is sent to
