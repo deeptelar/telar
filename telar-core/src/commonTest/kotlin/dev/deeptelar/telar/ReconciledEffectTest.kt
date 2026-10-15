@@ -99,7 +99,7 @@ class ReconciledEffectTest {
         }
 
     @Test
-    fun `a reconcile that throws stops the run, and asks again on the next resume`() =
+    fun `a reconcile that throws stops the run and asks again on the next resume`() =
         runTest {
             var canTell = false
             val app = graph { id -> if (canTell) payments.charges[id] else error("The provider is down.") }
@@ -157,7 +157,7 @@ class ReconciledEffectTest {
         }
 
     @Test
-    fun `effectId returns the id inside the block and the reconcile, and null elsewhere`() =
+    fun `effectId returns the id inside the block and the reconcile and null elsewhere`() =
         runTest {
             val seen = mutableListOf<String?>()
             val app =

@@ -144,7 +144,7 @@ class ToolReplayTest {
         }
 
     @Test
-    fun `effect keys are the call ids, with a number for an id that repeats`() {
+    fun `effect keys are the call ids with a number for an id that repeats`() {
         val calls = listOf(chargeCall, receiptCall, chargeCall, chargeCall)
 
         assertEquals(
@@ -216,7 +216,7 @@ class ToolReplayTest {
         }
 
     @Test
-    fun `a call whose reconcile cannot tell waits for a person, who answers it with a result`() =
+    fun `a call whose reconcile cannot tell waits for a person who answers it with a result`() =
         runTest {
             val model = ScriptedModel(calls(chargeCall), says("Paid."))
             val agent = toolAgent(model, listOf(reconciledCharge { error("The provider does not answer.") }))
