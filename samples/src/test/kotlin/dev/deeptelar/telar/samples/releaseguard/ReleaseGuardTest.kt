@@ -65,6 +65,36 @@ class ReleaseGuardTest {
         }
 
     @Test
+    fun `the command line checks a release in one process and approves it in the next`() =
+        withServer { server ->
+            val directory = directory()
+
+            // Each command gets a new graph and checkpointer, as each runs in a process of its own.
+            suspend fun run(command: String?): List<String> =
+                buildList {
+                    releaseGuard(
+                        command,
+                        buildReleaseGraph(mcpTools(server), auditorScript),
+                        releaseConfig(directory, "1.5.0"),
+                        "1.5.0",
+                    ) { add(it) }
+                }
+
+            assertEquals(
+                listOf("Release 1.5.0 is not waiting for approval. Run the sample without arguments first."),
+                run(APPROVE_COMMAND),
+            )
+            val first = run(null)
+            assertEquals("  risk      80", first[1])
+            assertEquals("Paused before $APPROVE: a person has to decide. The run is saved, and this process ends.", first[5])
+            assertEquals(listOf("published 1.5.0 to Maven Central", "5 checkpoints of this run are saved on disk."), run(APPROVE_COMMAND))
+            assertEquals(
+                listOf("Release 1.5.0 is not waiting for approval. Run the sample without arguments first."),
+                run(REJECT_COMMAND),
+            )
+        }
+
+    @Test
     fun `a rejected release is not published`() =
         withServer { server ->
             val graph = buildReleaseGraph(mcpTools(server), auditorScript)

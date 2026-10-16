@@ -207,31 +207,70 @@ val auditorScript: ChatModel =
         )
     }
 
+/** The command that resumes the run with the release approved, and the one that rejects it. */
+const val APPROVE_COMMAND = "--approve"
+const val REJECT_COMMAND = "--reject"
+
 /**
- * Checks two releases: 1.4.0 is clean and is published at once, 1.5.0 adds a secret and waits for
- * a person. Without settings the model is [auditorScript]; with ANTHROPIC_API_KEY, OPENAI_API_KEY
- * or OLLAMA_MODEL it is chosen as in `ToolAgent.kt`.
+ * One command of the release guard, in its own process. Without a [command] it checks [version]:
+ * a clean release is published at once, a risky one is saved to disk and the process ends. A later
+ * process continues it with [APPROVE_COMMAND] or [REJECT_COMMAND].
  */
-suspend fun main() {
+suspend fun releaseGuard(
+    command: String?,
+    graph: CompiledGraph<ReleaseState>,
+    config: GraphConfig<ReleaseState>,
+    version: String,
+    say: (String) -> Unit = { println(it) },
+) {
+    when (command) {
+        null -> {
+            say("Checking release $version: three branches at once")
+            val result = graph.invoke(ReleaseState(version), config)
+            say("  risk      ${result.state.riskScore}")
+            result.state.findings.forEach { say("  finding   $it") }
+            say("  notes     ${result.state.releaseNotes.lines().first()}")
+            when (result) {
+                is GraphResult.Completed -> say(result.state.status)
+                is GraphResult.Interrupted -> {
+                    say("Paused before ${result.nextNodes.single()}: a person has to decide. The run is saved, and this process ends.")
+                    say("Continue it in a new process with one of:")
+                    say("  ./gradlew :samples:runReleaseGuard --args=\"$APPROVE_COMMAND\"")
+                    say("  ./gradlew :samples:runReleaseGuard --args=\"$REJECT_COMMAND\"")
+                }
+            }
+        }
+        APPROVE_COMMAND, REJECT_COMMAND -> {
+            // Read where the thread stopped before resuming it: resume fails when nothing waits.
+            if (graph.lastResult(config) !is GraphResult.Interrupted) {
+                say("Release $version is not waiting for approval. Run the sample without arguments first.")
+                return
+            }
+            val result = graph.resume(config) { it.copy(approved = command == APPROVE_COMMAND) }
+            say(result.state.status)
+            say("${graph.history(config).size} checkpoints of this run are saved on disk.")
+        }
+        else -> say("Unknown command $command. Run without arguments, or with $APPROVE_COMMAND or $REJECT_COMMAND.")
+    }
+}
+
+/**
+ * The release guard as a command line program whose run outlives the process: the first command
+ * checks the release and stops when a person has to decide, the next one continues from disk.
+ *
+ * RELEASE_VERSION names the release, 1.5.0 (which adds a secret) by default, or 1.4.0 (clean).
+ * Without settings the model is [auditorScript], which still calls the tool of the MCP server;
+ * with ANTHROPIC_API_KEY, OPENAI_API_KEY or OLLAMA_MODEL it is chosen as in `ToolAgent.kt`.
+ */
+suspend fun main(args: Array<String>) {
+    val version = System.getenv("RELEASE_VERSION")?.takeIf { it.isNotBlank() } ?: "1.5.0"
+    val directory = Path(SystemTemporaryDirectory, "telar-release-guard")
     val http = HttpClient()
     val server = connectInProcess(repositoryServer())
     try {
         val model = modelFor(http).takeUnless { it === scriptedModel } ?: auditorScript
         val graph = buildReleaseGraph(mcpTools(server), model)
-        val directory = Path(SystemTemporaryDirectory, "telar-release-guard")
-
-        for (version in listOf("1.4.0", "1.5.0")) {
-            println("Release $version")
-            val config = releaseConfig(directory, version)
-            var result = graph.invoke(ReleaseState(version), config)
-            result.state.findings.forEach { println("  $it") }
-            if (result is GraphResult.Interrupted) {
-                print("  Risk ${result.state.riskScore} is at least $RISK_LIMIT. Publish anyway? [y/N] ")
-                val approved = readlnOrNull()?.trim().equals("y", ignoreCase = true)
-                result = graph.resume(config) { it.copy(approved = approved) }
-            }
-            println("  ${result.state.status}\n")
-        }
+        releaseGuard(args.firstOrNull(), graph, releaseConfig(directory, version), version)
     } finally {
         server.close()
         http.close()

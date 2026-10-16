@@ -80,7 +80,6 @@ tasks.register<JavaExec>("runReleaseGuard") {
     description = "Runs the ReleaseGuard sample."
     mainClass.set("dev.deeptelar.telar.samples.releaseguard.MainKt")
     classpath = sourceSets.main.get().runtimeClasspath
-    standardInput = System.`in`
 }
 
 // The levels of the tutorial in docs/tutorial/, for example: ./gradlew :samples:runLevel1

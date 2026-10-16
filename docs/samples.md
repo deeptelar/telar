@@ -14,10 +14,24 @@ Runnable examples live in the repository, in [`samples/`](https://github.com/dee
 ./gradlew :samples:runChatAgent         # a chat agent built on a LangChain4j model
 ./gradlew :samples:runToolAgent         # an agent that calls tools, with or without an API key
 ./gradlew :samples:runMcpTools          # the same agent, with its tools on an MCP server
-./gradlew :samples:runReleaseGuard      # three checks of a release at once; a risky one waits for a person
+./gradlew :samples:runReleaseGuard      # three checks of a release at once; a risky one waits, across processes
 ./gradlew :samples:runKitchenRush       # a model runs a pizzeria for a shift, on a token budget
 ./gradlew :samples:runLevel1            # ... runLevel8, the levels of the tutorial
 ```
+
+## The release guard: a run that outlives its process
+
+[`releaseguard/`](https://github.com/deeptelar/telar/tree/main/samples/src/main/kotlin/dev/deeptelar/telar/samples/releaseguard)
+checks a release with three branches in the same step: an agent with the tools of an MCP server, a
+dependency check, and a writer of release notes, merged by `mergeRules`. A risky release pauses
+before `approve` and is saved to disk, and the process ends. The next command continues it:
+
+```bash
+./gradlew :samples:runReleaseGuard                       # pauses: release 1.5.0 adds a secret
+./gradlew :samples:runReleaseGuard --args="--approve"    # a new process publishes it, or --reject
+```
+
+It needs no API key: the scripted model still calls the tool of the MCP server.
 
 ## The kitchen: one shift, measured
 
