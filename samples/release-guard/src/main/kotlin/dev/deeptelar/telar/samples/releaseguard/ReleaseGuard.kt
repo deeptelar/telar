@@ -5,7 +5,14 @@ import dev.deeptelar.telar.END
 import dev.deeptelar.telar.GraphConfig
 import dev.deeptelar.telar.START
 import dev.deeptelar.telar.StateGraph
+import dev.deeptelar.telar.agent.AgentState
+import dev.deeptelar.telar.agent.ChatMessage
+import dev.deeptelar.telar.agent.ChatModel
+import dev.deeptelar.telar.agent.Tool
+import dev.deeptelar.telar.agent.chat
+import dev.deeptelar.telar.agent.toolAgent
 import dev.deeptelar.telar.checkpoint.file.FileCheckpointer
+import dev.deeptelar.telar.mergeRules
 import dev.deeptelar.telar.serialization.KotlinxStateSerializer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -18,7 +25,7 @@ enum class Severity { OK, WARNING, BLOCKER }
 
 @Serializable
 data class Finding(
-    val check: String,
+    val source: String,
     val severity: Severity,
     val message: String,
 )
@@ -32,185 +39,278 @@ data class Decision(
     val pid: Long,
 )
 
-/** The whole release, as the checkpoint file holds it between the two processes. */
+/**
+ * The whole release, as the checkpoint file holds it between processes. The first properties are
+ * what git says before the graph runs; the rest is what the nodes, a person or a fork add.
+ */
 @Serializable
 data class ReleaseState(
     val repository: String,
+    val tag: String,
+    val commit: String,
+    val previousTag: String?,
+    val commits: List<String>,
     val auditedAtMillis: Long,
     val auditedByPid: Long,
-    val commit: String = "",
-    val branch: String = "",
-    val previousTag: String? = null,
-    val tag: String = "",
-    val commits: List<String> = emptyList(),
+    // The three branches write these at the same time; the merge rules combine them.
     val findings: List<Finding> = emptyList(),
+    val risk: Int = 0,
+    val changelog: String = "",
+    val securitySummary: String = "",
+    // Written later: by a person when the run goes on, by a fork, by the last node.
     val decision: Decision? = null,
-    val published: Boolean = false,
+    val revision: Int = 1,
     val outcome: String = "",
+    val published: Boolean = false,
 ) {
     val blockers: List<Finding> get() = findings.filter { it.severity == Severity.BLOCKER }
     val shortCommit: String get() = commit.take(7)
+
+    /** Where the release starts: the last tag, or nothing for a first release. */
+    val from: String get() = previousTag ?: EMPTY_TREE
 }
 
-const val TAG = "tag"
-const val THREAD = "release"
+const val SECURITY_AGENT = "security_agent"
+const val DEPENDENCY_AUDIT = "dependency_audit"
+const val CHANGELOG_WRITER = "changelog_writer"
+const val VERDICT = "verdict"
+const val PUBLISH = "publish"
+
+private const val SECURITY_PROMPT =
+    "You review a release before it is tagged. Call read_diff to see what changed, then scan_secrets. " +
+        "Answer in two sentences: what the release changes, and whether anything must stop it."
 
 /**
- * The audit. `inspect` reads where HEAD is and which tag comes next; four checks run in parallel;
- * `verdict` joins them and routes to `blocked`, or to `tag`, which waits for a person. `tag` runs in
- * a later process, so it looks at the repository again before it trusts what was audited.
+ * Reads where HEAD is, which tag comes next and what changed since the last one. Returns `null`
+ * when [repository] is not a git repository with a commit. What git shows here becomes the first
+ * findings.
  */
-fun releaseGuardGraph(repository: Repository, notes: File): CompiledGraph<ReleaseState> =
-    StateGraph<ReleaseState> {
-        val inspect = node("inspect") { inspect(repository, it) }
-        val checks =
-            listOf(
-                node("working_tree", work = { workingTree(repository, it) }) { state, finding -> state + finding },
-                node("tag_is_free", work = { tagIsFree(repository, it) }) { state, finding -> state + finding },
-                node("changelog", work = { changelog(repository, it) }) { state, finding -> state + finding },
-                node("version", work = { version(repository, it) }) { state, finding -> state + finding },
-            )
-        val verdict = node("verdict") { it }
-        val blocked = node("blocked") { it.copy(outcome = "Blocked: ${it.blockers.joinToString("; ") { b -> b.message }}") }
-        val tag = node(TAG) { publish(repository, notes, it) }
-
-        START then inspect
-        checks.forEach { check -> inspect then check then verdict }
-        conditionalEdge(verdict, setOf(blocked, tag)) { if (it.blockers.isEmpty()) tag else blocked }
-        blocked then END
-        tag then END
-    }.compile()
-
-/** The run is saved in [home], so a later process (or a later day) can continue it. */
-fun releaseGuardConfig(home: File): GraphConfig<ReleaseState> =
-    GraphConfig(
-        threadId = THREAD,
-        checkpointer = FileCheckpointer(Path(home.path, "checkpoints"), KotlinxStateSerializer<ReleaseState>()),
-        interruptBefore = setOf(TAG),
-    )
-
-private operator fun ReleaseState.plus(finding: Finding?): ReleaseState = if (finding == null) this else copy(findings = findings + finding)
-
-private suspend fun inspect(repository: Repository, state: ReleaseState): ReleaseState {
+suspend fun prepareRelease(repository: Repository, now: Long, pid: Long): ReleaseState? {
     val head = repository.git("rev-parse", "--verify", "HEAD")
-    if (!head.ok) {
-        return state + Finding("inspect", Severity.BLOCKER, "${repository.directory} is not a git repository with a commit (${head.text})")
-    }
+    if (!head.ok) return null
     val branch = repository.git("rev-parse", "--abbrev-ref", "HEAD").text
     val previousTag = repository.git("describe", "--tags", "--abbrev=0").takeIf { it.ok }?.text
-    val range = if (previousTag == null) "HEAD" else "$previousTag..HEAD"
     val commits =
         repository
-            .git("log", "--no-merges", "--format=%s", range)
+            .git("log", "--no-merges", "--format=%s", if (previousTag == null) "HEAD" else "$previousTag..HEAD")
             .text
             .lines()
             .filter { it.isNotBlank() }
     // The version the build says it is, unless that tag already exists: then the tag after the last one.
-    val version = repository.read("gradle.properties")?.let { propertyOf(it, "VERSION_NAME") }?.removeSuffix("-SNAPSHOT")
+    val version = repository.read("gradle.properties")?.let { propertyOf(it, "VERSION_NAME") }
+    val release = version?.removeSuffix("-SNAPSHOT")
     val tag =
         when {
-            version != null && !tagExists(repository, "v$version") -> "v$version"
+            release != null && !tagExists(repository, "v$release") -> "v$release"
             previousTag != null -> nextTag(previousTag)
             else -> "v0.1.0"
         }
     val since = if (previousTag == null) "in the whole history" else "since $previousTag"
-    val inspected = state.copy(commit = head.text, branch = branch, previousTag = previousTag, tag = tag, commits = commits)
-    return when {
-        commits.isEmpty() -> inspected + Finding("inspect", Severity.BLOCKER, "No commits $since: nothing to release")
-        branch != "main" && branch != "master" ->
-            inspected + Finding("inspect", Severity.WARNING, "HEAD ${inspected.shortCommit} is on $branch, not on main")
-        else -> inspected + Finding("inspect", Severity.OK, "HEAD ${inspected.shortCommit} on $branch, ${commits.size} commits $since")
-    }
-}
-
-private suspend fun tagExists(repository: Repository, tag: String): Boolean =
-    repository.git("rev-parse", "-q", "--verify", "refs/tags/$tag").ok
-
-private suspend fun workingTree(repository: Repository, state: ReleaseState): Finding? {
-    if (state.commit.isEmpty()) return null
-    val changes =
+    val dirty =
         repository
             .git("status", "--porcelain")
             .text
             .lines()
-            .filter { it.isNotBlank() }
-    return if (changes.isEmpty()) {
-        Finding("working_tree", Severity.OK, "Working tree is clean")
-    } else {
-        Finding("working_tree", Severity.WARNING, "${changes.size} uncommitted changes; the tag will not contain them")
-    }
+            .count { it.isNotBlank() }
+    val findings =
+        buildList {
+            add(
+                when {
+                    commits.isEmpty() -> Finding("git", Severity.BLOCKER, "No commits $since: nothing to release")
+                    branch != "main" && branch != "master" -> Finding("git", Severity.WARNING, "HEAD is on $branch, not on main")
+                    else -> Finding("git", Severity.OK, "${commits.size} commits $since on $branch")
+                },
+            )
+            if (tagExists(repository, tag)) add(Finding("git", Severity.BLOCKER, "$tag already exists"))
+            if (dirty > 0) add(Finding("git", Severity.WARNING, "$dirty uncommitted changes; the tag will not contain them"))
+            if (version != null && "v$version" != tag) {
+                add(Finding("git", Severity.WARNING, "VERSION_NAME is $version; set it to ${tag.removePrefix("v")} before tagging"))
+            }
+        }
+    return ReleaseState(
+        repository = repository.directory.path,
+        tag = tag,
+        commit = head.text,
+        previousTag = previousTag,
+        commits = commits,
+        auditedAtMillis = now,
+        auditedByPid = pid,
+        findings = findings,
+        risk = if (findings.any { it.severity == Severity.WARNING }) 2 else 0,
+    )
 }
 
-private suspend fun tagIsFree(repository: Repository, state: ReleaseState): Finding? {
-    if (state.commit.isEmpty()) return null
-    return if (tagExists(repository, state.tag)) {
-        Finding("tag_is_free", Severity.BLOCKER, "${state.tag} already exists")
-    } else {
-        Finding("tag_is_free", Severity.OK, "${state.tag} does not exist yet")
-    }
+/**
+ * The audit. Three branches run at the same time from [START]: an agent that reviews the diff with
+ * the tools of an MCP server ([securityTools]), a check of the version catalog, and a model that
+ * drafts the changelog. The merge rules combine what they return. `verdict` routes to `blocked`, or
+ * to `publish`, which waits for a person and runs in a later process.
+ */
+fun releaseGuardGraph(repository: Repository, model: ChatModel, securityTools: List<Tool>, notes: File): CompiledGraph<ReleaseState> =
+    StateGraph<ReleaseState> {
+        val security =
+            subgraph(
+                SECURITY_AGENT,
+                toolAgent(model, securityTools, system = SECURITY_PROMPT),
+                state = { AgentState("Review the release ${it.tag}: ${it.commits.size} commits since ${it.previousTag ?: "the start"}.") },
+                update = { release, agent -> securityReport(release, agent) },
+            )
+        val dependencies =
+            node(DEPENDENCY_AUDIT, work = { dependencyAudit(repository, it) }) { release, (found, risk) ->
+                release.copy(findings = release.findings + found, risk = maxOf(release.risk, risk))
+            }
+        val changelog =
+            node(CHANGELOG_WRITER, work = { model.chat(changelogPrompt(it, instruction = null)) }) { release, text ->
+                release.copy(changelog = text.trim())
+            }
+        val verdict = node(VERDICT) { it }
+        val blocked = node("blocked") { it.copy(outcome = "Blocked: ${it.blockers.joinToString("; ") { b -> b.message }}") }
+        val publish = node(PUBLISH) { publishRelease(repository, notes, it) }
+
+        for (branch in listOf(security, dependencies, changelog)) {
+            START then branch then verdict
+        }
+        conditionalEdge(verdict, setOf(blocked, publish)) { if (it.blockers.isEmpty()) publish else blocked }
+        blocked then END
+        publish then END
+    }.compile(
+        // Every node of a step gets the state from before the step, and these rules combine what they return.
+        rules =
+            mergeRules {
+                append(ReleaseState::findings) { copy(findings = it) }
+                merge(ReleaseState::risk, combine = { before, changed -> maxOf(before, changed.max()) }) { copy(risk = it) }
+                replace(ReleaseState::changelog) { copy(changelog = it) }
+                replace(ReleaseState::securitySummary) { copy(securitySummary = it) }
+                replace(ReleaseState::outcome) { copy(outcome = it) }
+                replace(ReleaseState::published) { copy(published = it) }
+            },
+    )
+
+/** The runs are saved in [home]`/.checkpoints`, one file per thread, so a later process can continue them. */
+fun releaseGuardConfig(home: File, threadId: String): GraphConfig<ReleaseState> =
+    GraphConfig(
+        threadId = threadId,
+        checkpointer = FileCheckpointer(Path(File(home, ".checkpoints").path), KotlinxStateSerializer<ReleaseState>()),
+        interruptBefore = setOf(PUBLISH),
+    )
+
+/** The thread of a release: `release-1-2-0` for `v1.2.0`, and `release-1-2-0-r2` for its first fork. */
+fun threadOf(tag: String, revision: Int): String {
+    val base = "release-" + tag.removePrefix("v").lowercase().replace(Regex("[^a-z0-9]+"), "-")
+    return if (revision == 1) base else "$base-r$revision"
 }
 
-private suspend fun changelog(repository: Repository, state: ReleaseState): Finding? {
-    if (state.commit.isEmpty()) return null
-    val text = repository.read("CHANGELOG.md") ?: return Finding("changelog", Severity.WARNING, "No CHANGELOG.md")
-    val version = state.tag.removePrefix("v")
-    val hasEntries = { title: String -> changelogSection(text, title).orEmpty().any { it.startsWith("- ") } }
-    return when {
-        hasEntries(version) -> Finding("changelog", Severity.OK, "CHANGELOG.md describes $version")
-        hasEntries("Unreleased") ->
-            Finding("changelog", Severity.WARNING, "CHANGELOG.md has entries under [Unreleased], none under [$version]")
-        else -> Finding("changelog", Severity.WARNING, "CHANGELOG.md has no entries for $version")
+/** What the changelog writer is asked. [instruction] is what a person asked for in a fork. */
+fun changelogPrompt(release: ReleaseState, instruction: String?): String =
+    buildString {
+        appendLine("Write the changelog of ${release.tag} for its users from these commits. Answer with Markdown only, no heading.")
+        release.commits.forEach { appendLine("- $it") }
+        if (instruction != null) append("$INSTRUCTION $instruction")
     }
+
+/** What the security agent found: the scan of the MCP server is the evidence, the agent's answer the summary. */
+private fun securityReport(release: ReleaseState, agent: AgentState): ReleaseState {
+    val scans = agent.messages.filterIsInstance<ChatMessage.ToolResult>().filter { it.toolName == "scan_secrets" && !it.isError }
+    val secrets = scans.flatMap { scan -> scan.text.lines().filter { it.startsWith("SECRET ") } }
+    val (findings, risk) =
+        when {
+            secrets.isNotEmpty() ->
+                secrets.map { Finding(SECURITY_AGENT, Severity.BLOCKER, "Secret at ${it.removePrefix("SECRET ")}") } to
+                    10
+            scans.isEmpty() -> listOf(Finding(SECURITY_AGENT, Severity.WARNING, "The agent did not scan the diff for secrets")) to 5
+            else ->
+                listOf(
+                    Finding(
+                        SECURITY_AGENT,
+                        Severity.OK,
+                        scans
+                            .last()
+                            .text
+                            .lines()
+                            .first(),
+                    ),
+                ) to 1
+        }
+    return release.copy(
+        findings = release.findings + findings,
+        risk = maxOf(release.risk, risk),
+        securitySummary = agent.answer.orEmpty(),
+    )
 }
 
-private suspend fun version(repository: Repository, state: ReleaseState): Finding? {
-    if (state.commit.isEmpty()) return null
-    val properties = repository.read("gradle.properties") ?: return null
-    val version = propertyOf(properties, "VERSION_NAME") ?: return null
-    return if ("v$version" == state.tag) {
-        Finding("version", Severity.OK, "VERSION_NAME is $version")
-    } else {
-        Finding("version", Severity.WARNING, "VERSION_NAME is $version; set it to ${state.tag.removePrefix("v")} before tagging")
-    }
+private val versionLine = Regex("""^\s*([A-Za-z0-9_.-]+)\s*=\s*"([^"]+)"""")
+private val preRelease = Regex("""(?i)(alpha|beta|rc|eap|dev|-M\d)""")
+
+/** Checks the version catalog: a snapshot stops the release, a pre-release or a changed version is worth a look. */
+private suspend fun dependencyAudit(repository: Repository, release: ReleaseState): Pair<List<Finding>, Int> {
+    val catalog = "gradle/libs.versions.toml"
+    val text = repository.read(catalog) ?: return listOf(Finding(DEPENDENCY_AUDIT, Severity.OK, "No $catalog to audit")) to 0
+    val versions =
+        text
+            .substringAfter("[versions]", "")
+            .substringBefore("\n[")
+            .lines()
+            .mapNotNull { line -> versionLine.find(line)?.destructured?.let { (name, version) -> name to version } }
+    val changed =
+        repository
+            .git("diff", "--unified=0", release.from, release.commit, "--", catalog)
+            .text
+            .lines()
+            .filter { it.startsWith("+") && !it.startsWith("+++") }
+            .mapNotNull { versionLine.find(it.drop(1))?.groupValues?.get(1) }
+    val snapshots = versions.filter { (_, version) -> version.endsWith("-SNAPSHOT") }
+    val previews = versions.filter { (_, version) -> preRelease.containsMatchIn(version) } - snapshots.toSet()
+    val findings =
+        buildList {
+            snapshots.forEach { (name, version) -> add(Finding(DEPENDENCY_AUDIT, Severity.BLOCKER, "$name is a snapshot: $version")) }
+            previews.forEach { (name, version) -> add(Finding(DEPENDENCY_AUDIT, Severity.WARNING, "$name is a pre-release: $version")) }
+            if (changed.isNotEmpty()) {
+                add(Finding(DEPENDENCY_AUDIT, Severity.WARNING, "${changed.size} versions changed: ${changed.joinToString()}"))
+            }
+            if (isEmpty()) add(Finding(DEPENDENCY_AUDIT, Severity.OK, "${versions.size} versions, all stable, none changed"))
+        }
+    val risk =
+        when {
+            snapshots.isNotEmpty() -> 8
+            previews.isNotEmpty() -> 4
+            changed.isNotEmpty() -> 3
+            else -> 0
+        }
+    return findings to risk
 }
 
 /**
  * Runs after the pause, in another process. The repository may have changed since the audit, so
  * this looks again; then it writes the release notes and prints the commands. It does not run them.
  */
-private suspend fun publish(repository: Repository, notes: File, state: ReleaseState): ReleaseState {
-    val decision = state.decision ?: return state.copy(outcome = "No decision was given")
-    if (!decision.approved) return state.copy(outcome = "Rejected by ${decision.by}. No tag.")
+private suspend fun publishRelease(repository: Repository, notes: File, release: ReleaseState): ReleaseState {
+    val decision = release.decision ?: return release.copy(outcome = "No decision was given")
+    if (!decision.approved) return release.copy(outcome = "Rejected by ${decision.by}. No tag.")
 
     val head = repository.git("rev-parse", "--verify", "HEAD").text
-    if (head != state.commit) {
-        return state.copy(
-            outcome = "Refused: HEAD moved from ${state.shortCommit} to ${head.take(7)} after the audit. Audit again.",
-        )
+    if (head != release.commit) {
+        return release.copy(outcome = "Refused: HEAD moved from ${release.shortCommit} to ${head.take(7)} after the audit. Audit again.")
     }
-    if (tagExists(repository, state.tag)) {
-        return state.copy(outcome = "Refused: ${state.tag} was created after the audit.")
+    if (tagExists(repository, release.tag)) {
+        return release.copy(outcome = "Refused: ${release.tag} was created after the audit.")
     }
 
-    val file = File(notes, "${state.tag}.md")
+    val file = File(notes, "${release.tag}.md")
     withContext(Dispatchers.IO) {
         notes.mkdirs()
-        file.writeText(
-            buildString {
-                appendLine(state.tag)
-                appendLine()
-                state.commits.forEach { appendLine("- $it") }
-            },
-        )
+        file.writeText("${release.tag}\n\n${release.changelog}\n")
     }
-    return state.copy(
+    return release.copy(
         published = true,
         outcome =
             """
-            Release notes: ${file.path}
+            Approved by ${decision.by}. Release notes: ${file.path}
             Publish with (Release Guard never changes your repository):
-              git tag -a ${state.tag} ${state.shortCommit} -F ${file.path}
-              git push origin ${state.tag}
+              git tag -a ${release.tag} ${release.shortCommit} -F ${file.path}
+              git push origin ${release.tag}
             """.trimIndent(),
     )
 }
+
+private suspend fun tagExists(repository: Repository, tag: String): Boolean =
+    repository.git("rev-parse", "-q", "--verify", "refs/tags/$tag").ok

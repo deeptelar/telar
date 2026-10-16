@@ -36,3 +36,6 @@ local.properties
 node_modules/
 docs/.vitepress/dist/
 docs/.vitepress/cache/
+
+# The saved runs of the release-guard sample
+.checkpoints/

@@ -61,14 +61,3 @@ fun nextTag(tag: String): String {
     val last = Regex("""\d+(?!.*\d)""").find(tag) ?: return "$tag.1"
     return tag.replaceRange(last.range, (last.value.toInt() + 1).toString())
 }
-
-/** The lines of the section `## [title]` of a changelog, without blank lines, or `null` when there is no such section. */
-fun changelogSection(changelog: String, title: String): List<String>? {
-    val lines = changelog.lines()
-    val start = lines.indexOfFirst { it.startsWith("## [$title]") }
-    if (start < 0) return null
-    return lines
-        .drop(start + 1)
-        .takeWhile { !it.startsWith("## ") }
-        .filter { it.isNotBlank() }
-}
