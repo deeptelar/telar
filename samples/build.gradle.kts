@@ -74,14 +74,6 @@ tasks.register<JavaExec>("runKitchenRush") {
     classpath = sourceSets.main.get().runtimeClasspath
 }
 
-// A release checked by three parallel branches, one of them an agent with MCP tools, that waits for a person when it is risky.
-tasks.register<JavaExec>("runReleaseGuard") {
-    group = "samples"
-    description = "Runs the ReleaseGuard sample."
-    mainClass.set("dev.deeptelar.telar.samples.releaseguard.MainKt")
-    classpath = sourceSets.main.get().runtimeClasspath
-}
-
 // The levels of the tutorial in docs/tutorial/, for example: ./gradlew :samples:runLevel1
 (1..8).forEach { level ->
     tasks.register<JavaExec>("runLevel$level") {

@@ -4,9 +4,11 @@ A handoff note for the agent (or person) that continues this branch on a machine
 the project. **Delete this file in the last commit before the branch is merged.** It is not
 documentation of the project.
 
-- Branch: `ccr-e4db339c-jvx1ek`
+- Branch: `ccr-9186b6c5-i75a94`. Everything for this sample is here; it was written on
+  `ccr-e4db339c-jvx1ek` and merged in, so that branch is no longer needed.
 - Commits: `1f97e03` (first version of the sample), `3194cf6` (the version to verify), `c625b67`
-  (this note). Verified at `c625b67` on 2026-10-16; the code has not changed since.
+  (this note), all from `ccr-e4db339c-jvx1ek`. Verified at `c625b67` on 2026-10-16; the code of the
+  sample has not changed since.
 - Read first: [CLAUDE.md](CLAUDE.md) and [CONTRIBUTING.md](CONTRIBUTING.md). Their rules apply.
 
 ## Status
@@ -44,18 +46,13 @@ Notes for an agent in a restricted cloud container; on a normal machine skip thi
   fork of the JS tests) with 403. That is why step 5 is partial. Allowing those hosts in the
   environment's network settings would let it run.
 
-### Two versions of the sample exist
+### One sample, not two
 
-Branch `ccr-9186b6c5-i75a94` has a smaller sample with the same package name: `ReleaseGuard`, inside
-the `samples` module (`samples/src/main/kotlin/.../releaseguard/`), run with
-`./gradlew :samples:runReleaseGuard`. It runs three branches through `mergeRules`, pauses before an
-`approve` node only for a risky release, and resumes with `--approve` or `--reject` in a new process.
-It has no git, no fork and no evidence-based risk, and it has 4 tests, which pass. Both branches
-change `docs/samples.md`.
-
-**Merge one, not both.** This branch is the more complete one and matches the plan of this note.
-If it is chosen, close the other branch, or take only what this one lacks from it. Do not merge both:
-they would put two samples with the same package and two sections in `docs/samples.md`.
+This branch first had a smaller sample of the same name, `ReleaseGuard` inside the `samples` module
+(`./gradlew :samples:runReleaseGuard`). It was removed when `ccr-e4db339c-jvx1ek` was merged in,
+because this one does all it did and more: real git, `--fork`, and risk from evidence. Its section
+in `docs/samples.md` went with it, and `samples/build.gradle.kts` is the same as on `main` again.
+Nothing of it remains to keep in step.
 
 ## What the sample is
 
@@ -94,8 +91,8 @@ Requirements: JDK 17+, `git` on the `PATH`, network access to Maven Central and 
 portal. For the step 5 browser tests (`check`), Chrome or Chromium (`CHROME_BIN`).
 
 ```bash
-git fetch origin ccr-e4db339c-jvx1ek
-git checkout ccr-e4db339c-jvx1ek
+git fetch origin ccr-9186b6c5-i75a94
+git checkout ccr-9186b6c5-i75a94
 
 # 1. Compile. Expect to fix compile errors here first; nothing has been compiled yet.
 ./gradlew :samples:release-guard:compileTestKotlin
@@ -192,9 +189,9 @@ They were made on purpose; change them only with a reason:
       process ids shown different
 - [ ] `./gradlew check apiCheck` passes, and the docs site builds. The docs site builds and the JVM
       part of `check` passes; the JS, Wasm and native tasks still have to run, locally or in CI
-- [ ] Choose between this branch and `ccr-9186b6c5-i75a94` (see "Two versions of the sample exist")
+- [x] One sample on one branch (see "One sample, not two")
 - [x] Any fix is committed with the repository's style (`Samples: ...`, imperative), and
       `docs/samples.md` still matches the real output and flags. No fix was needed
 - [ ] This file is deleted in the last commit, then the branch is pushed:
-      `git push -u origin ccr-e4db339c-jvx1ek`
+      `git push -u origin ccr-9186b6c5-i75a94`
 - [ ] A pull request is opened only if the user asks for one
