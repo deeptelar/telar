@@ -20,6 +20,7 @@ dokka {
 apiValidation {
     // Samples are not published, so they have no API to keep stable.
     ignoredProjects.add("samples")
+    ignoredProjects.add("release-guard")
     @OptIn(kotlinx.validation.ExperimentalBCVApi::class)
     klib {
         enabled = true
