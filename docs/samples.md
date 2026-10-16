@@ -15,8 +15,31 @@ Runnable examples live in the repository, in [`samples/`](https://github.com/dee
 ./gradlew :samples:runToolAgent         # an agent that calls tools, with or without an API key
 ./gradlew :samples:runMcpTools          # the same agent, with its tools on an MCP server
 ./gradlew :samples:runKitchenRush       # a model runs a pizzeria for a shift, on a token budget
+./gradlew :samples:release-guard:run    # audit a release, exit, approve it in a new process
 ./gradlew :samples:runLevel1            # ... runLevel8, the levels of the tutorial
 ```
+
+## Release Guard: a pause that outlives the process
+
+[`release-guard/`](https://github.com/deeptelar/telar/tree/main/samples/release-guard) audits the
+repository it was cloned into before a tag is published. It needs no API key, no Docker and no
+Node.js: only `git` and the JDK.
+
+```bash
+./gradlew :samples:release-guard:run                  # audit, save the run to disk, exit
+./gradlew :samples:release-guard:run --args=approve   # a new JVM loads the run and finishes it
+./gradlew :samples:release-guard:run --args=reject    # ... or turns it down
+./gradlew :samples:release-guard:run --args=reset     # forget the saved run
+```
+
+The first command reads where `HEAD` is and which tag comes next, runs four checks at the same time
+(a clean working tree, a free tag, the changelog, `VERSION_NAME`), and stops before the `tag` node
+because of `interruptBefore`. `FileCheckpointer` has saved the run in
+`samples/release-guard/build/release-guard/checkpoints/release.json`, and the process ends: there is no
+`readln()` keeping it alive. The second command is another process, minutes or days later. It loads
+that file, adds the decision with `resume`, and runs `tag`, which looks at the repository again and
+refuses when `HEAD` moved after the audit. An approved release gets its notes written and the
+`git tag` and `git push` commands printed; the guard never changes the repository.
 
 ## The kitchen: one shift, measured
 

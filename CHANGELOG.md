@@ -7,6 +7,13 @@ breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- The sample `release-guard` audits the repository before a tag is published, saves the run with
+  `FileCheckpointer` and ends the process at `interruptBefore`; `--args=approve` continues it in a
+  new process. It runs right after `git clone`, with no API key:
+  `./gradlew :samples:release-guard:run`. See [Samples](https://deeptelar.github.io/telar/samples).
+
 ## [0.1.0-alpha10] - 2026-10-15
 
 ### Added
