@@ -1,0 +1,47 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, js, linuxArm64, linuxX64, macosArm64, mingwX64, wasmJs]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <telar:telar-otel>
+final class dev.deeptelar.telar.otel/OtlpExportException : dev.deeptelar.telar/TelarException { // dev.deeptelar.telar.otel/OtlpExportException|null[0]
+    constructor <init>(kotlin/String, kotlin/Throwable? = ...) // dev.deeptelar.telar.otel/OtlpExportException.<init>|<init>(kotlin.String;kotlin.Throwable?){}[0]
+}
+
+final class dev.deeptelar.telar.otel/OtlpObserver : dev.deeptelar.telar/GraphObserver { // dev.deeptelar.telar.otel/OtlpObserver|null[0]
+    constructor <init>(io.ktor.client/HttpClient, kotlinx.coroutines/CoroutineScope, kotlin/String = ..., kotlin/String = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin.time/Duration = ..., kotlin/Function1<dev.deeptelar.telar.otel/OtlpExportException, kotlin/Unit> = ...) // dev.deeptelar.telar.otel/OtlpObserver.<init>|<init>(io.ktor.client.HttpClient;kotlinx.coroutines.CoroutineScope;kotlin.String;kotlin.String;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.time.Duration;kotlin.Function1<dev.deeptelar.telar.otel.OtlpExportException,kotlin.Unit>){}[0]
+
+    final fun nodeContext(dev.deeptelar.telar/ObservedNode): kotlin.coroutines/CoroutineContext // dev.deeptelar.telar.otel/OtlpObserver.nodeContext|nodeContext(dev.deeptelar.telar.ObservedNode){}[0]
+    final fun onCheckpointSaved(dev.deeptelar.telar/ObservedRun, kotlin/Int, kotlin.collections/List<kotlin/String>) // dev.deeptelar.telar.otel/OtlpObserver.onCheckpointSaved|onCheckpointSaved(dev.deeptelar.telar.ObservedRun;kotlin.Int;kotlin.collections.List<kotlin.String>){}[0]
+    final fun onNodeCompleted(dev.deeptelar.telar/ObservedNode) // dev.deeptelar.telar.otel/OtlpObserver.onNodeCompleted|onNodeCompleted(dev.deeptelar.telar.ObservedNode){}[0]
+    final fun onNodeFailed(dev.deeptelar.telar/ObservedNode, kotlin/Throwable) // dev.deeptelar.telar.otel/OtlpObserver.onNodeFailed|onNodeFailed(dev.deeptelar.telar.ObservedNode;kotlin.Throwable){}[0]
+    final fun onNodeInterrupted(dev.deeptelar.telar/ObservedNode) // dev.deeptelar.telar.otel/OtlpObserver.onNodeInterrupted|onNodeInterrupted(dev.deeptelar.telar.ObservedNode){}[0]
+    final fun onNodeRetry(dev.deeptelar.telar/ObservedNode, kotlin/Int, kotlin/Throwable, kotlin.time/Duration) // dev.deeptelar.telar.otel/OtlpObserver.onNodeRetry|onNodeRetry(dev.deeptelar.telar.ObservedNode;kotlin.Int;kotlin.Throwable;kotlin.time.Duration){}[0]
+    final fun onNodeStarted(dev.deeptelar.telar/ObservedNode) // dev.deeptelar.telar.otel/OtlpObserver.onNodeStarted|onNodeStarted(dev.deeptelar.telar.ObservedNode){}[0]
+    final fun onRunCompleted(dev.deeptelar.telar/ObservedRun) // dev.deeptelar.telar.otel/OtlpObserver.onRunCompleted|onRunCompleted(dev.deeptelar.telar.ObservedRun){}[0]
+    final fun onRunFailed(dev.deeptelar.telar/ObservedRun, kotlin/Throwable) // dev.deeptelar.telar.otel/OtlpObserver.onRunFailed|onRunFailed(dev.deeptelar.telar.ObservedRun;kotlin.Throwable){}[0]
+    final fun onRunInterrupted(dev.deeptelar.telar/ObservedRun, kotlin.collections/List<kotlin/String>) // dev.deeptelar.telar.otel/OtlpObserver.onRunInterrupted|onRunInterrupted(dev.deeptelar.telar.ObservedRun;kotlin.collections.List<kotlin.String>){}[0]
+    final fun onRunStarted(dev.deeptelar.telar/ObservedRun) // dev.deeptelar.telar.otel/OtlpObserver.onRunStarted|onRunStarted(dev.deeptelar.telar.ObservedRun){}[0]
+    final fun onStepCompleted(dev.deeptelar.telar/ObservedRun, kotlin/Int, kotlin.collections/List<kotlin/String>, kotlin.collections/List<kotlin/String>) // dev.deeptelar.telar.otel/OtlpObserver.onStepCompleted|onStepCompleted(dev.deeptelar.telar.ObservedRun;kotlin.Int;kotlin.collections.List<kotlin.String>;kotlin.collections.List<kotlin.String>){}[0]
+    final suspend fun flush() // dev.deeptelar.telar.otel/OtlpObserver.flush|flush(){}[0]
+}
+
+final class dev.deeptelar.telar.otel/TraceContext : kotlin.coroutines/AbstractCoroutineContextElement { // dev.deeptelar.telar.otel/TraceContext|null[0]
+    constructor <init>(kotlin/String, kotlin/String) // dev.deeptelar.telar.otel/TraceContext.<init>|<init>(kotlin.String;kotlin.String){}[0]
+
+    final val spanId // dev.deeptelar.telar.otel/TraceContext.spanId|{}spanId[0]
+        final fun <get-spanId>(): kotlin/String // dev.deeptelar.telar.otel/TraceContext.spanId.<get-spanId>|<get-spanId>(){}[0]
+    final val traceId // dev.deeptelar.telar.otel/TraceContext.traceId|{}traceId[0]
+        final fun <get-traceId>(): kotlin/String // dev.deeptelar.telar.otel/TraceContext.traceId.<get-traceId>|<get-traceId>(){}[0]
+    final val traceparent // dev.deeptelar.telar.otel/TraceContext.traceparent|{}traceparent[0]
+        final fun <get-traceparent>(): kotlin/String // dev.deeptelar.telar.otel/TraceContext.traceparent.<get-traceparent>|<get-traceparent>(){}[0]
+
+    final fun toString(): kotlin/String // dev.deeptelar.telar.otel/TraceContext.toString|toString(){}[0]
+
+    final object Key : kotlin.coroutines/CoroutineContext.Key<dev.deeptelar.telar.otel/TraceContext> // dev.deeptelar.telar.otel/TraceContext.Key|null[0]
+}
+
+final val dev.deeptelar.telar.otel/Traceparent // dev.deeptelar.telar.otel/Traceparent|{}Traceparent[0]
+    final fun <get-Traceparent>(): io.ktor.client.plugins.api/ClientPlugin<kotlin/Unit> // dev.deeptelar.telar.otel/Traceparent.<get-Traceparent>|<get-Traceparent>(){}[0]

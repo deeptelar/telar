@@ -26,11 +26,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
-private data class Ticket(
-    val text: String = "",
-    val answer: String? = null,
-)
-
 class OpenTelemetryObserverTest {
     private val exporter = InMemorySpanExporter.create()
     private val tracerProvider = SdkTracerProvider.builder().addSpanProcessor(SimpleSpanProcessor.create(exporter)).build()
