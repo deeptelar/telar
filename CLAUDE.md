@@ -75,9 +75,12 @@ made under that name keep it. The repository is `deeptelar/telar` and the demo i
   (`io.modelcontextprotocol:kotlin-sdk-client`, an `api` dependency): the app connects and closes
   the SDK's `Client`. Its tests talk to `FakeMcpServer`, a server over channels in `commonTest`,
   because the server side of the SDK has no iOS targets
-- **`telar-otel`** (JVM): `OpenTelemetryObserver`, a `GraphObserver` that sends runs and nodes
-  to OpenTelemetry as spans, and makes the span of a node current while it runs. It never records
-  the state
+- **`telar-otel`** (KMP): `OtlpObserver` in `commonMain`, a `GraphObserver` that builds the spans of
+  runs and nodes itself and sends them as OTLP/HTTP JSON with the app's Ktor `HttpClient`, from a
+  coroutine of the app's scope; it puts a `TraceContext` in the context of each node, and the Ktor
+  plugin `Traceparent` sends it on. `OpenTelemetryObserver` in `jvmMain` records the same spans
+  through the OpenTelemetry API of Java and makes the span of a node current while it runs. Neither
+  records the state. Its JS and Wasm tests also run in headless Chrome, with Ktor's `Js` engine
 - **`telar-test`** (KMP, no test framework): helpers for the tests of an app. `ScriptedChatModel`
   and `ScriptedDecisionModel` give the answers of a script in order and keep their requests; a
   script that is too short throws an `AssertionError`, which the engine passes on. `record()`
