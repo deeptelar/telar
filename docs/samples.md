@@ -14,6 +14,7 @@ Runnable examples live in the repository, in [`samples/`](https://github.com/dee
 ./gradlew :samples:runChatAgent         # a chat agent built on a LangChain4j model
 ./gradlew :samples:runToolAgent         # an agent that calls tools, with or without an API key
 ./gradlew :samples:runMcpTools          # the same agent, with its tools on an MCP server
+./gradlew :samples:runReleaseGuard      # three checks of a release at once; a risky one waits for a person
 ./gradlew :samples:runKitchenRush       # a model runs a pizzeria for a shift, on a token budget
 ./gradlew :samples:runLevel1            # ... runLevel8, the levels of the tutorial
 ```
