@@ -16,6 +16,13 @@ breaking changes.
   writes the changelog again from the saved step. Without an API key a scripted model answers:
   `./gradlew :samples:release-guard:run`. See [Samples](https://deeptelar.github.io/telar/samples).
 
+### Fixed
+
+- `expectStep` of `graph.test` holds after `expectNode`, for a graph whose node leads to parallel
+  nodes: `expectNode("plan")` and then `expectStep("web", "papers")`. It failed with
+  `Expected a step with [web, papers] next, but the next was step 1 with [plan]`, because it took
+  the end of the step of `plan` for the step to check.
+
 ## [0.1.0-alpha10] - 2026-10-15
 
 ### Added

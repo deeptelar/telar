@@ -221,6 +221,26 @@ class GraphTestTest {
         }
 
     @Test
+    fun `a step of parallel nodes is checked after a node`() =
+        runTest {
+            val planned =
+                StateGraph<Research> {
+                    val plan = node("plan") { it.copy(notes = listOf("plan")) }
+                    val web = node("web", { "web" }) { state, note -> state.copy(notes = state.notes + note) }
+                    val papers = node("papers", { "papers" }) { state, note -> state.copy(notes = state.notes + note) }
+                    START then plan
+                    plan then web then END
+                    plan then papers then END
+                }.compile()
+
+            planned.test(Research()) {
+                expectNode("plan")
+                expectStep("web", "papers") { assertEquals(listOf("plan", "web", "papers"), it.notes) }
+                expectFinished()
+            }
+        }
+
+    @Test
     fun `a step with other nodes fails`() =
         runTest {
             val error =

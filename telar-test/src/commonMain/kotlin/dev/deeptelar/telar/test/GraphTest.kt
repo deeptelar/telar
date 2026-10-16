@@ -163,6 +163,8 @@ public class GraphTest<State> internal constructor(
      */
     public fun expectStep(vararg nodes: String, check: (State) -> Unit = {}): State {
         val expected = "a step with ${nodes.toList()}"
+        // The end of a step whose nodes were checked with expectNode is behind us, not the step to check.
+        while (next < events.size && events[next] is GraphEvent.StepCompleted) next++
         var index = next
         while (index < events.size) {
             when (val event = events[index]) {
