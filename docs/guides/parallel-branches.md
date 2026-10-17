@@ -42,6 +42,25 @@ Runnable version: [`ParallelResearch`](https://github.com/deeptelar/telar/blob/m
 - If one branch fails, the others are cancelled and the error is rethrown as
   `NodeExecutionException` with the name of the failing node.
 
+## Choosing the branches at run time
+
+`conditionalFanOut` is a conditional edge that returns a set of nodes. They all run in the next
+step, in parallel, like the targets of edges from one node:
+
+```kotlin
+conditionalFanOut(plan, targets = setOf(locate, web, docs)) { state ->
+    // Find the place first if it is not known yet, else search both sources at once.
+    if (state.place == null) setOf(locate) else setOf(web, docs)
+}
+```
+
+- `targets` lists every node it may return, as for `conditionalEdge`. A node it returns that is not
+  in `targets` fails the run with an `InvalidRouteException`.
+- `NodeRef.END` in the set ends this branch while the other nodes run, and an empty set ends the
+  branch too.
+- Two `targets` that return a whole state can run in the same step, so `compile()` asks for a
+  `Reducer` or `rules` for them, as it does for static edges.
+
 ## Merging whole states
 
 A node written as `node(name) { ... }` returns a whole state. One such node can share a step with

@@ -9,6 +9,11 @@ breaking changes.
 
 ### Added
 
+- `conditionalFanOut` is a conditional edge that picks several nodes, which run in parallel in the
+  next step: `conditionalFanOut(plan, targets = setOf(locate, web, docs)) { if (it.place == null)
+  setOf(locate) else setOf(web, docs) }`. `END` in the set, or an empty set, ends the branch.
+  `compile()` treats its targets as nodes that can run in the same step. See
+  [Parallel branches](https://deeptelar.github.io/telar/guides/parallel-branches#choosing-the-branches-at-run-time).
 - `conditionalEdge` takes `labels`, which say when the edge goes to some of its targets, such as
   `labels = mapOf(write to "too short")`. `toMermaid` writes them on the edges in place of `?`,
   and `GraphTopology` has them as `GraphEdge.label`. A label for a node that is not one of the

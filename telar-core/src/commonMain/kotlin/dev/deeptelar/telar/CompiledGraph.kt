@@ -754,7 +754,7 @@ public class CompiledGraph<State> internal constructor(
         for (node in currentNodes) {
             val conditionalEdge = conditionalEdges[node]
             if (conditionalEdge != null) {
-                nextNodes.add(route(conditionalEdge, state))
+                nextNodes.addAll(route(conditionalEdge, state))
             } else {
                 nextNodes.addAll(edges[node].orEmpty())
             }
@@ -762,11 +762,12 @@ public class CompiledGraph<State> internal constructor(
         return nextNodes.distinct() - END
     }
 
-    private suspend fun route(edge: ConditionalEdge<State>, state: State): String {
-        val target = wrapFailure({ EdgeConditionException(edge.from, it) }) { edge.condition(state) }
-        val allowed = edge.targets?.contains(target) ?: (target == END || target in nodes)
-        if (!allowed) throw InvalidRouteException(edge.from, target)
-        return target
+    private suspend fun route(edge: ConditionalEdge<State>, state: State): Set<String> {
+        val targets = wrapFailure({ EdgeConditionException(edge.from, it) }) { edge.condition(state) }
+        targets
+            .firstOrNull { target -> !(edge.targets?.contains(target) ?: (target == END || target in nodes)) }
+            ?.let { throw InvalidRouteException(edge.from, it) }
+        return targets
     }
 
     /** Checks that a checkpoint, or the position inside a subgraph, only names what this graph has. */
