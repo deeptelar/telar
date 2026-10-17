@@ -76,6 +76,11 @@ class MermaidTest {
             """.trimIndent(),
             helpDesk.toMermaid(config),
         )
+        // The same pauses without a config, which would need a checkpointer.
+        assertEquals(
+            helpDesk.toMermaid(config),
+            helpDesk.topology.toMermaid(interruptBefore = setOf("refund"), interruptAfter = setOf("read")),
+        )
     }
 
     @Test

@@ -18,6 +18,10 @@ breaking changes.
 
 ### Fixed
 
+- The KDoc of `CompiledGraph.toMermaid` and the guide
+  [Inspecting a graph](https://deeptelar.github.io/telar/guides/inspecting-a-graph#draw-it) say how
+  to draw the pauses of a graph without a checkpointer: a `GraphConfig` with pauses needs one, and
+  `GraphTopology.toMermaid` takes the pauses directly.
 - `expectStep` of `graph.test` holds after `expectNode`, for a graph whose node leads to parallel
   nodes: `expectNode("plan")` and then `expectStep("web", "papers")`. It failed with
   `Expected a step with [web, papers] next, but the next was step 1 with [plan]`, because it took
