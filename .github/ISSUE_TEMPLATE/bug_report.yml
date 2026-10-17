@@ -21,7 +21,7 @@ body:
     id: version
     attributes:
       label: Telar version
-      placeholder: 0.1.0-alpha11
+      placeholder: 0.1.0-alpha12
     validations:
       required: true
   - type: dropdown

@@ -7,7 +7,7 @@ into tools of an agent:
 
 ```kotlin
 dependencies {
-    implementation("dev.deeptelar:telar-mcp:0.1.0-alpha11")
+    implementation("dev.deeptelar:telar-mcp:0.1.0-alpha12")
 }
 ```
 
