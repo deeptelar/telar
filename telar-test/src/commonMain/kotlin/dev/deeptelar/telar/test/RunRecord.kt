@@ -71,9 +71,12 @@ public class RunRecord<State>(
                 }
                 when (inner) {
                     is GraphEvent.NodeProgress<*> ->
-                        (inner.value as? ChatEvent.TextDelta)?.let { pieces += "$place${inner.step}/${inner.node}/" to it.text }
+                        (inner.value as? ChatEvent.TextDelta)?.let {
+                            pieces += "$place${inner.step}/${inner.node}/${inner.item}" to it.text
+                        }
                     is GraphEvent.NodeRetry<*> -> {
-                        val retried = "$place${inner.step}/${inner.node}/"
+                        // A retry of one item of a node clears the text of that item.
+                        val retried = "$place${inner.step}/${inner.node}/${inner.item}"
                         pieces.removeAll { (written, _) -> written == retried }
                     }
                     else -> Unit
