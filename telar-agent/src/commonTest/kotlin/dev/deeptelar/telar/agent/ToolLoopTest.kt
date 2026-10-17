@@ -2,6 +2,7 @@ package dev.deeptelar.telar.agent
 
 import dev.deeptelar.telar.END
 import dev.deeptelar.telar.GraphConfig
+import dev.deeptelar.telar.GraphEdge
 import dev.deeptelar.telar.GraphResult
 import dev.deeptelar.telar.GraphValidationException
 import dev.deeptelar.telar.MemoryCheckpointer
@@ -244,6 +245,10 @@ class ToolLoopTest {
             assertEquals("A cola is 2 euros.", state.reply)
             assertEquals(listOf("greet", "append", "append", "append", "send"), state.log)
             assertEquals(setOf("greet", "send", "assistant", "desk"), graph.topology.nodes.toSet())
+            assertEquals(
+                listOf(GraphEdge("assistant", "desk", true, "tool calls"), GraphEdge("assistant", "send", true, "done")),
+                graph.topology.edges.filter { it.from == "assistant" },
+            )
         }
 
     private fun ticketGraph(model: ChatModel) =

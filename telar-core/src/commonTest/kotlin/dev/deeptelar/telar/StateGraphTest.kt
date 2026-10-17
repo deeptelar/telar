@@ -94,6 +94,27 @@ class StateGraphTest {
     }
 
     @Test
+    fun `a label for a node that is not a conditional target is rejected`() {
+        val message =
+            validationError {
+                val a = node("a") { it }
+                val b = node("b") { it }
+                START then a
+                conditionalEdge(a, targets = setOf(b, NodeRef.END), labels = mapOf(a to "again")) { NodeRef.END }
+                b then END
+            }
+        assertEquals("Conditional edge from 'a' has a label for 'a', which is not one of its targets", message)
+
+        val withoutTargets =
+            validationError {
+                node("a") { it }
+                edge(START, "a")
+                conditionalEdge("a", labels = mapOf(END to "done")) { END }
+            }
+        assertEquals("Conditional edge from 'a' has a label for '$END', which is not one of its targets", withoutTargets)
+    }
+
+    @Test
     fun `two conditional edges from one node are rejected`() {
         val message =
             validationError {

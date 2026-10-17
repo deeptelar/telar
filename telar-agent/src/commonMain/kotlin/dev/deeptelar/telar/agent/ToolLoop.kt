@@ -253,7 +253,7 @@ public fun <State> StateGraph<State>.toolLoop(
                 }
         }
 
-    conditionalEdge(askModel, targets = setOf(runTools, then)) { state ->
+    conditionalEdge(askModel, targets = setOf(runTools, then), labels = mapOf(runTools to "tool calls", then to "done")) { state ->
         if (messages(state).pendingToolCalls().isEmpty()) then else runTools
     }
     runTools then askModel

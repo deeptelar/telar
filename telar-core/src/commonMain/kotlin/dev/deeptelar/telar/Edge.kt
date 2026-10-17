@@ -12,9 +12,13 @@ internal data class Edge(
     val to: String,
 )
 
-/** A transition whose target is chosen at run time by [condition], optionally restricted to [targets]. */
+/**
+ * A transition whose target is chosen at run time by [condition], optionally restricted to [targets].
+ * [labels] describe some of the targets, by their names, for [GraphTopology.toMermaid].
+ */
 internal data class ConditionalEdge<State>(
     val from: String,
     val targets: Set<String>?,
     val condition: EdgeCondition<State>,
+    val labels: Map<String, String> = emptyMap(),
 )
