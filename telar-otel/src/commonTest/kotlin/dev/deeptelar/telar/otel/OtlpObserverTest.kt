@@ -350,7 +350,7 @@ class OtlpObserverTest {
         }
 
     @Test
-    fun `a traceparent header is read, and an invalid one is ignored`() {
+    fun `a traceparent header is read and an invalid one is ignored`() {
         val trace = TraceContext.parse("00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01")!!
         assertEquals("4bf92f3577b34da6a3ce929d0e0e4736", trace.traceId)
         assertEquals("00f067aa0ba902b7", trace.spanId)
