@@ -213,6 +213,7 @@ public class StateGraph<State> {
     /**
      * Adds a static edge: after [from] finishes, [to] runs. Several static edges from the same node
      * fan out and run their targets in parallel. See [compile] for when that needs a [Reducer].
+     * [conditionalFanOut] picks at run time which of them run.
      */
     public fun edge(from: String, to: String) {
         edges.add(Edge(from, to))
@@ -249,7 +250,7 @@ public class StateGraph<State> {
         labels: Map<String, String> = emptyMap(),
         condition: EdgeCondition<State>,
     ) {
-        conditionalEdges.add(ConditionalEdge(from, targets, condition, labels))
+        conditionalEdges.add(ConditionalEdge(from, targets, { state -> setOf(condition(state)) }, labels))
     }
 
     /** Adds a conditional edge from the node referenced by [from]. See the overload taking a node name. */
@@ -298,6 +299,49 @@ public class StateGraph<State> {
         condition: suspend (State) -> NodeRef,
     ) {
         conditionalEdge(from, targets.mapTo(mutableSetOf()) { it.name }, labels.mapKeys { it.key.name }) { state -> condition(state).name }
+    }
+
+    /**
+     * Adds a conditional edge that can fan out: after [from] finishes, [condition] picks any of
+     * [targets], and they run in parallel in the next step, like the targets of static edges from
+     * one node. See [compile] for when that needs a [Reducer].
+     *
+     * ```kotlin
+     * conditionalFanOut(brief, targets = setOf(locate, guide, map)) { trip ->
+     *     if (trip.located) setOf(guide, map) else setOf(locate)
+     * }
+     * ```
+     *
+     * [NodeRef.END] in the result ends this branch while the other nodes run. An empty result ends
+     * the branch too. [labels] are as for [conditionalEdge].
+     */
+    public fun conditionalFanOut(
+        from: NodeRef,
+        targets: Set<NodeRef>,
+        labels: Map<NodeRef, String> = emptyMap(),
+        condition: suspend (State) -> Set<NodeRef>,
+    ) {
+        conditionalFanOut(from.name, targets, labels, condition)
+    }
+
+    /**
+     * Adds a conditional edge that can fan out from the node named [from], usually [START]. See the
+     * overload taking a node reference.
+     */
+    public fun conditionalFanOut(
+        from: String,
+        targets: Set<NodeRef>,
+        labels: Map<NodeRef, String> = emptyMap(),
+        condition: suspend (State) -> Set<NodeRef>,
+    ) {
+        val names = targets.mapTo(mutableSetOf()) { it.name }
+        conditionalEdges.add(
+            ConditionalEdge(from, names, { state ->
+                condition(state).mapTo(mutableSetOf()) {
+                    it.name
+                }
+            }, labels.mapKeys { it.key.name }, fansOut = true),
+        )
     }
 
     /**
@@ -425,8 +469,8 @@ public class StateGraph<State> {
     /**
      * Returns two nodes that each return a whole state and can run in the same step, or `null` if
      * there are none. Two nodes can run in the same step when they are targets of the same fan-out,
-     * or when they follow two nodes that can. A conditional edge without declared targets may lead
-     * to any node.
+     * static or conditional, or when they follow two nodes that can. A conditional edge without
+     * declared targets may lead to any node.
      */
     private fun parallelStateNodes(): Pair<String, String>? {
         val routes = conditionalEdges.associateBy { it.from }
@@ -444,7 +488,7 @@ public class StateGraph<State> {
             if (first != second && first != END && second != END && together.add(first to second)) queue.add(first to second)
         }
 
-        for (targets in staticTargets.values) {
+        for (targets in staticTargets.values + routes.values.filter { it.fansOut }.map { it.targets ?: nodes.keys }) {
             for (first in targets) for (second in targets) add(first, second)
         }
         while (queue.isNotEmpty()) {

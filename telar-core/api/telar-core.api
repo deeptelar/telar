@@ -557,6 +557,10 @@ public final class dev/deeptelar/telar/StateGraph {
 	public final fun conditionalEdgeToRefs (Ljava/lang/String;Ljava/util/Set;Ljava/util/Map;Lkotlin/jvm/functions/Function2;)V
 	public static synthetic fun conditionalEdgeToRefs$default (Ldev/deeptelar/telar/StateGraph;Ldev/deeptelar/telar/NodeRef;Ljava/util/Set;Ljava/util/Map;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)V
 	public static synthetic fun conditionalEdgeToRefs$default (Ldev/deeptelar/telar/StateGraph;Ljava/lang/String;Ljava/util/Set;Ljava/util/Map;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)V
+	public final fun conditionalFanOut (Ldev/deeptelar/telar/NodeRef;Ljava/util/Set;Ljava/util/Map;Lkotlin/jvm/functions/Function2;)V
+	public final fun conditionalFanOut (Ljava/lang/String;Ljava/util/Set;Ljava/util/Map;Lkotlin/jvm/functions/Function2;)V
+	public static synthetic fun conditionalFanOut$default (Ldev/deeptelar/telar/StateGraph;Ldev/deeptelar/telar/NodeRef;Ljava/util/Set;Ljava/util/Map;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)V
+	public static synthetic fun conditionalFanOut$default (Ldev/deeptelar/telar/StateGraph;Ljava/lang/String;Ljava/util/Set;Ljava/util/Map;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)V
 	public final fun edge (Ljava/lang/String;Ljava/lang/String;)V
 	public final fun node (Ljava/lang/String;Lkotlin/jvm/functions/Function2;)Ldev/deeptelar/telar/NodeRef;
 	public final fun node (Ljava/lang/String;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function3;)Ldev/deeptelar/telar/NodeRef;
