@@ -114,7 +114,9 @@ public class CompiledGraph<State> internal constructor(
      * [GraphTopology.toMermaid].
      *
      * @param config marks the nodes of its [GraphConfig.interruptBefore] and
-     * [GraphConfig.interruptAfter] as the nodes where a run pauses. Defaults to no pauses.
+     * [GraphConfig.interruptAfter] as the nodes where a run pauses. Defaults to no pauses. A
+     * [GraphConfig] with pauses needs a checkpointer; to draw them without one, such as in a test,
+     * pass the nodes to [GraphTopology.toMermaid] of [topology].
      * @param edgeLabels a label for an edge, by the names of its two ends, such as
      * `("read" to "refund") to "refund request"`. A conditional edge without one is labeled `?`.
      * @throws GraphValidationException if [config] or [edgeLabels] name nodes or edges that are not

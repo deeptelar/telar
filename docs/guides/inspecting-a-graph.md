@@ -69,8 +69,17 @@ stateDiagram-v2
   conditional edge declares no `targets` gets a note that it can route to any node.
 - A subgraph is a state that holds the diagram of its graph.
 - Nodes the run pauses before start with ⏸, nodes it pauses after end with it, and both are
-  highlighted. `GraphTopology.toMermaid` takes the two sets directly, for a topology without a
-  config.
+  highlighted.
+
+A `GraphConfig` with pauses needs a checkpointer, which a test or a script that only draws the
+graph may not have. `GraphTopology.toMermaid` takes the pauses directly instead:
+
+```kotlin
+graph.topology.toMermaid(
+    interruptBefore = setOf("refund"),
+    edgeLabels = mapOf(("read" to "track") to "delivery", ("read" to "refund") to "refund"),
+)
+```
 
 A name or an edge in `config` or `edgeLabels` that is not in the graph throws a
 `GraphValidationException`.
