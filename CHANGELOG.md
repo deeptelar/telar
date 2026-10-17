@@ -32,8 +32,13 @@ breaking changes.
   too. Spans are sent in batches from a coroutine of the app's scope, a failed request goes to
   `onExportFailed` and never into the run, and `flush()` sends what is left. While a node runs, its
   coroutine context holds a `TraceContext` with the ids of its span, and the Ktor plugin
-  `Traceparent` sends them with the requests the node makes. See
+  `Traceparent` sends them with the requests the node makes. A run whose coroutine context holds a
+  `TraceContext` is inside that span: a server continues the trace of a request with
+  `withContext(TraceContext.parse(traceparent) ?: EmptyCoroutineContext) { graph.invoke(...) }`, and
+  a run that a traced node starts is inside that node. See
   [Tracing](https://deeptelar.github.io/telar/guides/tracing#on-every-platform).
+- `ObservedRun.context` is the coroutine context a run was started in, or that of the node of a
+  subgraph, so that an observer can read elements of its own there, such as a span around the run.
 
 ### Changed
 

@@ -81,6 +81,24 @@ spans inside the node:
 val api = HttpClient(Js) { install(Traceparent) }
 ```
 
+**Inside a trace of the app.** A run is a trace of its own, unless its coroutine context holds a
+`TraceContext`: then the run is recorded inside that span. A server continues the trace of the
+request that started the run, from its `traceparent` header:
+
+```kotlin
+post("/tickets") {
+    // null when the request has no traceparent, or one that is not valid
+    val trace = TraceContext.parse(call.request.headers["traceparent"])
+    val result = withContext(trace ?: EmptyCoroutineContext) { graph.invoke(ticket, config) }
+    call.respond(result.state)
+}
+```
+
+A browser page that sends its requests with `Traceparent` and a server that reads the header this
+way make one trace: the node in the page, the request, and the run on the server inside it. A run
+that a node starts itself, such as a graph that a tool runs, is inside the span of that node without
+anything more.
+
 ### With the OpenTelemetry SDK of Java
 
 Give an `OpenTelemetryObserver` to the runs you want to trace:
@@ -99,8 +117,8 @@ registered. One observer can be shared by every run of the app.
 The span of a node is current while the node runs. What the node calls opens its spans inside it:
 an HTTP client with OpenTelemetry instrumentation, a database driver, another traced library. And a
 run that starts inside a span, such as the span of a request to your server, is a child of that
-span. `OtlpObserver` cannot do that last part: a run it records is a trace of its own, unless it is
-a subgraph.
+span. `OtlpObserver` does not know the spans of the SDK: it needs a `TraceContext` around the run
+(see [On every platform](#on-every-platform)).
 
 ### The spans
 
