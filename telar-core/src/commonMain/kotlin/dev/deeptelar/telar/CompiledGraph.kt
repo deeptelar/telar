@@ -150,7 +150,9 @@ public class CompiledGraph<State> internal constructor(
      * interrupt and a human decision.
      *
      * @param update edits the checkpointed state before execution continues, for example to record
-     * an approval. Defaults to continuing with the state unchanged.
+     * an approval. Defaults to continuing with the state unchanged. A state that [update] changed is
+     * saved before anything runs, in place of the checkpoint it was made from, so that a step that
+     * fails or is cancelled does not lose it: a `resume` without an update then continues with it.
      * @throws GraphValidationException if [config] has no checkpointer.
      * @throws CheckpointNotFoundException if the thread has no checkpoint.
      * @throws GraphAlreadyCompletedException if the thread's last run already completed.
@@ -322,16 +324,28 @@ public class CompiledGraph<State> internal constructor(
             val checkpoint = checkpointer.load(config.threadId) ?: throw CheckpointNotFoundException(config.threadId)
             if (checkpoint.isComplete) throw GraphAlreadyCompletedException(config.threadId)
             validatePosition(config.threadId, checkpoint.nextNodes, checkpoint.subgraphs)
+            // Save an edited state before anything runs, as fork does: the answer of a person is not lost
+            // when the first step fails or is cancelled. It keeps the step's effects and its pause.
+            val updated = update(checkpoint.state)
+            val saved =
+                if (updated == checkpoint.state) {
+                    checkpoint
+                } else {
+                    checkpoint.copy(state = updated).also {
+                        checkpointer.save(config.threadId, it)
+                        watch.observer.onCheckpointSaved(watch.run, it.step, it.nextNodes)
+                    }
+                }
             // Only a run that paused before its next nodes continues past that pause. After any other
             // checkpoint (an interruptAfter pause, or a crash between steps) the pause is still due.
             val start =
                 RunStart(
-                    update(checkpoint.state),
-                    checkpoint.nextNodes,
-                    checkpoint.step,
-                    checkpoint.interruptedBefore,
-                    checkpoint.subgraphs,
-                    saved = checkpoint,
+                    saved.state,
+                    saved.nextNodes,
+                    saved.step,
+                    saved.interruptedBefore,
+                    saved.subgraphs,
+                    saved = saved,
                 )
             run(config, start, progress, watch)
         }

@@ -57,6 +57,10 @@ Runnable version: [`HumanInTheLoop`](https://github.com/deeptelar/telar/blob/mai
   [`effect`](side-effects.md), which saves them and does not repeat them, or make them safe to
   repeat. The tools of a [`toolLoop`](agents-with-tools.md) already run that way: a tool call that
   finished is not run again.
+- The state that the update of `resume` returns is saved before anything runs, in place of the
+  checkpoint it was made from. When the step after it fails, or the run is cancelled, the edit is
+  kept: continue with `resume(config)` and no update. Giving the update again applies it twice,
+  which adds an answer that appends to a list a second time.
 - `interruptAfter` pauses after a node instead of before it.
 - `MemoryCheckpointer` keeps checkpoints in memory, which is what tests want. `FileCheckpointer`
   keeps them in files, `SqlDelightCheckpointer` in a SQLite database on every platform, and

@@ -7,6 +7,14 @@ breaking changes.
 
 ## [Unreleased]
 
+### Changed
+
+- `resume` saves the state that its `update` returns before the first step runs, as `fork` already
+  did. A step that fails, or a run that is cancelled, no longer loses the edit, such as the answer
+  of a person: `resume(config)` without an update continues with it. Before, the edit had to be
+  given again. An update that leaves the state as it is saves nothing. See
+  [Human in the loop](https://deeptelar.github.io/telar/guides/human-in-the-loop).
+
 ## [0.1.0-alpha11] - 2026-10-17
 
 ### Added
