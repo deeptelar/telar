@@ -61,6 +61,56 @@ conditionalFanOut(plan, targets = setOf(locate, web, docs)) { state ->
 - Two `targets` that return a whole state can run in the same step, so `compile()` asks for a
   `Reducer` or `rules` for them, as it does for static edges.
 
+## One node for each item of a list
+
+Edges choose among the nodes of the graph, so the graph fixes how many can run at the same time.
+When the number is only known at run time, such as one call to a model for each document a search
+found, give `node` a `forEach`. Its `work` then runs once for each item, all at the same time:
+
+```kotlin
+@Serializable
+data class Summary(val title: String, val text: String)
+
+data class Reading(val documents: List<Document> = emptyList(), val summaries: List<Summary> = emptyList())
+
+val graph = StateGraph<Reading> {
+    val search = node("search") { it.copy(documents = searchDocuments()) }
+    val summarize = node(
+        "summarize",
+        // The items: one call of `work` for each.
+        forEach = { reading -> reading.documents },
+        work = { _, document -> model.ask<Summary>("Summarize this document: ${document.text}") },
+        // Saves each summary as soon as it is there (KotlinxStateSerializer is in telar-serialization).
+        serializer = KotlinxStateSerializer(),
+        retry = Retry(attempts = 3),
+    ) { reading, summaries -> reading.copy(summaries = summaries) }
+
+    START then search then summarize then END
+}.compile()
+```
+
+Runnable version: [`Summaries`](https://github.com/deeptelar/telar/blob/main/samples/src/main/kotlin/dev/deeptelar/telar/samples/Summaries.kt).
+
+- The block after `work` is the `update`. It runs once, after every item has finished, and gets the
+  results in the order of the items, not in the order they finished.
+- Every item reads the state from before the step. To the rest of the graph the node is one node
+  with a `work` and an `update`: it runs next to other nodes without a `Reducer`, `mergeRules` hold
+  for it, and `interruptBefore` and `interruptAfter` name the whole node.
+- `retry` and `timeout` hold for one item. An item that fails is tried again while the others go
+  on. When its last try fails, the run fails with a `NodeExecutionException` whose `item` is the
+  position of the item, and the items still running are cancelled.
+- With a `serializer`, the result of each item is saved in the checkpoint as soon as it is there.
+  `resume` after a failure, a crash or an `interrupt()` from one item then runs only the items
+  without a result. Without one, every item runs again, as any node does. The results are kept by
+  their position in the list, so do not change the list in the `update` of a `resume`.
+- An [effect](side-effects.md) in `work` belongs to its item: `effect("charge") { ... }` charges once
+  for each item, without a key for each.
+- `concurrency = 4` runs at most four items at the same time. There is no limit by default, so 500
+  documents are 500 calls to the model at once.
+- A stream has one `NodeStarted` and one `NodeCompleted` for the node, and a `GraphEvent.ItemCompleted`
+  for each item in between, so a screen can show "3 of 10". What an item reports with
+  `reportProgress()`, and a retry of an item, carry the position of the item in `item`.
+
 ## Merging whole states
 
 A node written as `node(name) { ... }` returns a whole state. One such node can share a step with

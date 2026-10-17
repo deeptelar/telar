@@ -12,7 +12,7 @@ what is already released.
 To ask for a feature or to move one up, add a 👍 to its issue or
 [start a discussion](https://github.com/deeptelar/telar/discussions).
 
-Last updated: 2026-10-15.
+Last updated: 2026-10-17.
 
 ## Where the project is
 
@@ -26,9 +26,10 @@ modules for Claude, for OpenAI, Ollama and the other servers with the Chat Compl
 LangChain4j, and for Jev, a decision model, and modules for tests and for OpenTelemetry. The API can
 still change in any release.
 
-Section 1 is done. What is missing now is mostly in the messages and the engine: a message holds
-text only, the number of parallel nodes is fixed by the edges, and a long conversation is sent to
-the model in full every time. Sections 2 and 3 are about that.
+Section 1 is done, and in `main` a node can also run once for each item of a list. What is missing
+now is mostly in the messages and the engine: a message holds text only, a subgraph cannot yet
+pause before one of its nodes, and a long conversation is sent to the model in full every time.
+Sections 2 and 3 are about that.
 
 ## The way to 1.0
 
@@ -74,7 +75,7 @@ These change how a graph runs or what a message holds, so they come before the b
 | | Feature | What you get | State | Issue |
 |---|---|---|---|---|
 | 7 | One rule for parallel nodes that write the same property | You decide what happens, and the rule is the same for both ways to write a node: `compile(rules = mergeRules { ... })`, or the same rules given as `reducer`, merges every node of a step, so a node with `work` and `update` no longer overwrites another without a word. Released: `compile(rules = mergeRules { ... })`, and `mergeRules` given as the reducer holds for every node too. Still open: the order of the reducer and the updates when no rules are given. | In progress | [#101] |
-| 8 | Fan-out over a list | One node runs once per item of a list, all at the same time, when the number of items is only known at run time. Today a `conditionalFanOut` picks among the nodes declared in the graph, so the graph fixes how many can run in parallel. | Planned | [#82] |
+| 8 | Fan-out over a list | One node runs once per item of a list, all at the same time, when the number of items is only known at run time: `node(name, forEach = { ... }, work = { ... }) { ... }`, with a retry and a time limit for each item, and with each result saved so that a resume runs only the items that are missing. | Done | [#82] |
 | 9 | Images and files in messages | Send a model a picture or a PDF with the question, and let a tool return one. A `ChatMessage` holds text only today. | Planned | [#103] |
 | 10 | Subgraphs | A compiled graph becomes a node of another graph, with a mapping between the two states and one thread for both. Released: `subgraph`, a run that pauses inside a subgraph and resumes there, the events of a subgraph in the stream of the graph around it, and the subgraph in `topology`. Still to come: `interruptBefore` for a node of a subgraph, and a retry after a failure that continues inside the subgraph. | In progress | [#34] |
 

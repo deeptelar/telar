@@ -53,6 +53,7 @@ listOf(
     "AskFromANode",
     "Subgraph",
     "ParallelResearch",
+    "Summaries",
     "ChatAgent",
     "ToolAgent",
     "McpTools",

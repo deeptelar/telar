@@ -7,7 +7,24 @@ breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- A node that runs once for each item of a list, all at the same time, when the number of items is
+  only known at run time: `node("summarize", forEach = { it.documents }, work = { state, document ->
+  summarize(document) }) { state, summaries -> state.copy(summaries = summaries) }`. The update gets
+  the results in the order of the items. `retry` and `timeout` hold for each item, `concurrency`
+  limits how many run at once (no limit by default), and with a `serializer` each result is saved
+  as soon as it is there, so that `resume` runs only the items without one. A failed item is named
+  by `NodeExecutionException.item`, an `effect` in `work` belongs to its item, a stream gets a
+  `GraphEvent.ItemCompleted` for each item, and `GraphTopology.forEachNodes` lists such nodes. See
+  [Parallel branches](https://deeptelar.github.io/telar/guides/parallel-branches#one-node-for-each-item-of-a-list)
+  and the sample `Summaries`.
+
 ### Changed
+
+- `GraphEvent` has a new subclass, `ItemCompleted`: a `when` over every event needs a branch for it.
+  `GraphEvent.NodeProgress` and `GraphEvent.NodeRetry` have an `item`, which is `null` except for a
+  node that runs for each item.
 
 - `resume` saves the state that its `update` returns before the first step runs, as `fork` already
   did. A step that fails, or a run that is cancelled, no longer loses the edit, such as the answer
