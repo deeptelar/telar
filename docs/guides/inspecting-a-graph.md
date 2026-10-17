@@ -65,8 +65,9 @@ stateDiagram-v2
 ```
 
 - `START` and `END` are the `[*]` of the diagram.
-- A conditional edge gets its label from `edgeLabels`, or `?` when it has none. A node whose
-  conditional edge declares no `targets` gets a note that it can route to any node.
+- A conditional edge gets its label from `edgeLabels`, from the `labels` of its
+  `conditionalEdge`, or `?` when it has neither. A node whose conditional edge declares no
+  `targets` gets a note that it can route to any node.
 - A subgraph is a state that holds the diagram of its graph.
 - Nodes the run pauses before start with ⏸, nodes it pauses after end with it, and both are
   highlighted.
@@ -83,3 +84,22 @@ graph.topology.toMermaid(
 
 A name or an edge in `config` or `edgeLabels` that is not in the graph throws a
 `GraphValidationException`.
+
+## Label the edges where they are declared
+
+`edgeLabels` suits a graph you draw once. To give every drawing of the graph its labels, put them
+on the conditional edge, by target:
+
+```kotlin
+conditionalEdge(
+    read,
+    targets = setOf(track, refund, answer),
+    labels = mapOf(track to "delivery", refund to "refund"),
+) { ticket ->
+    // ...
+}
+```
+
+They are in `topology` as `GraphEdge.label`, and an entry of `edgeLabels` for the same edge takes
+their place. A label for a node that is not one of the `targets` fails `compile()`. `toolLoop`
+labels its two edges `tool calls` and `done`.

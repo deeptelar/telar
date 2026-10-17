@@ -56,6 +56,34 @@ class MermaidTest {
     }
 
     @Test
+    fun `labels conditional edges with the labels of the graph unless edgeLabels has others`() {
+        val graph =
+            StateGraph<TestState> {
+                val read = node("read") { it }
+                val track = node("track") { it }
+                START then read
+                conditionalEdge(read, targets = setOf(track, NodeRef.END), labels = mapOf(track to "delivery", NodeRef.END to "spam")) {
+                    track
+                }
+                track then END
+            }.compile()
+
+        assertEquals(GraphEdge("read", "track", isConditional = true, label = "delivery"), graph.topology.edges[1])
+        assertEquals(
+            """
+            stateDiagram-v2
+                state "read" as n0
+                state "track" as n1
+                [*] --> n0
+                n0 --> n1 : parcel
+                n0 --> [*] : spam
+                n1 --> [*]
+            """.trimIndent(),
+            graph.toMermaid(edgeLabels = mapOf(("read" to "track") to "parcel")),
+        )
+    }
+
+    @Test
     fun `marks the nodes a run pauses at`() {
         val config =
             GraphConfig(checkpointer = MemoryCheckpointer<TestState>(), interruptBefore = setOf("refund"), interruptAfter = setOf("read"))

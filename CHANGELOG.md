@@ -9,6 +9,11 @@ breaking changes.
 
 ### Added
 
+- `conditionalEdge` takes `labels`, which say when the edge goes to some of its targets, such as
+  `labels = mapOf(write to "too short")`. `toMermaid` writes them on the edges in place of `?`,
+  and `GraphTopology` has them as `GraphEdge.label`. A label for a node that is not one of the
+  targets fails `compile()`. `toolLoop` labels its edges `tool calls` and `done`. See
+  [Inspecting a graph](https://deeptelar.github.io/telar/guides/inspecting-a-graph#label-the-edges-where-they-are-declared).
 - The sample `release-guard` audits the repository before a tag is published: a security agent
   with the tools of an MCP server in the same process, a dependency audit and a changelog writer run
   in parallel, combined by `mergeRules`. The run stops before `publish`, is saved with

@@ -1,6 +1,6 @@
 package dev.deeptelar.telar
 
-/** The label of a conditional edge that [GraphTopology.toMermaid] was given no label for. */
+/** The label of a conditional edge that has no label of its own and none in `edgeLabels`. */
 internal const val CONDITIONAL_LABEL: String = "?"
 
 /** Writes [topology] as a Mermaid state diagram. See [GraphTopology.toMermaid]. */
@@ -63,7 +63,7 @@ private fun StringBuilder.writeGraph(
     for (edge in topology.edges) {
         val from = if (edge.from == START) "[*]" else ids.getValue(edge.from)
         val to = if (edge.to == END) "[*]" else ids.getValue(edge.to)
-        val label = edgeLabels[edge.from to edge.to] ?: CONDITIONAL_LABEL.takeIf { edge.isConditional }
+        val label = edgeLabels[edge.from to edge.to] ?: edge.label ?: CONDITIONAL_LABEL.takeIf { edge.isConditional }
         appendLine(if (label == null) "$indent$from --> $to" else "$indent$from --> $to : ${escape(label)}")
     }
     for (name in topology.nodes.filter { it in topology.dynamicRoutes }) {

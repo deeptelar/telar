@@ -95,7 +95,7 @@ public class CompiledGraph<State> internal constructor(
                     val conditional = conditionalEdges[source]
                     val targets = edges[source].orEmpty()
                     when {
-                        conditional != null -> conditional.targets.orEmpty().map { GraphEdge(source, it, isConditional = true) }
+                        conditional != null -> conditional.targets.orEmpty().map { GraphEdge(source, it, true, conditional.labels[it]) }
                         targets.isNotEmpty() -> targets.map { GraphEdge(source, it) }
                         // A node without an outgoing edge ends its branch.
                         else -> listOf(GraphEdge(source, END))
@@ -118,7 +118,8 @@ public class CompiledGraph<State> internal constructor(
      * [GraphConfig] with pauses needs a checkpointer; to draw them without one, such as in a test,
      * pass the nodes to [GraphTopology.toMermaid] of [topology].
      * @param edgeLabels a label for an edge, by the names of its two ends, such as
-     * `("read" to "refund") to "refund request"`. A conditional edge without one is labeled `?`.
+     * `("read" to "refund") to "refund request"`, which takes the place of the `labels` given to
+     * [StateGraph.conditionalEdge]. A conditional edge with neither is labeled `?`.
      * @throws GraphValidationException if [config] or [edgeLabels] name nodes or edges that are not
      * in the graph.
      */

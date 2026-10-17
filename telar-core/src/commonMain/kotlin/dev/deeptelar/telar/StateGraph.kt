@@ -238,14 +238,28 @@ public class StateGraph<State> {
      * detect unreachable nodes. With `targets = null` the condition may return any node name.
      *
      * A node can have either one conditional edge or static edges, not both.
+     *
+     * [labels] say when the edge goes to some of its [targets], such as
+     * `mapOf("write" to "too short")`, and are the labels of [CompiledGraph.toMermaid]. Each needs
+     * its target in [targets].
      */
-    public fun conditionalEdge(from: String, targets: Set<String>? = null, condition: EdgeCondition<State>) {
-        conditionalEdges.add(ConditionalEdge(from, targets, condition))
+    public fun conditionalEdge(
+        from: String,
+        targets: Set<String>? = null,
+        labels: Map<String, String> = emptyMap(),
+        condition: EdgeCondition<State>,
+    ) {
+        conditionalEdges.add(ConditionalEdge(from, targets, condition, labels))
     }
 
     /** Adds a conditional edge from the node referenced by [from]. See the overload taking a node name. */
-    public fun conditionalEdge(from: NodeRef, targets: Set<String>? = null, condition: EdgeCondition<State>) {
-        conditionalEdge(from.name, targets, condition)
+    public fun conditionalEdge(
+        from: NodeRef,
+        targets: Set<String>? = null,
+        labels: Map<String, String> = emptyMap(),
+        condition: EdgeCondition<State>,
+    ) {
+        conditionalEdge(from.name, targets, labels, condition)
     }
 
     /**
@@ -258,11 +272,18 @@ public class StateGraph<State> {
      * }
      * ```
      *
-     * To finish the branch, list [NodeRef.END] in [targets] and return it.
+     * To finish the branch, list [NodeRef.END] in [targets] and return it. [labels] say when the
+     * edge goes to some of the targets, such as `mapOf(write to "too short")`, for
+     * [CompiledGraph.toMermaid].
      */
     @JvmName("conditionalEdgeToRefs")
-    public fun conditionalEdge(from: NodeRef, targets: Set<NodeRef>, condition: suspend (State) -> NodeRef) {
-        conditionalEdge(from.name, targets, condition)
+    public fun conditionalEdge(
+        from: NodeRef,
+        targets: Set<NodeRef>,
+        labels: Map<NodeRef, String> = emptyMap(),
+        condition: suspend (State) -> NodeRef,
+    ) {
+        conditionalEdge(from.name, targets, labels, condition)
     }
 
     /**
@@ -270,8 +291,13 @@ public class StateGraph<State> {
      * [START]. See the overload taking a node reference.
      */
     @JvmName("conditionalEdgeToRefs")
-    public fun conditionalEdge(from: String, targets: Set<NodeRef>, condition: suspend (State) -> NodeRef) {
-        conditionalEdge(from, targets.mapTo(mutableSetOf()) { it.name }) { state -> condition(state).name }
+    public fun conditionalEdge(
+        from: String,
+        targets: Set<NodeRef>,
+        labels: Map<NodeRef, String> = emptyMap(),
+        condition: suspend (State) -> NodeRef,
+    ) {
+        conditionalEdge(from, targets.mapTo(mutableSetOf()) { it.name }, labels.mapKeys { it.key.name }) { state -> condition(state).name }
     }
 
     /**
@@ -356,6 +382,9 @@ public class StateGraph<State> {
                 problems += "Conditional edge from '${edge.from}' references unknown target: $it"
             }
             if (edge.targets?.isEmpty() == true) problems += "Conditional edge from '${edge.from}' declares no targets"
+            edge.labels.keys.filter { edge.targets == null || it !in edge.targets }.forEach {
+                problems += "Conditional edge from '${edge.from}' has a label for '$it', which is not one of its targets"
+            }
         }
         val conditionalSources = conditionalEdges.groupingBy { it.from }.eachCount()
         conditionalSources.filterValues { it > 1 }.keys.forEach {

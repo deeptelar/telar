@@ -26,15 +26,16 @@ public data class GraphTopology(
      * most documentation sites show as a picture in a code block of the language `mermaid`.
      *
      * [START] and [END] are the `[*]` of the diagram, and a subgraph is a state that holds the
-     * diagram of its graph. A conditional edge is labeled with its entry in [edgeLabels], or `?`. A
-     * node in [dynamicRoutes] gets a note that it routes to any node.
+     * diagram of its graph. A conditional edge is labeled with its entry in [edgeLabels], its
+     * [GraphEdge.label], or `?`. A node in [dynamicRoutes] gets a note that it routes to any node.
      *
      * @param interruptBefore nodes the run pauses before, usually [GraphConfig.interruptBefore]. Their
      * names start with ⏸ and their states are highlighted.
      * @param interruptAfter nodes the run pauses after, usually [GraphConfig.interruptAfter]. Their
      * names end with ⏸ and their states are highlighted.
      * @param edgeLabels a label for an edge, by the names of its two ends, such as
-     * `("read" to "refund") to "refund request"`. Use [START] and [END] for those ends.
+     * `("read" to "refund") to "refund request"`. Use [START] and [END] for those ends. It takes
+     * the place of the [GraphEdge.label] of the edge.
      * @throws GraphValidationException if [interruptBefore] or [interruptAfter] name a node that is
      * not in [nodes], or [edgeLabels] an edge that is not in [edges].
      */
@@ -50,9 +51,12 @@ public data class GraphTopology(
  *
  * @property isConditional `true` when [to] is one of the declared targets of a conditional edge, so
  * the transition only happens when the edge's condition picks it.
+ * @property label says when a conditional edge goes to [to], from the `labels` of
+ * [StateGraph.conditionalEdge]. `null` when it has none, and for a static edge.
  */
 public data class GraphEdge(
     val from: String,
     val to: String,
     val isConditional: Boolean = false,
+    val label: String? = null,
 )
