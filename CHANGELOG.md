@@ -7,6 +7,8 @@ breaking changes.
 
 ## [Unreleased]
 
+## [0.1.0-alpha12] - 2026-10-17
+
 ### Added
 
 - A node that runs once for each item of a list, all at the same time, when the number of items is
@@ -25,7 +27,6 @@ breaking changes.
 - `GraphEvent` has a new subclass, `ItemCompleted`: a `when` over every event needs a branch for it.
   `GraphEvent.NodeProgress` and `GraphEvent.NodeRetry` have an `item`, which is `null` except for a
   node that runs for each item.
-
 - `resume` saves the state that its `update` returns before the first step runs, as `fork` already
   did. A step that fails, or a run that is cancelled, no longer loses the edit, such as the answer
   of a person: `resume(config)` without an update continues with it. Before, the edit had to be
@@ -552,7 +553,8 @@ First public release. Everything below is new compared with the unpublished beta
 - `START` counted toward `maxIterations`.
 - `FileCheckpointer` did not write the format version into its files.
 
-[Unreleased]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha11...HEAD
+[Unreleased]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha12...HEAD
+[0.1.0-alpha12]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha11...v0.1.0-alpha12
 [0.1.0-alpha11]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha10...v0.1.0-alpha11
 [0.1.0-alpha10]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha09...v0.1.0-alpha10
 [0.1.0-alpha09]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha08...v0.1.0-alpha09

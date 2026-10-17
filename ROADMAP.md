@@ -16,20 +16,20 @@ Last updated: 2026-10-17.
 
 ## Where the project is
 
-`0.1.0-alpha11` is the latest release on Maven Central. Telar has the graph builder and the engine:
+`0.1.0-alpha12` is the latest release on Maven Central. Telar has the graph builder and the engine:
 loops, parallel branches with rules for what they write, subgraphs, streaming, checkpoints with the
 history of a run, pausing for a person before a node or in the middle of its work, retries and time
-limits for a node, and side effects that run once per step. Around the engine it has checkpointers
-for memory, files, the browser and SQLite on every platform, a tool-calling agent for every platform
-with tools that change the state, typed answers, a token budget and the tools of MCP servers, model
-modules for Claude, for OpenAI, Ollama and the other servers with the Chat Completions API, for
-LangChain4j, and for Jev, a decision model, and modules for tests and for OpenTelemetry. The API can
-still change in any release.
+limits for a node, nodes that run once for each item of a list, and side effects that run once per
+step. Around the engine it has checkpointers for memory, files, the browser and SQLite on every
+platform, a tool-calling agent for every platform with tools that change the state, typed answers, a
+token budget and the tools of MCP servers, model modules for Claude, for OpenAI, Ollama and the
+other servers with the Chat Completions API, for LangChain4j, and for Jev, a decision model, and
+modules for tests and for OpenTelemetry. The API can still change in any release.
 
-Section 1 is done, and in `main` a node can also run once for each item of a list. What is missing
-now is mostly in the messages and the engine: a message holds text only, a subgraph cannot yet
-pause before one of its nodes, and a long conversation is sent to the model in full every time.
-Sections 2 and 3 are about that.
+Section 1 is done, and a node can run once for each item of a list. What is missing now is mostly in
+the messages and the engine: a message holds text only, a subgraph cannot yet pause before one of
+its nodes, and a long conversation is sent to the model in full every time. Sections 2 and 3 are
+about that.
 
 ## The way to 1.0
 
