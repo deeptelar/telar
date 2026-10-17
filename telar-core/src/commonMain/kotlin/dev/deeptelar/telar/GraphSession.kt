@@ -288,5 +288,5 @@ private fun <State> GraphSnapshot<State>.after(event: GraphEvent<State>): GraphS
         is GraphEvent.StepCompleted -> GraphSnapshot.Running(event.state, emptyList())
         is GraphEvent.Interrupted -> GraphSnapshot.Interrupted(event.state, event.nextNodes)
         is GraphEvent.Completed -> GraphSnapshot.Completed(event.state)
-        is GraphEvent.NodeProgress, is GraphEvent.NodeRetry, is GraphEvent.SubgraphEvent -> this
+        is GraphEvent.NodeProgress, is GraphEvent.NodeRetry, is GraphEvent.ItemCompleted, is GraphEvent.SubgraphEvent -> this
     }

@@ -142,6 +142,7 @@ fun describe(event: GraphEvent<Ticket>): String =
         is GraphEvent.NodeProgress -> "step ${event.step}: ${event.node} reports ${event.value}"
         is GraphEvent.SubgraphEvent -> "step ${event.step}: inside ${event.node}: ${event.event}"
         is GraphEvent.NodeRetry -> "step ${event.step}: ${event.node} failed, next try in ${event.pause}"
+        is GraphEvent.ItemCompleted -> "step ${event.step}: ${event.node} finished item ${event.item}"
         is GraphEvent.NodeCompleted -> "step ${event.step}: ${event.node} finished"
         is GraphEvent.StepCompleted -> "step ${event.step} done, facts so far: ${event.state.facts.size}"
         is GraphEvent.Completed -> "finished: ${event.state.reply}"

@@ -68,13 +68,20 @@ internal fun Throwable.isFailure(): Boolean = this !is Error || this::class == E
  * `withTimeout` inside the node, is a failure of that node and is wrapped like any other.
  *
  * @property attempts how often the node ran before the run failed. More than 1 only for a node with
- * a [Retry].
+ * a [Retry]. For a node that runs for each item of a list, how often [item] ran.
+ * @property item the position of the item that failed in the list of a node that runs for each item
+ * of a list. `null` for every other failure.
  */
 public class NodeExecutionException(
     public val nodeName: String,
     cause: Throwable,
     public val attempts: Int = 1,
-) : TelarException("Node '$nodeName' failed${if (attempts > 1) " after $attempts attempts" else ""}: ${cause.message}", cause)
+    public val item: Int? = null,
+) : TelarException(
+        "Node '$nodeName' failed${item?.let { " for item $it" }.orEmpty()}" +
+            "${if (attempts > 1) " after $attempts attempts" else ""}: ${cause.message}",
+        cause,
+    )
 
 /**
  * A try of a node took longer than the [timeout] the node was added with, and was cancelled. It is

@@ -136,6 +136,74 @@ public class StateGraph<State> {
         update: suspend (State, Result) -> State,
     ): NodeRef = add(workNode(name, work, retry, checked(name, timeout), update))
 
+    /**
+     * Adds a node that runs its [work] once for each item of a list, all at the same time, when the
+     * number of items is only known at run time: summarize every document a search found, or ask a
+     * model about each line of an order. [forEach] reads the list from the state, and [update]
+     * writes the results into the state, in the order of the items.
+     *
+     * ```kotlin
+     * val summarize = node(
+     *     "summarize",
+     *     forEach = { search -> search.documents },
+     *     work = { search, document -> model.ask<Summary>("Summarize: ${document.text}") },
+     *     serializer = KotlinxStateSerializer(),
+     * ) { search, summaries -> search.copy(summaries = summaries) }
+     * ```
+     *
+     * Every item gets the state from before the step, and [update] runs once, after the work of
+     * every item has succeeded, with an empty list when [forEach] returns none. To the rest of the
+     * graph it is a node with a `work` and an `update`: it can run next to other nodes without a
+     * [Reducer], and [GraphConfig.interruptBefore] and [GraphConfig.interruptAfter] name the whole
+     * node.
+     *
+     * What to know:
+     * - **Each item is tried on its own.** [retry] and [timeout] hold for one item: an item that
+     *   fails is tried again while the others go on. When its last try fails, the run fails with a
+     *   [NodeExecutionException] whose [item][NodeExecutionException.item] is the position of the
+     *   item, and the items still running are cancelled.
+     * - **With a [serializer], a finished item is not run again.** Its result is saved in the
+     *   checkpoint as soon as it is there, as an [effect] is. When the step runs again, after a
+     *   failure, a crash or an [interrupt] from the work of an item, only the items without a result
+     *   run. The results belong to the positions in the list, so a [CompiledGraph.resume] that
+     *   changes the list should not keep them: change the list in a later step instead. Without a
+     *   serializer, every item runs again, as any node does. With `telar-serialization`,
+     *   `KotlinxStateSerializer()` stores a `@Serializable` result.
+     * - **An [effect] in [work] belongs to its item**, so `effect("charge") { ... }` runs once for
+     *   each item without a key of its own for each.
+     * - **A stream shows the items.** The node has one [GraphEvent.NodeStarted] and one
+     *   [GraphEvent.NodeCompleted], and a [GraphEvent.ItemCompleted] for each item, in between.
+     *   What an item passes to [reportProgress] and the retries of an item say which item it is.
+     * - **[concurrency] limits how many items run at the same time.** There is no limit by default,
+     *   so 500 items are 500 calls to a model at once: set one for a service with a rate limit.
+     *
+     * [forEach], [work] and [update] must only read and build. The engine may call [update] more
+     * than once for one run of the node.
+     *
+     * @param forEach reads the items from the state.
+     * @param work does the work of one item, with the state of the node.
+     * @param serializer stores the result of an item as a string and reads it back. `null` saves no
+     * results.
+     * @param concurrency how many items may run at the same time.
+     * @param retry how an item is tried again after a failure. `null` runs it once.
+     * @param timeout how long one try of an item may take. `null` is no limit.
+     * @throws GraphValidationException if the name is blank, reserved ([START], [END]) or already
+     * used, [concurrency] is not positive, or [timeout] is not positive.
+     */
+    public fun <Item, Result> node(
+        name: String,
+        forEach: suspend (State) -> List<Item>,
+        work: suspend (State, Item) -> Result,
+        serializer: StateSerializer<Result>? = null,
+        concurrency: Int = Int.MAX_VALUE,
+        retry: Retry? = null,
+        timeout: Duration? = null,
+        update: suspend (State, List<Result>) -> State,
+    ): NodeRef {
+        if (concurrency <= 0) throw GraphValidationException("The concurrency of node '$name' must be positive, but was $concurrency.")
+        return add(forEachNode(name, forEach, work, serializer, concurrency, retry, checked(name, timeout), update))
+    }
+
     private fun checked(node: String, timeout: Duration?): Duration? {
         if (timeout != null && !timeout.isPositive()) {
             throw GraphValidationException("The timeout of node '$node' must be positive, but was $timeout.")

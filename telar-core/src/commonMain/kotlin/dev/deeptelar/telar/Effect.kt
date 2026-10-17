@@ -227,6 +227,9 @@ internal class EffectLog(
         val started: String?,
     )
 
+    /** Returns what was recorded under [path], or `null`. */
+    suspend fun recorded(path: String): String? = mutex.withLock { recorded[path] }
+
     /** Frees [path] after its effect failed, so that the node may try it again. */
     suspend fun release(node: RunningNode, path: String) {
         withContext(NonCancellable) { mutex.withLock { node.effectsUsed.remove(path) } }

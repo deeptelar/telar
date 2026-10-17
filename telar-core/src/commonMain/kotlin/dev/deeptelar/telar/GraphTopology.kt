@@ -11,12 +11,15 @@ package dev.deeptelar.telar
  * route to any node or to [END], so it has no entries in [edges].
  * @property subgraphs the structure of the graph that a node added with [StateGraph.subgraph] runs,
  * by the name of that node. The node is in [nodes] and [edges] like any other.
+ * @property forEachNodes the nodes that run their work for each item of a list, added with the
+ * `forEach` of [StateGraph.node]. They are in [nodes] and [edges] like any other.
  */
 public data class GraphTopology(
     val nodes: List<String>,
     val edges: List<GraphEdge>,
     val dynamicRoutes: Set<String>,
     val subgraphs: Map<String, GraphTopology> = emptyMap(),
+    val forEachNodes: Set<String> = emptySet(),
 ) {
     /** The nodes (or [END]) that [node] can lead to according to [edges]. */
     public fun successors(node: String): List<String> = edges.filter { it.from == node }.map { it.to }
@@ -27,7 +30,8 @@ public data class GraphTopology(
      *
      * [START] and [END] are the `[*]` of the diagram, and a subgraph is a state that holds the
      * diagram of its graph. A conditional edge is labeled with its entry in [edgeLabels], its
-     * [GraphEdge.label], or `?`. A node in [dynamicRoutes] gets a note that it routes to any node.
+     * [GraphEdge.label], or `?`. A node in [dynamicRoutes] gets a note that it routes to any node,
+     * and a node in [forEachNodes] one that it runs for each item.
      *
      * @param interruptBefore nodes the run pauses before, usually [GraphConfig.interruptBefore]. Their
      * names start with ⏸ and their states are highlighted.
