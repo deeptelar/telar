@@ -7,6 +7,8 @@ breaking changes.
 
 ## [Unreleased]
 
+## [0.1.0-alpha11] - 2026-10-17
+
 ### Added
 
 - `conditionalFanOut` is a conditional edge that picks several nodes, which run in parallel in the
@@ -42,6 +44,12 @@ breaking changes.
 
 ### Changed
 
+- `GraphEdge` has a new property, `label`, so two edges with different labels are no longer equal.
+  The edges of `toolLoop` and `toolAgent` have the labels `tool calls` and `done`: a test that
+  compares the `topology` of such a graph with `GraphEdge`s it builds, or the text of its
+  `toMermaid()`, sees them.
+- `conditionalEdge` has a new parameter, `labels`, before the condition. A condition given as a
+  trailing lambda works as before; one given in the parentheses needs its name, `condition = ...`.
 - `telar-otel` is a multiplatform module. `OpenTelemetryObserver` is unchanged and still for the JVM
   and Android. A Gradle build picks the right artifact by itself; a Maven build names
   `telar-otel-jvm`.
@@ -519,7 +527,8 @@ First public release. Everything below is new compared with the unpublished beta
 - `START` counted toward `maxIterations`.
 - `FileCheckpointer` did not write the format version into its files.
 
-[Unreleased]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha10...HEAD
+[Unreleased]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha11...HEAD
+[0.1.0-alpha11]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha10...v0.1.0-alpha11
 [0.1.0-alpha10]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha09...v0.1.0-alpha10
 [0.1.0-alpha09]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha08...v0.1.0-alpha09
 [0.1.0-alpha08]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha07...v0.1.0-alpha08

@@ -7,7 +7,7 @@ run takes and for a run that failed in production, run again from its checkpoint
 
 ```kotlin
 dependencies {
-    testImplementation("dev.deeptelar:telar-test:0.1.0-alpha10")
+    testImplementation("dev.deeptelar:telar-test:0.1.0-alpha11")
 }
 ```
 

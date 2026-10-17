@@ -16,7 +16,7 @@ Last updated: 2026-10-15.
 
 ## Where the project is
 
-`0.1.0-alpha10` is the latest release on Maven Central. Telar has the graph builder and the engine:
+`0.1.0-alpha11` is the latest release on Maven Central. Telar has the graph builder and the engine:
 loops, parallel branches with rules for what they write, subgraphs, streaming, checkpoints with the
 history of a run, pausing for a person before a node or in the middle of its work, retries and time
 limits for a node, and side effects that run once per step. Around the engine it has checkpointers
@@ -74,7 +74,7 @@ These change how a graph runs or what a message holds, so they come before the b
 | | Feature | What you get | State | Issue |
 |---|---|---|---|---|
 | 7 | One rule for parallel nodes that write the same property | You decide what happens, and the rule is the same for both ways to write a node: `compile(rules = mergeRules { ... })`, or the same rules given as `reducer`, merges every node of a step, so a node with `work` and `update` no longer overwrites another without a word. Released: `compile(rules = mergeRules { ... })`, and `mergeRules` given as the reducer holds for every node too. Still open: the order of the reducer and the updates when no rules are given. | In progress | [#101] |
-| 8 | Fan-out over a list | One node runs once per item of a list, all at the same time, when the number of items is only known at run time. Today the edges fix how many nodes run in parallel. | Planned | [#82] |
+| 8 | Fan-out over a list | One node runs once per item of a list, all at the same time, when the number of items is only known at run time. Today a `conditionalFanOut` picks among the nodes declared in the graph, so the graph fixes how many can run in parallel. | Planned | [#82] |
 | 9 | Images and files in messages | Send a model a picture or a PDF with the question, and let a tool return one. A `ChatMessage` holds text only today. | Planned | [#103] |
 | 10 | Subgraphs | A compiled graph becomes a node of another graph, with a mapping between the two states and one thread for both. Released: `subgraph`, a run that pauses inside a subgraph and resumes there, the events of a subgraph in the stream of the graph around it, and the subgraph in `topology`. Still to come: `interruptBefore` for a node of a subgraph, and a retry after a failure that continues inside the subgraph. | In progress | [#34] |
 
