@@ -15,6 +15,21 @@ breaking changes.
   `FileCheckpointer`, and the process ends; `--approve` finishes it in a new process and `--fork`
   writes the changelog again from the saved step. Without an API key a scripted model answers:
   `./gradlew :samples:release-guard:run`. See [Samples](https://deeptelar.github.io/telar/samples).
+- Tracing on every platform: `OtlpObserver` of `telar-otel` records the same spans as
+  `OpenTelemetryObserver` and sends them itself, as OTLP over HTTP with a Ktor `HttpClient` of the
+  app, to an OpenTelemetry Collector or any backend that receives OTLP. It runs on Android, iOS, the
+  desktop, servers and the browser (Kotlin/JS and Kotlin/Wasm), and its tests run in headless Chrome
+  too. Spans are sent in batches from a coroutine of the app's scope, a failed request goes to
+  `onExportFailed` and never into the run, and `flush()` sends what is left. While a node runs, its
+  coroutine context holds a `TraceContext` with the ids of its span, and the Ktor plugin
+  `Traceparent` sends them with the requests the node makes. See
+  [Tracing](https://deeptelar.github.io/telar/guides/tracing#on-every-platform).
+
+### Changed
+
+- `telar-otel` is a multiplatform module. `OpenTelemetryObserver` is unchanged and still for the JVM
+  and Android. A Gradle build picks the right artifact by itself; a Maven build names
+  `telar-otel-jvm`.
 
 ### Fixed
 

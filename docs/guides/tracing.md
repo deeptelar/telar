@@ -2,8 +2,8 @@
 
 A run in production should leave a trace: which nodes ran and how long each took, which nodes the
 edges chose, which tries failed, and where the run stopped. A `GraphObserver` is told all of that,
-and `telar-otel` sends it to OpenTelemetry, so it shows up in the tools a team already uses, such
-as Jaeger, Grafana Tempo or Honeycomb.
+and `telar-otel` sends it to OpenTelemetry, on every platform, so it shows up in the tools a team
+already uses, such as Jaeger, Grafana Tempo or Honeycomb.
 
 ## OpenTelemetry
 
@@ -13,8 +13,75 @@ dependencies {
 }
 ```
 
-> `telar-otel` is for the JVM and Android, because the OpenTelemetry API it is built on is a Java
-> library.
+`telar-otel` works on every platform Telar runs on: Android, iOS, the desktop, servers and the
+browser, with Kotlin/JS and Kotlin/Wasm. It has two observers that record the same spans:
+
+| Observer | Platforms | Sends the spans |
+|---|---|---|
+| `OtlpObserver` | Every platform | Itself, as OTLP over HTTP, with a Ktor `HttpClient` of the app |
+| `OpenTelemetryObserver` | JVM and Android | Through the OpenTelemetry SDK or Java agent the app already has |
+
+A multiplatform app uses `OtlpObserver` in its common code. A server on the JVM that already
+has OpenTelemetry uses `OpenTelemetryObserver`, so that a run is part of the traces of its
+requests.
+
+### On every platform
+
+Give an `OtlpObserver` to the runs you want to trace:
+
+```kotlin
+val tracing =
+    OtlpObserver(
+        client = httpClient,
+        scope = appScope,
+        endpoint = "https://collector.example.com/v1/traces",
+        serviceName = "help-desk",
+    )
+val config = GraphConfig(threadId = "ticket-42", checkpointer = checkpointer, observers = listOf(tracing))
+
+graph.invoke(ticket, config)
+```
+
+- **`client`** is a Ktor `HttpClient` that the app creates, with the engine of its platform (`Js` in
+  the browser, `Darwin` on iOS, `OkHttp` on Android, `CIO` or `Java` on the JVM), and closes.
+- **`scope`** is where the spans are sent from, such as the scope of the app or a `viewModelScope`.
+- **`endpoint`** is the `/v1/traces` address of an
+  [OpenTelemetry Collector](https://opentelemetry.io/docs/collector/), or of any backend that
+  receives OTLP over HTTP. The default is a collector on the same machine,
+  `http://localhost:4318/v1/traces`. A backend that wants a key gets it in `headers`.
+- **`resource`** adds attributes of the app, such as `service.version`.
+
+A span is sent when it ends, together with the others that end within `exportDelay` (one second).
+A run never fails because of tracing: a request that fails goes to `onExportFailed`, and its spans
+are dropped. Before the app ends, call `tracing.flush()`, which sends what is left and returns when
+the collector has answered.
+
+**In a browser**, the collector is on another origin than the page, so it has to allow it. In the
+configuration of the OpenTelemetry Collector:
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      http:
+        cors:
+          allowed_origins: ["https://app.example.com"]
+```
+
+A key in `headers` can be read by everyone who opens the page, so a page sends its spans to a
+collector of your own, not straight to a backend that wants a secret. A page can be closed at any
+time: call `flush()` when it is hidden (the `visibilitychange` event).
+
+**What a node calls.** While a node runs, its coroutine context holds a `TraceContext` with the ids
+of its span. The Ktor plugin `Traceparent` sends them as the
+[`traceparent`](https://www.w3.org/TR/trace-context/) header, so that a server of the app records its
+spans inside the node:
+
+```kotlin
+val api = HttpClient(Js) { install(Traceparent) }
+```
+
+### With the OpenTelemetry SDK of Java
 
 Give an `OpenTelemetryObserver` to the runs you want to trace:
 
@@ -29,7 +96,15 @@ graph.invoke(ticket, config)
 an argument, the observer takes the one the OpenTelemetry Java agent or `GlobalOpenTelemetry.set`
 registered. One observer can be shared by every run of the app.
 
-A run then looks like this:
+The span of a node is current while the node runs. What the node calls opens its spans inside it:
+an HTTP client with OpenTelemetry instrumentation, a database driver, another traced library. And a
+run that starts inside a span, such as the span of a request to your server, is a child of that
+span. `OtlpObserver` cannot do that last part: a run it records is a trace of its own, unless it is
+a subgraph.
+
+### The spans
+
+A run looks the same with both observers:
 
 ```
 telar.run                    telar.thread_id=ticket-42  telar.outcome=completed
@@ -39,7 +114,7 @@ telar.run                    telar.thread_id=ticket-42  telar.outcome=completed
 │     ├─ telar.node search   telar.step=1
 │     └─ telar.node sum      telar.step=2
 └─ telar.node reply          telar.step=3
-   └─ POST api.anthropic.com (the span of an instrumented HTTP client)
+   └─ POST api.anthropic.com (with OpenTelemetryObserver, the span of an instrumented HTTP client)
 ```
 
 - **The run** is a span named `telar.run`, with `telar.thread_id` and `telar.outcome`:
@@ -53,10 +128,8 @@ telar.run                    telar.thread_id=ticket-42  telar.outcome=completed
 - **A failure** is recorded on the node and on the run, with the status `ERROR`. A cancelled node,
   for example the other node of a step in which one node failed, is not an error.
 
-The span of a node is current while the node runs. What the node calls opens its spans inside it:
-an HTTP client with OpenTelemetry instrumentation, a database driver, another traced library. And a
-run that starts inside a span, such as the span of a request to your server, is a child of that
-span.
+`exception.type` is the name of the class with its package, except on Kotlin/JS, which only knows
+the name of the class.
 
 ## What is never recorded
 

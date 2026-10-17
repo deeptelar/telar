@@ -16,7 +16,7 @@ dependencies {
     implementation("dev.deeptelar:telar-langchain4j:0.1.0-alpha10")        // call AI models through LangChain4j (JVM)
     implementation("dev.deeptelar:telar-typesafe:0.1.0-alpha10")           // ask Jev, a decision model, on every platform
     implementation("dev.deeptelar:telar-mcp:0.1.0-alpha10")                // the tools of an MCP server as tools of an agent
-    implementation("dev.deeptelar:telar-otel:0.1.0-alpha10")               // send runs to OpenTelemetry (JVM and Android)
+    implementation("dev.deeptelar:telar-otel:0.1.0-alpha10")               // send runs to OpenTelemetry, on every platform
     testImplementation("dev.deeptelar:telar-test:0.1.0-alpha10")           // scripted models and checks for the tests of a graph
 }
 ```
@@ -37,7 +37,7 @@ dependencies {
 | `telar-langchain4j` | JVM (Java 17+) | `LangChain4jChatModel` and `chatNode` / `chatMessagesNode` for LangChain4j 1.x models |
 | `telar-typesafe` | same as core | `TypeSafeDecisionModel`: Jev, the decision model of TypeSafe AI, through Ktor |
 | `telar-mcp` | same as core | `mcpTools`: the tools of a [Model Context Protocol server](guides/mcp.md) as tools of an agent, on the Kotlin SDK of MCP. |
-| `telar-otel` | JVM/Android | `OpenTelemetryObserver`: the runs and nodes of a graph as [OpenTelemetry traces](guides/tracing.md). |
+| `telar-otel` | same as core | `OtlpObserver`: the runs and nodes of a graph as [OpenTelemetry traces](guides/tracing.md), sent over HTTP with Ktor on every platform. On the JVM also `OpenTelemetryObserver`, for the OpenTelemetry SDK of Java. |
 | `telar-test` | same as core | `ScriptedChatModel`, `ScriptedDecisionModel`, `record()`, and `graph.test { }` / `graph.replay { }` for the path of a run, for [tests](guides/testing.md) of a graph. |
 
 Requires Kotlin 2.x. JVM artifacts target Java 11, except `telar-langchain4j`, which needs
