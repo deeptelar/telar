@@ -227,6 +227,8 @@ class GraphObserverTest {
                     "run saved step 0, next [ask]",
                     "run interrupted before [ask]",
                     "run started",
+                    // The edit of resume is saved before the node runs again.
+                    "run saved step 0, next [ask]",
                     "ask@1 started",
                     "ask@1 completed",
                     "run step 1: [ask] -> []",

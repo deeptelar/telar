@@ -1,5 +1,9 @@
 package dev.deeptelar.telar
 
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -45,6 +49,78 @@ class InterruptTest {
             val finished = app.resume(config) { it.copy(count = 5) }
 
             assertEquals(115, finished.state.count)
+        }
+
+    @Test
+    fun `an edit of resume is saved before the step runs and a failure does not lose it`() =
+        runTest {
+            var fail = true
+            val graph =
+                StateGraph<TestState> {
+                    node("a") { it.copy(count = it.count + 1) }
+                    node("b") { if (fail) error("offline") else it.copy(count = it.count + 10) }
+                    edge(START, "a")
+                    edge("a", "b")
+                    edge("b", END)
+                }.compile()
+            val checkpointer = MemoryCheckpointer<TestState>()
+            val config = GraphConfig(threadId = "t", checkpointer = checkpointer, interruptBefore = setOf("b"))
+            graph.invoke(TestState(0), config)
+
+            assertFailsWith<NodeExecutionException> { graph.resume(config) { it.copy(count = 5) } }
+
+            // The edit is where the run stands, and it still continues past the pause.
+            assertEquals(Checkpoint(TestState(5), listOf("b"), step = 1, interruptedBefore = true), checkpointer.load("t"))
+            fail = false
+            assertEquals(GraphResult.Completed(TestState(15)), graph.resume(config))
+        }
+
+    @Test
+    fun `an edit of resume is kept when the run is cancelled in the step`() =
+        runTest {
+            val started = CompletableDeferred<Unit>()
+            val graph =
+                StateGraph<TestState> {
+                    node("a") { it.copy(count = it.count + 1) }
+                    node("b") {
+                        started.complete(Unit)
+                        awaitCancellation()
+                    }
+                    edge(START, "a")
+                    edge("a", "b")
+                    edge("b", END)
+                }.compile()
+            val checkpointer = MemoryCheckpointer<TestState>()
+            val config = GraphConfig(threadId = "t", checkpointer = checkpointer, interruptBefore = setOf("b"))
+            graph.invoke(TestState(0), config)
+
+            val run = launch { graph.resume(config) { it.copy(count = 5) } }
+            started.await()
+            run.cancelAndJoin()
+
+            assertEquals(TestState(5), checkpointer.load("t")?.state)
+        }
+
+    @Test
+    fun `resume without an edit saves nothing before the step`() =
+        runTest {
+            val memory = MemoryCheckpointer<TestState>()
+            val saves = mutableListOf<Int>()
+            val recording =
+                object : Checkpointer<TestState> by memory {
+                    override suspend fun save(threadId: String, checkpoint: Checkpoint<TestState>) {
+                        saves += checkpoint.step
+                        memory.save(threadId, checkpoint)
+                    }
+                }
+            val config = GraphConfig(threadId = "t", checkpointer = recording, interruptBefore = setOf("b"))
+            app.invoke(TestState(0), config)
+            saves.clear()
+
+            app.resume(config) { it }
+
+            // One save for each of the two steps that ran, none before them.
+            assertEquals(listOf(2, 3), saves)
         }
 
     @Test
