@@ -69,6 +69,9 @@ private fun StringBuilder.writeGraph(
     for (name in topology.nodes.filter { it in topology.dynamicRoutes }) {
         appendLine("${indent}note right of ${ids.getValue(name)} : routes to any node")
     }
+    for (name in topology.nodes.filter { it in topology.forEachNodes }) {
+        appendLine("${indent}note right of ${ids.getValue(name)} : runs for each item")
+    }
 }
 
 /** Keeps a name or a label on one line and out of Mermaid's syntax. */

@@ -107,6 +107,7 @@ public class CompiledGraph<State> internal constructor(
                     .map { it.from }
                     .toSet(),
             subgraphs = nodes.values.mapNotNull { node -> node.subgraph?.let { node.name to it.topology } }.toMap(),
+            forEachNodes = nodes.values.filter { it.forEach }.mapTo(mutableSetOf()) { it.name },
         )
 
     /**
@@ -551,13 +552,7 @@ public class CompiledGraph<State> internal constructor(
                     while (running > 0) {
                         when (val signal = signals.receive()) {
                             is NodeSignal.Progress -> {
-                                val value = signal.value
-                                if (value is SubgraphReport) {
-                                    emit(GraphEvent.SubgraphEvent(step, signal.node, value.event, state))
-                                } else {
-                                    run.watch.observer.onNodeProgress(observed.getValue(signal.node), value)
-                                    emit(GraphEvent.NodeProgress(step, signal.node, value, state))
-                                }
+                                emit(reported(run, observed.getValue(signal.node), signal.value, state))
                                 signal.emitted.complete(Unit)
                             }
                             is NodeSignal.Retry ->
@@ -579,6 +574,28 @@ public class CompiledGraph<State> internal constructor(
                 }
             }
         return combine(state, activeNodes.zip(outputs))
+    }
+
+    /**
+     * The event of what [node] reported: [value] of [reportProgress], or what the engine sends the
+     * same way, the event of a subgraph or the news of an item.
+     */
+    private fun reported(run: StepRun, node: ObservedNode, value: Any, state: State): GraphEvent<State> {
+        val step = run.step
+        val name = node.name
+        return when (value) {
+            is SubgraphReport -> GraphEvent.SubgraphEvent(step, name, value.event, state)
+            is ItemReport.Progress -> {
+                run.watch.observer.onNodeProgress(node, value.value)
+                GraphEvent.NodeProgress(step, name, value.value, state, value.item)
+            }
+            is ItemReport.Failed -> GraphEvent.NodeRetry(step, name, value.attempt, value.cause, value.pause, state, value.item)
+            is ItemReport.Completed -> GraphEvent.ItemCompleted(step, name, value.item, value.result, state)
+            else -> {
+                run.watch.observer.onNodeProgress(node, value)
+                GraphEvent.NodeProgress(step, name, value, state)
+            }
+        }
     }
 
     /** Sends what the node named [name] reports to [signals], and makes the node wait until it is emitted. */
@@ -732,36 +749,20 @@ public class CompiledGraph<State> internal constructor(
                     run.watch.observer,
                 ),
         ) {
-            wrapFailure({ NodeExecutionException(node.name, it, attempt) }) {
-                val timeout = node.timeout
-                if (timeout == null) {
-                    node.run(state)
-                } else {
-                    // Null only when this limit ran out: one that the node set for itself throws.
-                    withTimeoutOrNull(timeout) { node.run(state) } ?: throw NodeTimeoutException(timeout)
+            if (node.forEach) {
+                // It tries each item on its own, and its failures name the item.
+                node.run(state)
+            } else {
+                wrapFailure({ NodeExecutionException(node.name, it, attempt) }) {
+                    val timeout = node.timeout
+                    if (timeout == null) {
+                        node.run(state)
+                    } else {
+                        // Null only when this limit ran out: one that the node set for itself throws.
+                        withTimeoutOrNull(timeout) { node.run(state) } ?: throw NodeTimeoutException(timeout)
+                    }
                 }
             }
-        }
-
-    /**
-     * Runs [block], which calls code of the application (a node, the condition of an edge or the
-     * reducer), and rethrows what it throws as the exception that [failure] builds. That includes a
-     * [TelarException], such as the failure of a graph that a node runs, so the caller always
-     * learns which part of this graph failed.
-     *
-     * Not everything a browser throws is an `Exception`, so every `Throwable` is looked at. What is
-     * no failure of the code passes as it is: see [isFailure].
-     */
-    private suspend inline fun <T> wrapFailure(failure: (Throwable) -> TelarException, block: () -> T): T =
-        try {
-            block()
-        } catch (e: CancellationException) {
-            // Propagate a real cancellation of the run. If the run is still active, the code cancelled
-            // only itself (for example its own withTimeout expired), which is a failure of that code.
-            currentCoroutineContext().ensureActive()
-            throw failure(e)
-        } catch (e: Throwable) {
-            throw if (e.isFailure()) failure(e) else e
         }
 
     /** Returns the nodes to run after [currentNodes], without [END]. */
@@ -816,6 +817,7 @@ public class CompiledGraph<State> internal constructor(
             is GraphEvent.NodeProgress,
             is GraphEvent.SubgraphEvent,
             is GraphEvent.NodeRetry,
+            is GraphEvent.ItemCompleted,
             is GraphEvent.NodeCompleted,
             is GraphEvent.StepCompleted,
             -> error("A graph stream always ends with Completed or Interrupted")
@@ -838,3 +840,24 @@ internal sealed interface RunEnd<out State> {
 internal class SubgraphReport(
     val event: GraphEvent<*>,
 )
+
+/**
+ * Runs [block], which calls code of the application (a node, the condition of an edge or the
+ * reducer), and rethrows what it throws as the exception that [failure] builds. That includes a
+ * [TelarException], such as the failure of a graph that a node runs, so the caller always
+ * learns which part of the graph failed.
+ *
+ * Not everything a browser throws is an `Exception`, so every `Throwable` is looked at. What is
+ * no failure of the code passes as it is: see [isFailure].
+ */
+internal suspend inline fun <T> wrapFailure(failure: (Throwable) -> TelarException, block: () -> T): T =
+    try {
+        block()
+    } catch (e: CancellationException) {
+        // Propagate a real cancellation of the run. If the run is still active, the code cancelled
+        // only itself (for example its own withTimeout expired), which is a failure of that code.
+        currentCoroutineContext().ensureActive()
+        throw failure(e)
+    } catch (e: Throwable) {
+        throw if (e.isFailure()) failure(e) else e
+    }

@@ -4,6 +4,7 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import dev.deeptelar.telar.GraphConfig
 import dev.deeptelar.telar.GraphResult
 import dev.deeptelar.telar.MemoryCheckpointer
+import dev.deeptelar.telar.NodeExecutionException
 import dev.deeptelar.telar.agent.AgentState
 import dev.deeptelar.telar.agent.ChatDecisionModel
 import dev.deeptelar.telar.agent.ChatMessage
@@ -19,6 +20,7 @@ import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
 import io.ktor.http.headersOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.test.runTest
@@ -26,6 +28,7 @@ import kotlinx.io.files.Path
 import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertSame
@@ -226,6 +229,29 @@ class SamplesTest {
             assertEquals(3, state.findings.size)
             assertEquals("3 sources agree.", state.summary)
             assertEquals(300, currentTime)
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `documents are summarized at the same time and a resume summarizes only the missing ones`() =
+        runTest {
+            val asked = mutableListOf<String>()
+            var modelUp = false
+            val graph =
+                summariesGraph { document ->
+                    asked += document
+                    delay(if (document == "faq") 200 else 100)
+                    if (document == "faq" && !modelUp) error("The model did not answer.")
+                    "about $document"
+                }
+            val config = GraphConfig(threadId = "reading", checkpointer = MemoryCheckpointer<Reading>())
+
+            assertFailsWith<NodeExecutionException> { graph.invoke(Reading("coroutines"), config) }
+            modelUp = true
+            val state = graph.resume(config).state
+
+            assertEquals(listOf("about intro", "about guide", "about faq", "about changelog"), state.summaries.map { it.text })
+            assertEquals(listOf("intro", "guide", "faq", "changelog", "faq"), asked)
         }
 
     @Test

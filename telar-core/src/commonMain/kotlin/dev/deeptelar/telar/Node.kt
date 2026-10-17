@@ -39,6 +39,8 @@ public class NodeRef internal constructor(
  * @property subgraph the graph that this node runs, for a node added with [StateGraph.subgraph].
  * @property retry how the node is tried again after a failure. `null` for a node that runs once.
  * @property timeout how long one try of the node may take. `null` for no limit.
+ * @property forEach `true` for a node that runs its work for each item of a list. It tries each
+ * item and wraps the failures of its items itself, so that they name the item: see [forEachNode].
  */
 internal class Node<State>(
     val name: String,
@@ -46,6 +48,7 @@ internal class Node<State>(
     val subgraph: CompiledGraph<*>? = null,
     val retry: Retry? = null,
     val timeout: Duration? = null,
+    val forEach: Boolean = false,
     val run: suspend (State) -> NodeOutput<State>,
 )
 

@@ -103,7 +103,10 @@ made under that name keep it. The repository is `deeptelar/telar` and the demo i
 
 1. **Define** with the `StateGraph<State> { ... }` DSL. `node(name) { ... }` returns a whole state;
    `node(name, work) { state, result -> ... }` splits a node into slow work and a state update, for
-   nodes that run in parallel. Both take a `retry` (a `Retry`: how often the node is tried and the
+   nodes that run in parallel. `node(name, forEach = { ... }, work = { state, item -> ... }) { state, results -> ... }`
+   runs its work once per item of a list, all at once (`concurrency` limits it), and with a `serializer`
+   saves each item's result in `Checkpoint.effects` so a resume runs only the missing items (`ForEach.kt`).
+   All take a `retry` (a `Retry`: how often the node is tried and the
    pause between tries) and a `timeout` for one try; the tries happen inside the node's step, and a
    stream gets a `GraphEvent.NodeRetry` for each failed one. `subgraph(name, graph, state, update)`
    adds a compiled graph as a node, with the two functions mapping its state out of and into this

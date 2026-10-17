@@ -11,6 +11,7 @@ Runnable examples live in the repository, in [`samples/`](https://github.com/dee
 ./gradlew :samples:runAskFromANode      # a payout that asks for approval only when it is large
 ./gradlew :samples:runSubgraph          # the payout graph as one node of a larger graph
 ./gradlew :samples:runParallelResearch  # three lookups at the same time
+./gradlew :samples:runSummaries         # one summary per document, all at once; a resume redoes only the missing one
 ./gradlew :samples:runChatAgent         # a chat agent built on a LangChain4j model
 ./gradlew :samples:runToolAgent         # an agent that calls tools, with or without an API key
 ./gradlew :samples:runMcpTools          # the same agent, with its tools on an MCP server

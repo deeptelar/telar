@@ -9,13 +9,16 @@ import dev.deeptelar.telar.Retry
 import dev.deeptelar.telar.START
 import dev.deeptelar.telar.StateGraph
 import dev.deeptelar.telar.agent.AgentState
+import dev.deeptelar.telar.agent.ChatEvent
 import dev.deeptelar.telar.agent.Tool
 import dev.deeptelar.telar.agent.toolAgent
+import dev.deeptelar.telar.reportProgress
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.time.Duration
 
 data class Desk(
     val chat: AgentState = AgentState("Where is my pizza?"),
@@ -90,6 +93,38 @@ class RunRecordTest {
             assertEquals("Your pizza is 5 minutes away.", run.text)
             assertEquals(1, run.events.count { it is GraphEvent.NodeRetry })
             assertEquals(listOf("model"), run.nodes)
+        }
+
+    @Test
+    fun `a retry of one item leaves out the text of that item only`() =
+        runTest {
+            var tries = 0
+            val graph =
+                StateGraph<Desk> {
+                    val each =
+                        node(
+                            "answer",
+                            forEach = { listOf("kitchen", "driver") },
+                            work = { _, who ->
+                                if (who == "kitchen") {
+                                    reportProgress(ChatEvent.TextDelta("Baking. "))
+                                } else {
+                                    // The first try breaks off in the middle of its answer.
+                                    if (tries++ == 0) {
+                                        reportProgress(ChatEvent.TextDelta("On the w"))
+                                        error("The connection broke.")
+                                    }
+                                    reportProgress(ChatEvent.TextDelta("On the way."))
+                                }
+                            },
+                            retry = Retry(attempts = 2, pause = Duration.ZERO),
+                        ) { desk, _ -> desk }
+                    START then each
+                }.compile()
+
+            val run = graph.stream(Desk()).record()
+
+            assertEquals("Baking. On the way.", run.text)
         }
 
     @Test

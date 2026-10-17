@@ -14,6 +14,8 @@ graph.stream(SupportEmail(sender = "Ana", body = "I would like a refund.")).coll
         is GraphEvent.SubgraphEvent -> println("inside ${event.node}: ${event.event}")
         // A node with a retry failed and will run again. See "Retries and time limits".
         is GraphEvent.NodeRetry -> println("${event.node} failed, next try in ${event.pause}")
+        // A node that runs for each item of a list finished one. See "Parallel branches".
+        is GraphEvent.ItemCompleted -> println("${event.node} finished item ${event.item}")
         // A node has returned its updated state.
         is GraphEvent.NodeCompleted -> println("${event.node} finished")
         // A step is over: every node that ran at the same time has finished.

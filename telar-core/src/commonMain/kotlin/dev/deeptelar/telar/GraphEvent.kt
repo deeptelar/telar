@@ -11,8 +11,9 @@ import kotlin.time.Duration
  * For every executed step a stream emits a [NodeStarted] for each node of the step, a
  * [NodeCompleted] as each of them finishes, and then one [StepCompleted]. While a node runs, it can
  * add [NodeProgress] events of its own, and a node that runs a subgraph adds a [SubgraphEvent] for
- * every event of that graph. A node with a [Retry] adds a [NodeRetry] for each try that failed and
- * is followed by another. A stream always ends with exactly one [Completed] or [Interrupted]. When
+ * every event of that graph. A node that runs for each item of a list adds an [ItemCompleted] for
+ * each item. A node with a [Retry] adds a [NodeRetry] for each try that failed and is followed by
+ * another. A stream always ends with exactly one [Completed] or [Interrupted]. When
  * a node calls [interrupt], [Interrupted] comes right after the events of the nodes that had
  * started, without a [StepCompleted].
  */
@@ -38,12 +39,15 @@ public sealed interface GraphEvent<out State> {
      *
      * @property value what the node reported. Its type is up to the node: check it with `is` or `as?`.
      * @property state the state the node received.
+     * @property item the position in the list of the item whose work reported [value], for a node
+     * that runs for each item of a list. `null` for every other node.
      */
     public data class NodeProgress<out State>(
         val step: Int,
         val node: String,
         val value: Any,
         override val state: State,
+        val item: Int? = null,
     ) : GraphEvent<State>
 
     /**
@@ -94,10 +98,15 @@ public sealed interface GraphEvent<out State> {
      * The last try of a node has no event: when it fails, the run fails with a
      * [NodeExecutionException].
      *
+     * For a node that runs for each item of a list, a try is the work of one item, and [item] says
+     * which.
+     *
      * @property attempt the number of the try that failed, starting at 1.
      * @property cause what the node threw, or a [NodeTimeoutException] when the try took too long.
      * @property pause how long the engine waits before the next try.
      * @property state the state the node received, and receives again.
+     * @property item the position in the list of the item that is tried again, for a node that runs
+     * for each item of a list. `null` for every other node.
      */
     public data class NodeRetry<out State>(
         val step: Int,
@@ -105,6 +114,26 @@ public sealed interface GraphEvent<out State> {
         val attempt: Int,
         val cause: Throwable,
         val pause: Duration,
+        override val state: State,
+        val item: Int? = null,
+    ) : GraphEvent<State>
+
+    /**
+     * The work of one item of [node] finished in [step], for a node that runs for each item of a
+     * list. One arrives for each item, in the order they finish, after the [NodeStarted] of [node]
+     * and before its [NodeCompleted]. An item whose result was saved before, and that does not run
+     * again, has one too, so a screen can count the items that are done.
+     *
+     * @property item the position of the item in the list.
+     * @property result what the work of the item returned. Its type is the result type of the node:
+     * check it with `is` or `as?`.
+     * @property state the state the node received.
+     */
+    public data class ItemCompleted<out State>(
+        val step: Int,
+        val node: String,
+        val item: Int,
+        val result: Any?,
         override val state: State,
     ) : GraphEvent<State>
 
