@@ -598,6 +598,8 @@ final class dev.deeptelar.telar/ObservedNode { // dev.deeptelar.telar/ObservedNo
 }
 
 final class dev.deeptelar.telar/ObservedRun { // dev.deeptelar.telar/ObservedRun|null[0]
+    final val context // dev.deeptelar.telar/ObservedRun.context|{}context[0]
+        final fun <get-context>(): kotlin.coroutines/CoroutineContext // dev.deeptelar.telar/ObservedRun.context.<get-context>|<get-context>(){}[0]
     final val parent // dev.deeptelar.telar/ObservedRun.parent|{}parent[0]
         final fun <get-parent>(): dev.deeptelar.telar/ObservedNode? // dev.deeptelar.telar/ObservedRun.parent.<get-parent>|<get-parent>(){}[0]
     final val threadId // dev.deeptelar.telar/ObservedRun.threadId|{}threadId[0]

@@ -514,6 +514,7 @@ public final class dev/deeptelar/telar/ObservedNode {
 }
 
 public final class dev/deeptelar/telar/ObservedRun {
+	public final fun getContext ()Lkotlin/coroutines/CoroutineContext;
 	public final fun getParent ()Ldev/deeptelar/telar/ObservedNode;
 	public final fun getThreadId ()Ljava/lang/String;
 	public fun toString ()Ljava/lang/String;
