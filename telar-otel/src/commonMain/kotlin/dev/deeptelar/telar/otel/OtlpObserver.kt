@@ -74,6 +74,11 @@ import kotlin.time.TimeSource
  * ids of its span. The [Traceparent] plugin of Ktor sends them with each request, so that a server
  * of the app records its spans inside the node.
  *
+ * **Inside a trace of the app.** A run is a trace of its own, unless its coroutine context holds a
+ * [TraceContext]: then the run is inside that span. The app puts one there, for example from the
+ * `traceparent` header of the request that started the run (see [TraceContext.parse]), and a run
+ * started inside a node traced by an `OtlpObserver` already has the one of that node.
+ *
  * @param client sends the spans. Its engine decides the platform: `Js` in the browser, `Darwin` on
  * iOS, `OkHttp` on Android, `CIO` or `Java` on the JVM.
  * @param scope the coroutines that send the spans run in it. Cancel it, and nothing more is sent
@@ -143,7 +148,8 @@ public class OtlpObserver(
     }
 
     override fun onRunStarted(run: ObservedRun) {
-        val parent = run.parent?.let { open.load()[it] }
+        // A subgraph is inside its node; another run is inside the span the app or a node put around it.
+        val parent = run.parent?.let { open.load()[it]?.context } ?: run.context[TraceContext]
         start(
             run,
             name = "telar.run",
@@ -169,7 +175,7 @@ public class OtlpObserver(
         start(
             node,
             name = "telar.node ${node.name}",
-            parent = parent,
+            parent = parent.context,
             attributes =
                 listOf(
                     Attribute(NODE, AttributeValue.Text(node.name)),
@@ -224,10 +230,9 @@ public class OtlpObserver(
         }
     }
 
-    override fun nodeContext(node: ObservedNode): CoroutineContext =
-        open.load()[node]?.let { TraceContext(it.traceId, it.spanId) } ?: EmptyCoroutineContext
+    override fun nodeContext(node: ObservedNode): CoroutineContext = open.load()[node]?.context ?: EmptyCoroutineContext
 
-    private fun start(key: Any, name: String, parent: SpanRecord?, attributes: List<Attribute>) {
+    private fun start(key: Any, name: String, parent: TraceContext?, attributes: List<Attribute>) {
         val span =
             SpanRecord(
                 traceId = parent?.traceId ?: randomId(TRACE_ID_BYTES),
@@ -315,6 +320,9 @@ internal data class SpanRecord(
     val error: String? = null,
     val endNanos: Long? = null,
 ) {
+    /** The ids of this span, as the parent of another. */
+    val context: TraceContext get() = TraceContext(traceId, spanId)
+
     /** The time since the epoch, measured from the start on a clock that never jumps. */
     fun nanosNow(): Long = startNanos + started.elapsedNow().inWholeNanoseconds
 

@@ -51,6 +51,7 @@ public final class dev/deeptelar/telar/otel/TraceContext : kotlin/coroutines/Abs
 }
 
 public final class dev/deeptelar/telar/otel/TraceContext$Key : kotlin/coroutines/CoroutineContext$Key {
+	public final fun parse (Ljava/lang/String;)Ldev/deeptelar/telar/otel/TraceContext;
 }
 
 public final class dev/deeptelar/telar/otel/TraceContextKt {

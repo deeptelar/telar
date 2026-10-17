@@ -40,7 +40,9 @@ final class dev.deeptelar.telar.otel/TraceContext : kotlin.coroutines/AbstractCo
 
     final fun toString(): kotlin/String // dev.deeptelar.telar.otel/TraceContext.toString|toString(){}[0]
 
-    final object Key : kotlin.coroutines/CoroutineContext.Key<dev.deeptelar.telar.otel/TraceContext> // dev.deeptelar.telar.otel/TraceContext.Key|null[0]
+    final object Key : kotlin.coroutines/CoroutineContext.Key<dev.deeptelar.telar.otel/TraceContext> { // dev.deeptelar.telar.otel/TraceContext.Key|null[0]
+        final fun parse(kotlin/String?): dev.deeptelar.telar.otel/TraceContext? // dev.deeptelar.telar.otel/TraceContext.Key.parse|parse(kotlin.String?){}[0]
+    }
 }
 
 final val dev.deeptelar.telar.otel/Traceparent // dev.deeptelar.telar.otel/Traceparent|{}Traceparent[0]
