@@ -300,7 +300,7 @@ public class CompiledGraph<State> internal constructor(
         block: suspend FlowCollector<GraphEvent<State>>.(RunWatch) -> Unit,
     ): Flow<GraphEvent<State>> =
         flow {
-            val watch = RunWatch(config.observer(), ObservedRun(config.threadId, parent = null))
+            val watch = RunWatch(config.observer(), ObservedRun(config.threadId, parent = null, currentCoroutineContext()))
             watch.started()
             try {
                 block(watch)
@@ -343,7 +343,7 @@ public class CompiledGraph<State> internal constructor(
     internal suspend fun runAsSubgraph(state: State, parent: RunningNode): RunEnd<State> {
         val config = GraphConfig<State>(threadId = parent.threadId, maxIterations = parent.maxIterations)
         // The observers of the run around are told about this run too, as a run inside the node.
-        val watch = RunWatch(parent.observer, ObservedRun(parent.threadId, parent.observed))
+        val watch = RunWatch(parent.observer, ObservedRun(parent.threadId, parent.observed, currentCoroutineContext()))
         watch.started()
         try {
             val position = parent.position

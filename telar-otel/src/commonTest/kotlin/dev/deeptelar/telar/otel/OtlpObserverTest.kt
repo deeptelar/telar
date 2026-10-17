@@ -24,6 +24,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
@@ -312,6 +313,72 @@ class OtlpObserverTest {
             assertEquals(node.spanId, trace.spanId)
             assertEquals("00-${node.traceId}-${node.spanId}-01", trace.traceparent)
         }
+
+    @Test
+    fun `a run in a TraceContext is inside that span`() =
+        runTest {
+            val tracing = tracing()
+            val request = TraceContext("4bf92f3577b34da6a3ce929d0e0e4736", "00f067aa0ba902b7")
+            val graph = StateGraph<Ticket> { START then node("read") { it } then END }.compile()
+
+            withContext(request) { graph.invoke(Ticket(), config(tracing)) }
+            val spans = tracing.sent()
+
+            val run = spans.span("telar.run")
+            assertEquals(request.spanId, run.parentSpanId)
+            assertEquals(setOf(request.traceId), spans.map { it.traceId }.toSet())
+            assertEquals(run.spanId, spans.span("telar.node read").parentSpanId)
+        }
+
+    @Test
+    fun `a run started inside a traced node is inside the span of that node`() =
+        runTest {
+            val tracing = tracing()
+            val lookup = StateGraph<Ticket> { START then node("search") { it.copy(answer = "found") } then END }.compile()
+            val graph =
+                StateGraph<Ticket> {
+                    START then node("tool") { lookup.invoke(it, config(tracing)).state } then END
+                }.compile()
+
+            graph.invoke(Ticket(), config(tracing))
+            val spans = tracing.sent()
+
+            val (lookupRun, outerRun) = spans.filter { it.name == "telar.run" }
+            assertNull(outerRun.parentSpanId)
+            assertEquals(spans.span("telar.node tool").spanId, lookupRun.parentSpanId)
+            assertEquals(setOf(outerRun.traceId), spans.map { it.traceId }.toSet())
+        }
+
+    @Test
+    fun `a traceparent header is read and an invalid one is ignored`() {
+        val trace = TraceContext.parse("00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01")!!
+        assertEquals("4bf92f3577b34da6a3ce929d0e0e4736", trace.traceId)
+        assertEquals("00f067aa0ba902b7", trace.spanId)
+        assertEquals("00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01", trace.traceparent)
+        // A later version may add fields, and the flags do not matter.
+        assertEquals(trace.spanId, TraceContext.parse("cc-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00-what")?.spanId)
+
+        val invalid =
+            listOf(
+                null,
+                "",
+                "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7",
+                "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01-more",
+                "ff-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+                "00-4BF92F3577B34DA6A3CE929D0E0E4736-00f067aa0ba902b7-01",
+                "00-00000000000000000000000000000000-00f067aa0ba902b7-01",
+                "00-4bf92f3577b34da6a3ce929d0e0e4736-0000000000000000-01",
+                "00-4bf92f3577b34da6a3ce929d0e0e473-00f067aa0ba902b7-01",
+                "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-1",
+            )
+        invalid.forEach { assertNull(TraceContext.parse(it), "$it") }
+    }
+
+    @Test
+    fun `a TraceContext needs valid ids`() {
+        assertFailsWith<GraphValidationException> { TraceContext("trace", "00f067aa0ba902b7") }
+        assertFailsWith<GraphValidationException> { TraceContext("4bf92f3577b34da6a3ce929d0e0e4736", "0000000000000000") }
+    }
 
     @Test
     fun `Traceparent sends the span of the node with each request`() =

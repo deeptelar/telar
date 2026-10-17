@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -382,6 +383,29 @@ class GraphObserverTest {
             graph.invoke(TestState(), GraphConfig(observers = listOf(recorder, naming)))
 
             assertEquals("span of traced", seen)
+        }
+
+    @Test
+    fun `a run is told the context it was started in and a subgraph the context of its node`() =
+        runTest {
+            val contexts = mutableListOf<String?>()
+            val naming =
+                object : GraphObserver {
+                    override fun onRunStarted(run: ObservedRun) {
+                        contexts += run.context[CoroutineName]?.name
+                    }
+
+                    override fun nodeContext(node: ObservedNode): CoroutineContext = CoroutineName("span of ${node.name}")
+                }
+            val inner = StateGraph<TestState> { START then node("draft") { it } then END }.compile()
+            val graph = StateGraph<TestState> { START then subgraph("write", inner) then END }.compile()
+
+            withContext(CoroutineName("request")) {
+                graph.invoke(TestState(), GraphConfig(observers = listOf(naming)))
+                graph.stream(TestState(), GraphConfig(observers = listOf(naming))).toList()
+            }
+
+            assertEquals(listOf<String?>("request", "span of write", "request", "span of write"), contexts)
         }
 
     @Test

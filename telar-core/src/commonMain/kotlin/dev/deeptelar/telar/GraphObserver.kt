@@ -114,10 +114,15 @@ public interface GraphObserver {
  *
  * @property threadId the thread of the run, from [GraphConfig.threadId].
  * @property parent the node that runs this run as a subgraph. `null` for the run that the app started.
+ * @property context the coroutine context the run was started in: that of the code that called
+ * [CompiledGraph.invoke] or collected [CompiledGraph.stream], or that of [parent] for a subgraph. An
+ * observer reads its own elements there, such as the span the app opened around the run, so that it
+ * can record the run inside it. It must not cancel the run's [kotlinx.coroutines.Job].
  */
 public class ObservedRun internal constructor(
     public val threadId: String,
     public val parent: ObservedNode?,
+    public val context: CoroutineContext,
 ) {
     override fun toString(): String = if (parent == null) "run of thread '$threadId'" else "subgraph run of $parent"
 }
