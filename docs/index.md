@@ -16,6 +16,8 @@ banner:
       link: /tutorial/
     - text: Play the demo
       link: https://deeptelar.github.io/telar-demo/
+    - text: Plan a food trip
+      link: https://deeptelar.github.io/telar-foodie/
     - text: GitHub
       link: https://github.com/deeptelar/telar
 
@@ -126,4 +128,5 @@ LangChain4j.
 | Learn graphs and agents from zero, in eight levels | [Tutorial](tutorial/) |
 | Look up one feature | [Guides](guides/index.md) |
 | See graphs run before I write any code | [Pixel Pizza](https://deeptelar.github.io/telar-demo/), a game in the browser |
+| See an agent app that uses all of it: parallel steps, approvals, tools, save points, streaming | [Foodie Route](https://deeptelar.github.io/telar-foodie/), which plans where to eat on a trip, in the browser ([source](https://github.com/deeptelar/telar-foodie)) |
 | Read what a function does | [API reference](https://deeptelar.github.io/telar/api/) |

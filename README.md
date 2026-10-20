@@ -19,6 +19,11 @@ parallel steps, live streaming, save points, and pausing until a person approves
 small game in which every stage runs a Telar graph, from two nodes in a row to a full agent
 workflow. No account and no API key needed.
 
+**[Plan a food trip](https://deeptelar.github.io/telar-foodie/):** Foodie Route is a complete app
+on Telar. An agent asks what you like, reads a travel guide and the street map at the same time,
+plans a route of meals and changes it until you say yes, all in your browser.
+[Its source](https://github.com/deeptelar/telar-foodie) shows each part of Telar at work.
+
 **[Documentation](https://deeptelar.github.io/telar/)** ·
 [Quick start](https://deeptelar.github.io/telar/quick-start) ·
 [Tutorial](https://deeptelar.github.io/telar/tutorial/) ·
@@ -158,6 +163,7 @@ what is planned.
 | Learn graphs and agents from zero, in eight levels like a game | [Tutorial](https://deeptelar.github.io/telar/tutorial/) |
 | Look up one feature: streaming, approvals, parallel steps, subgraphs, models, tools | [Guides](https://deeptelar.github.io/telar/guides/) |
 | See graphs run before I write any code | [Pixel Pizza](https://deeptelar.github.io/telar-demo/), a game in the browser |
+| See an agent app that uses all of it: parallel steps, approvals, tools, save points, streaming | [Foodie Route](https://deeptelar.github.io/telar-foodie/), which plans where to eat on a trip, in the browser ([source](https://github.com/deeptelar/telar-foodie)) |
 | Run complete programs | [Samples](https://deeptelar.github.io/telar/samples), such as `./gradlew :samples:runQuickStart` |
 | Read what a function does | [API reference](https://deeptelar.github.io/telar/api/) |
 | See a complete app | [telar-demo](https://github.com/deeptelar/telar-demo), a Compose Multiplatform app for the browser, the desktop and Android |
