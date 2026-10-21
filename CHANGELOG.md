@@ -7,6 +7,14 @@ breaking changes.
 
 ## [Unreleased]
 
+### Fixed
+
+- An `AgentObserver` is told about the calls of `ask` and of a `ChatDecisionModel` in a node, as it
+  is about those of `toolLoop` and `chatWithProgress`. `ask` reports each attempt as a call, with its
+  own tokens. Before, an app that counted tokens with an observer missed these calls.
+  The call of a `decisionEdge` is still not reported, because an edge's condition runs outside a
+  node; the docs say how to observe it.
+
 ## [0.1.0-alpha12] - 2026-10-17
 
 ### Added

@@ -237,10 +237,14 @@ agent.invoke(AgentState("Where is my pizza?"), GraphConfig(observers = listOf(co
 | `onToolCallStarted` | A node runs a tool the model called |
 | `onToolCallCompleted`, `onToolCallFailed` | The tool returned a result, or an error for the model (`isError`); or the call ended without one: cancelled, or paused by `interrupt`. Exactly one of them |
 
-The calls of `toolLoop` and `toolAgent` are reported, and those of `chatWithProgress` and
-`List<Tool>.execute` in a node of your own. A call straight to `ChatModel.chat`, or outside a
-node, is not. As for the rest of an observer, the conversation is never given: not the messages,
-the input of a tool or its result.
+The calls of `toolLoop` and `toolAgent` are reported, and those of `chatWithProgress`, `ask`, a
+`ChatDecisionModel` and `List<Tool>.execute` in a node of your own. `ask` reports each time it asks,
+so an answer that could not be read and was asked again is two calls. A call straight to
+`ChatModel.chat`, or outside a node, is not. That includes the call of a `decisionEdge`, because an
+edge's condition runs after its node has ended. To see that call, decide in a node with `choose`,
+`isYes` or `score`, store the decision in the state, and route on it with a plain `conditionalEdge`.
+As for the rest of an observer, the conversation is never given: not the messages, the input of a
+tool or its result.
 
 A library can tell observers of its own kind about what happens in a node the same way, with
 `forEachNodeObserver` from `telar-core`.

@@ -141,12 +141,77 @@ class AgentObserverTest {
         }
 
     @Test
+    fun `a node that asks for a typed answer reports each attempt as a call`() =
+        runTest {
+            val model = ScriptedModel(says("""{"stars": 9}""").using(10, 2), says("""{"stars": 4}""").using(12, 2))
+            val graph =
+                StateGraph<AgentState> {
+                    val rate = node("rate") { state -> state.also { model.ask<Rating>("How was the pizza?") } }
+                    START then rate
+                }.compile()
+
+            graph.invoke(AgentState("Hi"), config)
+
+            assertEquals(
+                listOf(
+                    "rate@1 started",
+                    "rate@1 asks the model",
+                    "rate@1 got an answer, 12 tokens",
+                    "rate@1 asks the model",
+                    "rate@1 got an answer, 14 tokens",
+                ),
+                recorder.log,
+            )
+        }
+
+    @Test
+    fun `a node that asks a chat decision model reports its call`() =
+        runTest {
+            val chat = ScriptedModel(says("""{"decision": {"yes": 0.8, "no": 0.2}}""").using(30, 4))
+            val graph =
+                StateGraph<AgentState> {
+                    val triage =
+                        node("triage") { state ->
+                            state.also { ChatDecisionModel(chat).isYes("It is late again!", "Is the customer angry?") }
+                        }
+                    START then triage
+                }.compile()
+
+            graph.invoke(AgentState("Hi"), config)
+
+            assertEquals(listOf("triage@1 started", "triage@1 asks the model", "triage@1 got an answer, 34 tokens"), recorder.log)
+            assertSame(chat, recorder.modelCalls.single().model)
+        }
+
+    @Test
+    fun `the call of a decision edge is not reported, because it runs outside a node`() =
+        runTest {
+            val chat = ScriptedModel(says("""{"decision": {"refund": 0.1, "technical": 0.9}}""").using(30, 4))
+            val graph =
+                StateGraph<AgentState> {
+                    val refund = node("refund") { it }
+                    val technical = node("technical") { it }
+                    decisionEdge(START, ChatDecisionModel(chat), "Which team?", routes = mapOf(refund to null, technical to null)) {
+                        "It crashes"
+                    }
+                }.compile()
+
+            graph.invoke(AgentState("Hi"), config)
+
+            assertEquals(listOf("technical@1 started"), recorder.log)
+            assertEquals(1, chat.requests.size)
+        }
+
+    @Test
     fun `calls outside a node and observers of the graph alone are not told`() =
         runTest {
             val plain = object : GraphObserver {}
             val model = ScriptedModel(says("Hello!"), says("Hello again!"))
 
             model.chatWithProgress("Hi")
+            ScriptedModel(says("""{"stars": 4}""")).ask<Rating>("How was the pizza?")
+            ChatDecisionModel(ScriptedModel(says("""{"decision": {"yes": 0.8, "no": 0.2}}""")))
+                .isYes("It is late again!", "Is the customer angry?")
             listOf(orderStatus).execute(listOf(ToolCall("call-1", "order_status", noInput)))
             toolAgent(model).invoke(AgentState("Hi"), GraphConfig(observers = listOf(plain)))
 

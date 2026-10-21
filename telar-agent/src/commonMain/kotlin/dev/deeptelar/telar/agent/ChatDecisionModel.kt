@@ -30,6 +30,10 @@ import kotlinx.serialization.json.putJsonObject
  *   option is as likely and 1 when the model is sure, so a limit means the same with both models.
  * - **A small, fast model is usually enough.** Picking an option is easier than writing an answer.
  *
+ * In a node, each call is told to the run's [AgentObserver]s like the calls of [toolLoop]. The call
+ * of a [decisionEdge] is not, because an edge's condition runs outside any node: to observe it,
+ * decide in a node, store the decision in the state and route on it with `conditionalEdge`.
+ *
  * A failed call to the chat model, an answer cut off at its output limit, and an answer that is not
  * the JSON it was asked for throw a [DecisionModelException]; for a failed call, the
  * [ChatModelException] is its `cause`.
@@ -43,7 +47,7 @@ public class ChatDecisionModel(
         val labels = request.questions.mapValues { (_, question) -> question.labels() }
         val response =
             try {
-                model.chat(ChatRequest(listOf(ChatMessage.User(prompt(request, labels))), SYSTEM))
+                observeModelCall(model) { model.chat(ChatRequest(listOf(ChatMessage.User(prompt(request, labels))), SYSTEM)) }
             } catch (e: ChatModelException) {
                 throw DecisionModelException("The chat model could not decide: ${e.message}", e)
             }

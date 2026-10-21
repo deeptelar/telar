@@ -6,7 +6,11 @@ import dev.deeptelar.telar.forEachNodeObserver
 
 /**
  * A [GraphObserver] that is also told about the calls to models and tools inside the nodes of a
- * run: those of [toolLoop] and [toolAgent], of [chatWithProgress], and of [execute][List.execute].
+ * run: those of [toolLoop] and [toolAgent], of [chatWithProgress], of [ask] (each time it asks), of
+ * a [ChatDecisionModel], and of [execute][List.execute]. A call outside a node is not reported, and
+ * that includes the call of a [decisionEdge], whose condition runs after its node has ended. To see
+ * it, decide in a node with [choose], store the decision in the state and route on it with
+ * `conditionalEdge`.
  * Use it to count the tokens of a run, log which tools ran, or show them in a debugger. Give it to a
  * run in `GraphConfig.observers`, like any observer:
  *
