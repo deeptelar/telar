@@ -12,7 +12,7 @@ what is already released.
 To ask for a feature or to move one up, add a 👍 to its issue or
 [start a discussion](https://github.com/deeptelar/telar/discussions).
 
-Last updated: 2026-10-17.
+Last updated: 2026-10-22.
 
 ## Where the project is
 
@@ -26,10 +26,11 @@ token budget and the tools of MCP servers, model modules for Claude, for OpenAI,
 other servers with the Chat Completions API, for LangChain4j, and for Jev, a decision model, and
 modules for tests and for OpenTelemetry. The API can still change in any release.
 
-Section 1 is done, and a node can run once for each item of a list. What is missing now is mostly in
-the messages and the engine: a message holds text only, a subgraph cannot yet pause before one of
-its nodes, and a long conversation is sent to the model in full every time. Sections 2 and 3 are
-about that.
+Section 1 is done, and a node can run once for each item of a list. Section 2 is what is worked on
+now: a message holds text only, and a subgraph cannot yet pause before one of its nodes. The next
+feature to be built is images and files in messages ([#103]), because it changes `ChatMessage`,
+which every model module uses. After that, a long conversation is still sent to the model in full
+every time (section 3).
 
 ## The way to 1.0
 
@@ -47,8 +48,8 @@ The features are numbered in the order they are worked on. Two rules decide it:
   `telar-core` and `telar-agent`, so that their API can stop moving as early as possible. Most of
   section 3 is new modules, which change nothing that exists.
 
-The issues have the same order as labels: `priority: now` for section 1, `priority: next` for
-section 2 and `priority: later` for section 3.
+The issues have the same order as labels: `priority: now` for section 2, the one worked on now
+(section 1 is done), and `priority: later` for section 3.
 
 Each item has one of four states:
 
@@ -86,8 +87,8 @@ time by someone who needs it.
 
 | | Feature | What you get | State | Issue |
 |---|---|---|---|---|
-| 11 | Tracing | Hooks in the engine that report every node, edge, tool call and token count, and a module that sends them to OpenTelemetry. Released: `GraphObserver` for runs, nodes, steps and checkpoints, `AgentObserver` for each call to a model and each tool call, with its token count, and `telar-otel`, which sends runs to OpenTelemetry on every platform, the browser included. Still to come: a span in `telar-otel` for each call to a model and each tool call. | In progress | [#38] |
-| 12 | Database checkpointer | Saves runs in a SQL database. Released: SQLite through SQLDelight, `telar-checkpoint-sqldelight`, for Android, iOS, desktop and the browser. Still to come: a database server such as PostgreSQL. | In progress | [#84] |
+| 11 | Tracing | Hooks in the engine that report every node, edge, tool call and token count, and a module that sends them to OpenTelemetry. Released: `GraphObserver` for runs, nodes, steps and checkpoints, `AgentObserver` for each call to a model and each tool call, with its token count, and `telar-otel`, which sends runs to OpenTelemetry on every platform, the browser included. Still to come: a span in `telar-otel` for each call to a model and each tool call ([#138]), and a report of the calls that an edge condition makes, such as the model of a `decisionEdge` ([#157]). | In progress | [#38] |
+| 12 | Database checkpointer | Saves runs in a SQL database. Released: SQLite through SQLDelight, `telar-checkpoint-sqldelight`, for Android, iOS, desktop and the browser. Still to come: a database server such as PostgreSQL ([#137]). | In progress | [#84] |
 | 13 | Long conversations | A conversation that is kept short for the model, by dropping or summarizing old messages, and that pays less for what the provider already read. Today every request sends everything. | Planned | [#105] |
 | 14 | One version for all modules | `telar-bom`: a bill of materials. An app names the version of Telar once, and every module it adds uses that version. | Planned | [#79] |
 
@@ -114,6 +115,8 @@ Ideas without a place in the plan yet. Say so in the issue or in a discussion if
 | Idea | What it is | Issue |
 |---|---|---|
 | Functional API | Write a small workflow as ordinary `suspend` functions, without a graph, and keep checkpoints and streaming. | [#39] |
+| More typed answers | The provider's own structured output, a sealed class as the answer, and a typed final answer from an agent that called tools. | [#134] |
+| More events for a run | How many items a node for each item of a list runs, and when an effect gives back its saved result instead of running. | [#153], [#154] |
 | Memory across threads | A store that an agent reads and writes in every conversation, next to the checkpoint of one thread. | |
 | Ready-made teams of agents | A supervisor and hand-offs between agents, built on subgraphs. | |
 
@@ -154,3 +157,9 @@ are larger, or need something the maintainers lack, such as a key for another mo
 [#103]: https://github.com/deeptelar/telar/issues/103
 [#104]: https://github.com/deeptelar/telar/issues/104
 [#105]: https://github.com/deeptelar/telar/issues/105
+[#134]: https://github.com/deeptelar/telar/issues/134
+[#137]: https://github.com/deeptelar/telar/issues/137
+[#138]: https://github.com/deeptelar/telar/issues/138
+[#153]: https://github.com/deeptelar/telar/issues/153
+[#154]: https://github.com/deeptelar/telar/issues/154
+[#157]: https://github.com/deeptelar/telar/issues/157
