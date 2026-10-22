@@ -24,6 +24,8 @@ dependencies {
     implementation(libs.sqldelight.sqlite.driver)
     implementation(project(":telar-typesafe"))
     implementation(project(":telar-langchain4j"))
+    // The Ollama model of LangChain4j, for ChatAgent when OLLAMA_MODEL is set.
+    implementation(libs.langchain4j.ollama)
     implementation(project(":telar-agent"))
     implementation(project(":telar-anthropic"))
     implementation(project(":telar-openai"))

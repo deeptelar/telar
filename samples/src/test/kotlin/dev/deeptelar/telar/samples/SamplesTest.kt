@@ -202,7 +202,7 @@ class SamplesTest {
     @Test
     fun `support agent continues a conversation from the last result`() =
         runTest {
-            val agent = supportAgent(CannedModel())
+            val agent = supportAgent(CannedModel(), cannedEscalation)
             val config = GraphConfig(threadId = "customer-7", checkpointer = MemoryCheckpointer<ChatState>())
 
             for (question in listOf("The app is frozen", "I want a refund")) {
@@ -380,7 +380,7 @@ class SamplesTest {
     @Test
     fun `support agent escalates refund questions`() =
         runTest {
-            val agent = supportAgent(CannedModel())
+            val agent = supportAgent(CannedModel(), cannedEscalation)
 
             assertTrue(agent.invoke(ChatState(listOf(UserMessage.from("I want a refund")))).state.needsEscalation)
             assertFalse(agent.invoke(ChatState(listOf(UserMessage.from("The app is frozen")))).state.needsEscalation)
