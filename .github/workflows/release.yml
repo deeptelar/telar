@@ -13,6 +13,9 @@ jobs:
     name: Publish to Maven Central
     # macOS can build every target, including the Apple ones.
     runs-on: macos-latest
+    # The keys for Maven Central and for signing are secrets of this environment, and a maintainer
+    # approves each run before the job starts. A pushed tag alone cannot publish.
+    environment: release
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
