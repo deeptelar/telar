@@ -13,7 +13,8 @@ breaking changes.
   is about those of `toolLoop` and `chatWithProgress`. `ask` reports each attempt as a call, with its
   own tokens. Before, an app that counted tokens with an observer missed these calls.
   The call of a `decisionEdge` is still not reported, because an edge's condition runs outside a
-  node; the docs say how to observe it.
+  node; the docs say how to observe it. ([#155](https://github.com/deeptelar/telar/issues/155), by
+  [@bercedev](https://github.com/bercedev) in [#158](https://github.com/deeptelar/telar/pull/158))
 
 ## [0.1.0-alpha12] - 2026-10-17
 
