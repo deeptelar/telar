@@ -16,7 +16,7 @@ Last updated: 2026-10-22.
 
 ## Where the project is
 
-`0.1.0-alpha12` is the latest release on Maven Central. Telar has the graph builder and the engine:
+`0.1.0-alpha13` is the latest release on Maven Central. Telar has the graph builder and the engine:
 loops, parallel branches with rules for what they write, subgraphs, streaming, checkpoints with the
 history of a run, pausing for a person before a node or in the middle of its work, retries and time
 limits for a node, nodes that run once for each item of a list, and side effects that run once per
