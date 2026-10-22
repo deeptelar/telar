@@ -137,12 +137,16 @@ their address as `baseUrl`, up to the part before `/chat/completions`:
 // Groq, OpenRouter, LM Studio, vLLM, a gateway of your company, ...
 val model = OpenAiChatModel(client, apiKey = key, model = "llama-3.3-70b-versatile", baseUrl = "https://api.groq.com/openai/v1")
 
+// The llama-server of llama.cpp on your machine. It answers with the model it loaded, whatever the name.
+val local = OpenAiChatModel(client, apiKey = null, model = "local", baseUrl = "http://localhost:8080/v1")
+
 // More fields for every request go in `parameters`.
 val careful = OpenAiChatModel(client, apiKey = key, model = "gpt-5", parameters = buildJsonObject { put("reasoning_effort", "high") })
 ```
 
 An agent with tools needs a model that can call tools. With Ollama, pick one that lists "tools"
-among what it can do. Gemini calls tools and streams through its address at the top of this page.
+among what it can do. With llama.cpp, start `llama-server` with `--jinja`, which turns on its tool
+calls, and load a model that was trained for them, such as Qwen3. Gemini calls tools and streams through its address at the top of this page.
 It sends a thought signature with each tool call and wants it back with the result:
 `OpenAiChatModel` keeps it in `ChatMessage.Assistant.providerContent` and returns it, so a
 `toolAgent` needs nothing more.
