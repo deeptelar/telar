@@ -184,7 +184,7 @@ class AgentObserverTest {
         }
 
     @Test
-    fun `the call of a decision edge is not reported, because it runs outside a node`() =
+    fun `the call of a decision edge is not reported because it runs outside a node`() =
         runTest {
             val chat = ScriptedModel(says("""{"decision": {"refund": 0.1, "technical": 0.9}}""").using(30, 4))
             val graph =
