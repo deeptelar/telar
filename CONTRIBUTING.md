@@ -149,9 +149,11 @@ One-time setup:
 
 - Register and verify the `dev.deeptelar` namespace at <https://central.sonatype.com>.
 - Create a GPG key and publish its public part to a key server.
-- Add the repository secrets `MAVEN_CENTRAL_USERNAME`, `MAVEN_CENTRAL_PASSWORD` (a Central Portal
-  user token), `SIGNING_IN_MEMORY_KEY` (the ASCII-armored private key) and
-  `SIGNING_IN_MEMORY_KEY_PASSWORD`.
+- Create the environment `release` in the repository settings, with the maintainers as required
+  reviewers and only tags `v*` allowed to deploy. Add to it the secrets `MAVEN_CENTRAL_USERNAME`,
+  `MAVEN_CENTRAL_PASSWORD` (a Central Portal user token), `SIGNING_IN_MEMORY_KEY` (the
+  ASCII-armored private key) and `SIGNING_IN_MEMORY_KEY_PASSWORD`. Keep them out of the repository
+  secrets, so that only the release job can read them.
 - In the repository settings, set Pages to deploy from GitHub Actions and enable private
   vulnerability reporting and Discussions.
 
@@ -160,8 +162,9 @@ For each release:
 1. Open a pull request that moves the "Unreleased" entries in `CHANGELOG.md` under the new version
    and date, sets `VERSION_NAME` in `gradle.properties` to the release version, and replaces the
    previous version in `README.md`, `ROADMAP.md`, `docs/` and the bug report template. Merge it.
-2. Tag that commit on `main` as `vX.Y.Z` and push the tag. The release workflow publishes to Maven
-   Central and creates the GitHub release.
+2. Tag that commit on `main` as `vX.Y.Z` and push the tag. The release workflow waits for a
+   maintainer to approve it under Actions, then publishes to Maven Central and creates the GitHub
+   release.
 3. Open a pull request that sets `VERSION_NAME` to the next `-SNAPSHOT`.
 
 ## License
