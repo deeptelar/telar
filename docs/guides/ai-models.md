@@ -154,4 +154,6 @@ It sends a thought signature with each tool call and wants it back with the resu
 On the JVM, `telar-langchain4j` also builds a node straight from a
 [LangChain4j](https://docs.langchain4j.dev) model with `chatNode` (one text in, one text out) and
 `chatMessagesNode` (a list of LangChain4j messages). Both run the blocking call on `Dispatchers.IO`.
-The [`ChatAgent`](https://github.com/deeptelar/telar/blob/main/samples/src/main/kotlin/dev/deeptelar/telar/samples/ChatAgent.kt) sample uses them.
+The [`ChatAgent`](https://github.com/deeptelar/telar/blob/main/samples/src/main/kotlin/dev/deeptelar/telar/samples/ChatAgent.kt) sample uses them, and
+hands the same model to `ChatDecisionModel` through `LangChain4jChatModel` to decide when a person
+takes over. With `OLLAMA_MODEL` set, it runs on that model of a local Ollama.
