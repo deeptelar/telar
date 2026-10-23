@@ -7,6 +7,8 @@ breaking changes.
 
 ## [Unreleased]
 
+## [0.1.0-alpha13] - 2026-10-22
+
 ### Fixed
 
 - An `AgentObserver` is told about the calls of `ask` and of a `ChatDecisionModel` in a node, as it
@@ -15,6 +17,12 @@ breaking changes.
   The call of a `decisionEdge` is still not reported, because an edge's condition runs outside a
   node; the docs say how to observe it. ([#155](https://github.com/deeptelar/telar/issues/155), by
   [@bercedev](https://github.com/bercedev) in [#158](https://github.com/deeptelar/telar/pull/158))
+
+### Security
+
+- The artifacts are signed with a new key, `0E8D2C4E992EB229D547390106E7178AA20C0EDA`
+  ("hermosotech (Telar releases)"), on keyserver.ubuntu.com and keys.openpgp.org. The releases up
+  to `0.1.0-alpha12` keep the signatures of the old key, `DB251FBD9DCEB7E3993E5E369A3C377D795F4AE1`.
 
 ## [0.1.0-alpha12] - 2026-10-17
 
@@ -562,7 +570,8 @@ First public release. Everything below is new compared with the unpublished beta
 - `START` counted toward `maxIterations`.
 - `FileCheckpointer` did not write the format version into its files.
 
-[Unreleased]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha12...HEAD
+[Unreleased]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha13...HEAD
+[0.1.0-alpha13]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha12...v0.1.0-alpha13
 [0.1.0-alpha12]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha11...v0.1.0-alpha12
 [0.1.0-alpha11]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha10...v0.1.0-alpha11
 [0.1.0-alpha10]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha09...v0.1.0-alpha10
