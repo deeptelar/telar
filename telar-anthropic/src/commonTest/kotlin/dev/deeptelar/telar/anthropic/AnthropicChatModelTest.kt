@@ -2,6 +2,7 @@ package dev.deeptelar.telar.anthropic
 
 import dev.deeptelar.telar.GraphValidationException
 import dev.deeptelar.telar.agent.AgentState
+import dev.deeptelar.telar.agent.Attachment
 import dev.deeptelar.telar.agent.ChatMessage
 import dev.deeptelar.telar.agent.ChatModelException
 import dev.deeptelar.telar.agent.ChatRequest
@@ -181,6 +182,81 @@ class AnthropicChatModelTest {
                 ),
                 sentBody()["messages"],
             )
+        }
+
+    @Test
+    fun `images and PDFs go before the text of a user message as bytes or addresses`() =
+        runTest {
+            val photo = Attachment.of(byteArrayOf(1, 2, 3), "image/png")
+            val contract = Attachment.url("https://example.com/contract.pdf", "application/pdf")
+
+            model(text("A receipt.")).chat(ChatRequest(listOf(ChatMessage.User("What is this?", listOf(photo, contract)))))
+
+            assertEquals(
+                json(
+                    """
+                    [{"role": "user", "content": [
+                      {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": "AQID"}},
+                      {"type": "document", "source": {"type": "url", "url": "https://example.com/contract.pdf"}},
+                      {"type": "text", "text": "What is this?"}
+                    ]}]
+                    """,
+                ),
+                sentBody()["messages"],
+            )
+        }
+
+    @Test
+    fun `a user message with only a file sends no empty text`() =
+        runTest {
+            model(text("A receipt.")).chat(ChatRequest(listOf(ChatMessage.User("", listOf(Attachment.of(byteArrayOf(1), "image/jpeg"))))))
+
+            assertEquals(
+                json("""[{"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": "AQ=="}}]"""),
+                ((sentBody()["messages"] as List<*>)[0] as Map<*, *>)["content"],
+            )
+        }
+
+    @Test
+    fun `the files of a tool result go in its content with its text`() =
+        runTest {
+            val input = buildJsonObject { put("url", "https://example.com") }
+            val messages =
+                listOf(
+                    ChatMessage.User("Show me the page."),
+                    ChatMessage.Assistant(toolCalls = listOf(ToolCall("call-1", "screenshot", input))),
+                    ChatMessage.ToolResult(
+                        "call-1",
+                        "screenshot",
+                        "The page.",
+                        attachments = listOf(Attachment.of(byteArrayOf(1, 2, 3), "image/png")),
+                    ),
+                )
+
+            model(text("A page.")).chat(ChatRequest(messages))
+
+            assertEquals(
+                json(
+                    """
+                    {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "call-1", "content": [
+                      {"type": "text", "text": "The page."},
+                      {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": "AQID"}}
+                    ]}]}
+                    """,
+                ),
+                (sentBody()["messages"] as List<*>)[2],
+            )
+        }
+
+    @Test
+    fun `a file of a type Claude does not read fails before the request`() =
+        runTest {
+            val voice = ChatMessage.User("Listen.", listOf(Attachment.of(byteArrayOf(1), "audio/wav")))
+
+            val failure = assertFailsWith<ChatModelException> { model(text("Hi")).chat(ChatRequest(listOf(voice))) }
+
+            assertTrue("audio/wav" in failure.message.orEmpty())
+            assertTrue(sent.isEmpty())
         }
 
     @Test

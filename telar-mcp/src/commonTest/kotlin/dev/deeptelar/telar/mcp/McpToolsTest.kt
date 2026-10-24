@@ -2,7 +2,10 @@ package dev.deeptelar.telar.mcp
 
 import dev.deeptelar.telar.GraphValidationException
 import dev.deeptelar.telar.agent.AgentState
+import dev.deeptelar.telar.agent.Attachment
 import dev.deeptelar.telar.agent.ChatMessage
+import dev.deeptelar.telar.agent.ToolCall
+import dev.deeptelar.telar.agent.execute
 import dev.deeptelar.telar.agent.toolAgent
 import dev.deeptelar.telar.test.ScriptedChatModel
 import io.modelcontextprotocol.kotlin.sdk.types.AudioContent
@@ -269,12 +272,13 @@ class McpToolsTest {
         }
 
     @Test
-    fun `the parts of a result that are not text become a line each`() {
+    fun `the parts of a result that are neither text nor a file for the model become a line each`() {
         val result =
             CallToolResult(
                 listOf(
                     TextContent("Here is the chart."),
                     ImageContent(data = "aGVsbG8=", mimeType = "image/png"),
+                    ImageContent(data = "aGVsbG8=", mimeType = "image/svg+xml"),
                     AudioContent(data = "aGVsbG8=", mimeType = "audio/wav"),
                     ResourceLink(name = "report", uri = "file:///report.pdf"),
                     EmbeddedResource(TextResourceContents(text = "Total: 42", uri = "file:///total.txt")),
@@ -287,7 +291,7 @@ class McpToolsTest {
         assertEquals(
             """
             Here is the chart.
-            [image: image/png]
+            [image: image/svg+xml]
             [audio: audio/wav]
             [resource: report, file:///report.pdf]
             Total: 42
@@ -298,6 +302,28 @@ class McpToolsTest {
             result.asText(),
         )
     }
+
+    @Test
+    fun `the images and PDFs of a result go to the model as files`() =
+        runTest {
+            val server =
+                FakeMcpServer(serverTool("chart")) {
+                    CallToolResult(
+                        listOf(
+                            TextContent("Here is the chart."),
+                            ImageContent(data = "aGVsbG8=", mimeType = "image/png"),
+                            EmbeddedResource(BlobResourceContents(blob = "cGRm", uri = "file:///report.pdf", mimeType = "application/pdf")),
+                            EmbeddedResource(BlobResourceContents(blob = "emlw", uri = "file:///data.zip", mimeType = "application/zip")),
+                        ),
+                    )
+                }
+            val tools = mcpTools(server.connect(this))
+
+            val result = tools.execute(listOf(ToolCall("call-1", "chart", noInput))).single()
+
+            assertEquals("Here is the chart.\n[file: application/zip, file:///data.zip]", result.text)
+            assertEquals(listOf(Attachment.Data("aGVsbG8=", "image/png"), Attachment.Data("cGRm", "application/pdf")), result.attachments)
+        }
 
     @Test
     fun `a result without parts is its structured content or says that there was nothing`() {

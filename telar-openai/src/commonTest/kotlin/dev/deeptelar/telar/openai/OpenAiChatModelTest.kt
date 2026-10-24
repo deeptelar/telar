@@ -2,6 +2,7 @@ package dev.deeptelar.telar.openai
 
 import dev.deeptelar.telar.GraphValidationException
 import dev.deeptelar.telar.agent.AgentState
+import dev.deeptelar.telar.agent.Attachment
 import dev.deeptelar.telar.agent.ChatMessage
 import dev.deeptelar.telar.agent.ChatModelException
 import dev.deeptelar.telar.agent.ChatRequest
@@ -25,11 +26,13 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -211,6 +214,106 @@ class OpenAiChatModelTest {
                 ),
                 sentBody()["messages"],
             )
+        }
+
+    @Test
+    fun `a user message with files has parts with images as data or addresses and a PDF as data`() =
+        runTest {
+            val files =
+                listOf(
+                    Attachment.of(byteArrayOf(1, 2, 3), "image/png"),
+                    Attachment.url("https://example.com/receipt.jpg", "image/jpeg"),
+                    Attachment.of(byteArrayOf(4), "application/pdf"),
+                )
+
+            model(text("Done")).chat(ChatRequest(listOf(ChatMessage.User("What are these?", files))))
+
+            assertEquals(
+                json(
+                    """
+                    [{"role": "user", "content": [
+                      {"type": "text", "text": "What are these?"},
+                      {"type": "image_url", "image_url": {"url": "data:image/png;base64,AQID"}},
+                      {"type": "image_url", "image_url": {"url": "https://example.com/receipt.jpg"}},
+                      {"type": "file", "file": {"filename": "document.pdf", "file_data": "data:application/pdf;base64,BA=="}}
+                    ]}]
+                    """,
+                ),
+                sentBody()["messages"],
+            )
+        }
+
+    @Test
+    fun `the files of tool results follow the results in a user message`() =
+        runTest {
+            val first = ToolCall("call_1", "screenshot", buildJsonObject { put("page", "home") })
+            val second = ToolCall("call_2", "screenshot", buildJsonObject { put("page", "menu") })
+            val image = Attachment.of(byteArrayOf(1, 2, 3), "image/png")
+
+            model(text("Done")).chat(
+                ChatRequest(
+                    listOf(
+                        ChatMessage.User("Show me both pages."),
+                        ChatMessage.Assistant(toolCalls = listOf(first, second)),
+                        ChatMessage.ToolResult("call_1", "screenshot", "The home page.", attachments = listOf(image)),
+                        ChatMessage.ToolResult("call_2", "screenshot", "The menu."),
+                        ChatMessage.User("Which is nicer?"),
+                    ),
+                ),
+            )
+
+            val messages = sentBody()["messages"] as List<*>
+            assertEquals(
+                json(
+                    """
+                    [
+                      {"role": "tool", "tool_call_id": "call_1", "content": "The home page."},
+                      {"role": "tool", "tool_call_id": "call_2", "content": "The menu."},
+                      {"role": "user", "content": [
+                        {"type": "text", "text": "The files that the tool call call_1 of screenshot returned:"},
+                        {"type": "image_url", "image_url": {"url": "data:image/png;base64,AQID"}}
+                      ]},
+                      {"role": "user", "content": "Which is nicer?"}
+                    ]
+                    """,
+                ),
+                JsonArray(messages.drop(2).map { it as JsonElement }),
+            )
+        }
+
+    @Test
+    fun `the files of the last tool results end the conversation`() =
+        runTest {
+            val call = ToolCall("call_1", "screenshot", buildJsonObject { put("page", "home") })
+            val result =
+                ChatMessage.ToolResult(
+                    "call_1",
+                    "screenshot",
+                    "",
+                    attachments = listOf(Attachment.of(byteArrayOf(1), "image/webp")),
+                )
+
+            model(
+                text("Done"),
+            ).chat(ChatRequest(listOf(ChatMessage.User("Look."), ChatMessage.Assistant(toolCalls = listOf(call)), result)))
+
+            val last = (sentBody()["messages"] as List<*>).last() as JsonObject
+            assertEquals("user", last.getValue("role").jsonPrimitive.content)
+        }
+
+    @Test
+    fun `a file the API does not take fails before the request`() =
+        runTest {
+            val model = model(text("Done"))
+            val audio = ChatMessage.User("Listen.", listOf(Attachment.of(byteArrayOf(1), "audio/wav")))
+            val pdfAddress = ChatMessage.User("Read.", listOf(Attachment.url("https://example.com/a.pdf", "application/pdf")))
+
+            val wrongType = assertFailsWith<ChatModelException> { model.chat(ChatRequest(listOf(audio))) }
+            val wrongSource = assertFailsWith<ChatModelException> { model.chat(ChatRequest(listOf(pdfAddress))) }
+
+            assertTrue("audio/wav" in wrongType.message.orEmpty())
+            assertTrue("Attachment.of" in wrongSource.message.orEmpty())
+            assertTrue(sent.isEmpty())
         }
 
     @Test

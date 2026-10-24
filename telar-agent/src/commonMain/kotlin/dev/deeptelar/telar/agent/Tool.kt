@@ -8,6 +8,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialInfo
@@ -192,7 +193,9 @@ private suspend fun List<Tool>.executeOne(call: ToolCall): ChatMessage.ToolResul
     val tool = firstOrNull { it.spec.name == call.name } ?: return call.failed("There is no tool named '${call.name}'.")
     call.invalidInput?.let { return call.failed("The input is not a JSON object: $it") }
     return try {
-        ChatMessage.ToolResult(call.id, call.name, tool.execute(call.input))
+        val attachments = ToolAttachments()
+        val text = withContext(attachments) { tool.execute(call.input) }
+        ChatMessage.ToolResult(call.id, call.name, text, attachments = attachments.all())
     } catch (e: CancellationException) {
         // Propagate a cancellation of the caller. If the caller is still active, the tool cancelled
         // only itself (for example its own withTimeout expired), which is a failure of the tool.

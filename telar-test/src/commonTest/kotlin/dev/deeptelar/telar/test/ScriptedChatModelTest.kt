@@ -226,7 +226,7 @@ class ScriptedChatModelTest {
 
             assertEquals(
                 "The script of this model has 1 answers, but the model was asked 2 times. " +
-                    "The last message it was asked with: User(text=And now?)",
+                    "The last message it was asked with: User(text=And now?, attachments=[])",
                 error.message,
             )
         }

@@ -41,13 +41,18 @@ import kotlinx.serialization.serializer
  * @param prompt what the model is asked.
  * @param system instructions for the model.
  * @param attempts how often the model is asked at most.
+ * @param attachments files that go to the model with [prompt], such as the photo of a receipt.
  * @throws ChatModelException when a call fails, when the answer was cut off at the model's output
  * limit, or when the model gave no answer that could be read in [attempts] attempts.
  * @throws GraphValidationException if [Answer] is not a class or has a property of a type that
  * cannot be described, or [attempts] is less than 1.
  */
-public suspend inline fun <reified Answer> ChatModel.ask(prompt: String, system: String? = null, attempts: Int = 2): Answer =
-    ask(serializer<Answer>(), ChatRequest(listOf(ChatMessage.User(prompt)), system), attempts).value
+public suspend inline fun <reified Answer> ChatModel.ask(
+    prompt: String,
+    system: String? = null,
+    attempts: Int = 2,
+    attachments: List<Attachment> = emptyList(),
+): Answer = ask(serializer<Answer>(), ChatRequest(listOf(ChatMessage.User(prompt, attachments)), system), attempts).value
 
 /**
  * Returns the model's next message for [request] as an instance of the `@Serializable` class

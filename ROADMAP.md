@@ -26,11 +26,9 @@ token budget and the tools of MCP servers, model modules for Claude, for OpenAI,
 other servers with the Chat Completions API, for LangChain4j, and for Jev, a decision model, and
 modules for tests and for OpenTelemetry. The API can still change in any release.
 
-Section 1 is done, and a node can run once for each item of a list. Section 2 is what is worked on
-now: a message holds text only, and a subgraph cannot yet pause before one of its nodes. The next
-feature to be built is images and files in messages ([#103]), because it changes `ChatMessage`,
-which every model module uses. After that, a long conversation is still sent to the model in full
-every time (section 3).
+Section 1 is done, a node can run once for each item of a list, and a message can carry images and
+PDFs ([#103]). Section 2 is what is worked on now: a subgraph cannot yet pause before one of its
+nodes. After that, a long conversation is still sent to the model in full every time (section 3).
 
 ## The way to 1.0
 
@@ -77,7 +75,7 @@ These change how a graph runs or what a message holds, so they come before the b
 |---|---|---|---|---|
 | 7 | One rule for parallel nodes that write the same property | You decide what happens, and the rule is the same for both ways to write a node: `compile(rules = mergeRules { ... })`, or the same rules given as `reducer`, merges every node of a step, so a node with `work` and `update` no longer overwrites another without a word. Released: `compile(rules = mergeRules { ... })`, and `mergeRules` given as the reducer holds for every node too. Still open: the order of the reducer and the updates when no rules are given. | In progress | [#101] |
 | 8 | Fan-out over a list | One node runs once per item of a list, all at the same time, when the number of items is only known at run time: `node(name, forEach = { ... }, work = { ... }) { ... }`, with a retry and a time limit for each item, and with each result saved so that a resume runs only the items that are missing. | Done | [#82] |
-| 9 | Images and files in messages | Send a model a picture or a PDF with the question, and let a tool return one. A `ChatMessage` holds text only today. | Planned | [#103] |
+| 9 | Images and files in messages | Send a model a picture or a PDF with the question, and let a tool return one: `ChatMessage.User(text, attachments)`, `attach()` in a tool, and the images and PDFs of MCP results. Audio, video and images that a model makes are not part of it. | Done | [#103] |
 | 10 | Subgraphs | A compiled graph becomes a node of another graph, with a mapping between the two states and one thread for both. Released: `subgraph`, a run that pauses inside a subgraph and resumes there, the events of a subgraph in the stream of the graph around it, and the subgraph in `topology`. Still to come: `interruptBefore` for a node of a subgraph, and a retry after a failure that continues inside the subgraph. | In progress | [#34] |
 
 ## 3. Run it in production

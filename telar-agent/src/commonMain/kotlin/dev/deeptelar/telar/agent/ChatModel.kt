@@ -117,9 +117,14 @@ public suspend fun ChatModel.chatWithProgress(request: ChatRequest): ChatRespons
  *     state.copy(summary = summary)
  * }
  * ```
+ *
+ * @param attachments files that go to the model with [prompt], such as images or PDFs.
  */
-public suspend fun ChatModel.chatWithProgress(prompt: String, system: String? = null): String =
-    chatWithProgress(ChatRequest(listOf(ChatMessage.User(prompt)), system)).message.text
+public suspend fun ChatModel.chatWithProgress(
+    prompt: String,
+    system: String? = null,
+    attachments: List<Attachment> = emptyList(),
+): String = chatWithProgress(ChatRequest(listOf(ChatMessage.User(prompt, attachments)), system)).message.text
 
 /**
  * The piece of text a model wrote, when this event is a node's report of one, and `null` for every
@@ -148,9 +153,11 @@ public val GraphEvent<*>.textDelta: String?
  *     state.copy(summary = summary)
  * }
  * ```
+ *
+ * @param attachments files that go to the model with [prompt], such as images or PDFs.
  */
-public suspend fun ChatModel.chat(prompt: String, system: String? = null): String =
-    chat(ChatRequest(listOf(ChatMessage.User(prompt)), system)).message.text
+public suspend fun ChatModel.chat(prompt: String, system: String? = null, attachments: List<Attachment> = emptyList()): String =
+    chat(ChatRequest(listOf(ChatMessage.User(prompt, attachments)), system)).message.text
 
 /**
  * What a [ChatModel] is asked.

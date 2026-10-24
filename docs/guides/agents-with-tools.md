@@ -71,6 +71,20 @@ What to know:
   `ChatMessage.Assistant`). When it reaches the limit in a tool call, the run fails.
 - **`AgentState` is `@Serializable`**, so `KotlinxStateSerializer` and `FileCheckpointer` can save it.
 
+A tool can return a file with its text, such as the screenshot a browser tool took. It passes the
+file to `attach`, and the model gets it with the result:
+
+```kotlin
+val screenshot = Tool<Page>("screenshot", "Takes a screenshot of a web page.") { page ->
+    attach(Attachment.of(browser.screenshot(page.url), "image/png"))
+    "The screenshot of ${page.url}."
+}
+```
+
+The model classes send images and PDFs; see [Images and PDFs](ai-models.md#images-and-pdfs). The
+Chat Completions API takes text only in the result of a tool, so `OpenAiChatModel` sends the files
+of the results in a user message right after them.
+
 To let a person approve the tool calls, pause before the node that runs them. It is named `tools`:
 
 ```kotlin
