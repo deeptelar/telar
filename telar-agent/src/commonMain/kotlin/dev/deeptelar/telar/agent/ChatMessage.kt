@@ -16,11 +16,16 @@ public sealed interface ChatMessage {
     /** The text of the message. Empty for an assistant message that only asks for tools. */
     public val text: String
 
-    /** What the user said. */
+    /**
+     * What the user said.
+     *
+     * @property attachments files that go to the model with [text], such as images or PDFs.
+     */
     @Serializable
     @SerialName("user")
     public data class User(
         override val text: String,
+        val attachments: List<Attachment> = emptyList(),
     ) : ChatMessage
 
     /**
@@ -50,6 +55,8 @@ public sealed interface ChatMessage {
      * @property toolName the [ToolCall.name] this result answers.
      * @property text what the tool returned, or what went wrong when [isError] is `true`.
      * @property isError `true` when the tool failed. The model sees the error and can try again.
+     * @property attachments files that the tool returned with [text], such as a screenshot. A tool
+     * adds them with [attach].
      */
     @Serializable
     @SerialName("tool_result")
@@ -58,6 +65,7 @@ public sealed interface ChatMessage {
         val toolName: String,
         override val text: String,
         val isError: Boolean = false,
+        val attachments: List<Attachment> = emptyList(),
     ) : ChatMessage
 }
 

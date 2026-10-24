@@ -1,6 +1,7 @@
 package dev.deeptelar.telar.openai
 
 import dev.deeptelar.telar.GraphValidationException
+import dev.deeptelar.telar.agent.Attachment
 import dev.deeptelar.telar.agent.ChatEvent
 import dev.deeptelar.telar.agent.ChatMessage
 import dev.deeptelar.telar.agent.ChatModel
@@ -33,6 +34,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonArrayBuilder
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -125,10 +127,11 @@ public class OpenAiChatModel(
      * the model declines the request.
      */
     override suspend fun chat(request: ChatRequest): ChatResponse {
+        val body = body(request)
         val status: Int
         val text: String
         try {
-            val response = client.post(url) { completion(body(request)) }
+            val response = client.post(url) { completion(body) }
             status = response.status.value
             text = response.bodyAsText()
         } catch (e: CancellationException) {
@@ -492,6 +495,8 @@ private fun describe(error: JsonElement?, fallback: String): String {
 /**
  * Returns the conversation of [request] as the messages of the Chat Completions API: the
  * instructions first, as a system message, and every tool result as a message of its own.
+ *
+ * A tool message holds text only, so the files of tool results follow the results in a user message.
  */
 private fun messages(request: ChatRequest): JsonArray =
     buildJsonArray {
@@ -501,12 +506,21 @@ private fun messages(request: ChatRequest): JsonArray =
                 put("content", system)
             }
         }
+        val filesOfResults = mutableListOf<ChatMessage.ToolResult>()
         for (message in request.messages) {
+            if (message !is ChatMessage.ToolResult) addFilesOf(filesOfResults)
             when (message) {
                 is ChatMessage.User ->
                     addJsonObject {
                         put("role", "user")
-                        put("content", message.text)
+                        if (message.attachments.isEmpty()) {
+                            put("content", message.text)
+                        } else {
+                            putJsonArray("content") {
+                                if (message.text.isNotEmpty()) add(textPart(message.text))
+                                message.attachments.forEach { add(filePart(it)) }
+                            }
+                        }
                     }
                 is ChatMessage.Assistant -> {
                     // The API rejects an assistant message that says nothing and asks for nothing.
@@ -537,15 +551,80 @@ private fun messages(request: ChatRequest): JsonArray =
                         }
                     }
                 }
-                is ChatMessage.ToolResult ->
+                is ChatMessage.ToolResult -> {
                     addJsonObject {
                         put("role", "tool")
                         put("tool_call_id", message.toolCallId)
                         put("content", message.text)
                     }
+                    if (message.attachments.isNotEmpty()) filesOfResults += message
+                }
+            }
+        }
+        addFilesOf(filesOfResults)
+    }
+
+/** Adds a user message with the files of [results], after the tool messages they belong to, and empties [results]. */
+private fun JsonArrayBuilder.addFilesOf(results: MutableList<ChatMessage.ToolResult>) {
+    if (results.isEmpty()) return
+    addJsonObject {
+        put("role", "user")
+        putJsonArray("content") {
+            results.forEach { result ->
+                add(textPart("The files that the tool call ${result.toolCallId} of ${result.toolName} returned:"))
+                result.attachments.forEach { add(filePart(it)) }
             }
         }
     }
+    results.clear()
+}
+
+private val IMAGE_TYPES = listOf("image/jpeg", "image/png", "image/gif", "image/webp")
+
+private fun textPart(text: String): JsonObject =
+    buildJsonObject {
+        put("type", "text")
+        put("text", text)
+    }
+
+/**
+ * Returns [attachment] as a part of a user message: an image from its bytes or its address, or a
+ * PDF from its bytes.
+ *
+ * @throws ChatModelException if the API does not take files of its type, or a PDF from an address.
+ */
+private fun filePart(attachment: Attachment): JsonObject =
+    buildJsonObject {
+        when (attachment.mediaType) {
+            in IMAGE_TYPES -> {
+                put("type", "image_url")
+                putJsonObject("image_url") {
+                    put(
+                        "url",
+                        when (attachment) {
+                            is Attachment.Data -> attachment.dataUrl()
+                            is Attachment.Url -> attachment.url
+                        },
+                    )
+                }
+            }
+            "application/pdf" -> {
+                if (attachment !is Attachment.Data) {
+                    throw ChatModelException("OpenAiChatModel sends a PDF with its bytes, but not from an address: use Attachment.of.")
+                }
+                put("type", "file")
+                putJsonObject("file") {
+                    put("filename", "document.pdf")
+                    put("file_data", attachment.dataUrl())
+                }
+            }
+            else -> throw ChatModelException(
+                "OpenAiChatModel sends images (${IMAGE_TYPES.joinToString()}) and PDFs, but not ${attachment.mediaType}.",
+            )
+        }
+    }
+
+private fun Attachment.Data.dataUrl(): String = "data:$mediaType;base64,$base64"
 
 /** The text of a message: a string, or for some servers a list of parts with a `text` each. */
 private fun text(content: JsonElement?): String =

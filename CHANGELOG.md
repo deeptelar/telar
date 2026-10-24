@@ -7,6 +7,20 @@ breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- Images and PDFs in messages ([#103](https://github.com/deeptelar/telar/issues/103)). A
+  `ChatMessage.User` and a `ChatMessage.ToolResult` have `attachments`: files made with
+  `Attachment.of(bytes, mediaType)` or `Attachment.url(url, mediaType)`. `chat`, `chatWithProgress`,
+  `ask` and `AgentState.withUserMessage` take them too: `model.ask<Receipt>("Read the total.",
+  attachments = listOf(photo))`. A tool returns a file with `attach(attachment)`, and `mcpTools`
+  passes on the images and PDFs of a server's results instead of a line that names them.
+  `AnthropicChatModel`, `OpenAiChatModel` and `LangChain4jChatModel` send JPEG, PNG, GIF and WebP
+  images and PDFs, and fail before the request with a `ChatModelException` for a file they cannot
+  send. `OpenAiChatModel` sends the files of tool results in a user message after the results,
+  because the Chat Completions API takes text only in a tool message. Conversations saved before
+  read as they did. See [Images and PDFs](https://deeptelar.github.io/telar/guides/ai-models#images-and-pdfs).
+
 ## [0.1.0-alpha13] - 2026-10-22
 
 ### Fixed

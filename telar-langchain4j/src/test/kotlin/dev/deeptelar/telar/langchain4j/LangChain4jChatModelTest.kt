@@ -1,6 +1,7 @@
 package dev.deeptelar.telar.langchain4j
 
 import dev.deeptelar.telar.agent.AgentState
+import dev.deeptelar.telar.agent.Attachment
 import dev.deeptelar.telar.agent.ChatMessage
 import dev.deeptelar.telar.agent.ChatModelException
 import dev.deeptelar.telar.agent.ChatRequest
@@ -12,7 +13,10 @@ import dev.deeptelar.telar.agent.ToolSpec
 import dev.deeptelar.telar.agent.toolAgent
 import dev.langchain4j.agent.tool.ToolExecutionRequest
 import dev.langchain4j.data.message.AiMessage
+import dev.langchain4j.data.message.ImageContent
+import dev.langchain4j.data.message.PdfFileContent
 import dev.langchain4j.data.message.SystemMessage
+import dev.langchain4j.data.message.TextContent
 import dev.langchain4j.data.message.ToolExecutionResultMessage
 import dev.langchain4j.data.message.UserMessage
 import dev.langchain4j.model.chat.request.json.JsonAnyOfSchema
@@ -33,6 +37,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.net.URI
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -138,6 +143,51 @@ class LangChain4jChatModelTest {
                 sent.messages(),
             )
             assertTrue(sent.toolSpecifications().isNullOrEmpty())
+        }
+
+    @Test
+    fun `files become LangChain4j images and PDFs in user messages and tool results`() =
+        runTest {
+            val model = RecordingModel(reply(AiMessage.from("A receipt.")))
+            val png = Attachment.of(byteArrayOf(1, 2, 3), "image/png")
+            val pdf = Attachment.url("https://example.com/a.pdf", "application/pdf")
+            val messages =
+                listOf(
+                    ChatMessage.User("What is this?", listOf(png, pdf)),
+                    ChatMessage.Assistant(toolCalls = listOf(ToolCall("call-1", "screenshot", cola))),
+                    ChatMessage.ToolResult("call-1", "screenshot", "The page.", attachments = listOf(png)),
+                )
+
+            LangChain4jChatModel(model).chat(ChatRequest(messages))
+
+            val sent = model.requests.single().messages()
+            assertEquals(
+                UserMessage.from(
+                    listOf(
+                        TextContent("What is this?"),
+                        ImageContent.from("AQID", "image/png"),
+                        PdfFileContent.from(URI("https://example.com/a.pdf")),
+                    ),
+                ),
+                sent[0],
+            )
+            assertEquals(
+                listOf(TextContent("The page."), ImageContent.from("AQID", "image/png")),
+                (sent[2] as ToolExecutionResultMessage).contents(),
+            )
+        }
+
+    @Test
+    fun `a file that LangChain4j has no content for fails with its type`() =
+        runTest {
+            val voice = ChatMessage.User("Listen.", listOf(Attachment.of(byteArrayOf(1), "audio/wav")))
+
+            val failure = assertFailsWith<ChatModelException> { LangChain4jChatModel(RecordingModel()).chat(ChatRequest(listOf(voice))) }
+
+            assertEquals(
+                "LangChain4jChatModel sends images (image/jpeg, image/png, image/gif, image/webp) and PDFs, but not audio/wav.",
+                failure.message,
+            )
         }
 
     @Test

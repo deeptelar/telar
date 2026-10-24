@@ -2,8 +2,10 @@ package dev.deeptelar.telar.mcp
 
 import dev.deeptelar.telar.GraphValidationException
 import dev.deeptelar.telar.TelarException
+import dev.deeptelar.telar.agent.Attachment
 import dev.deeptelar.telar.agent.Tool
 import dev.deeptelar.telar.agent.ToolSpec
+import dev.deeptelar.telar.agent.attach
 import io.modelcontextprotocol.kotlin.sdk.client.Client
 import io.modelcontextprotocol.kotlin.sdk.shared.RequestOptions
 import io.modelcontextprotocol.kotlin.sdk.types.AudioContent
@@ -50,8 +52,9 @@ import io.modelcontextprotocol.kotlin.sdk.types.Tool as ServerTool
  * the function again and build the agent again.
  *
  * What a tool returns to the model:
- * - The text parts of the result, joined. An image, a sound or a file becomes one line that says
- *   what it was, such as `[image: image/png]`.
+ * - The text parts of the result, joined.
+ * - Its images (JPEG, PNG, GIF and WebP) and PDFs, as attachments of the result. Any other image,
+ *   sound or file becomes one line of the text that says what it was, such as `[audio: audio/wav]`.
  * - A result the server marks as an error is an error result for the model, like a tool of the app
  *   that throws. So is a call that failed or got no answer in time. The run goes on, and the model
  *   can react.
@@ -130,6 +133,7 @@ private fun ServerTool.asTool(server: Client, prefix: String, options: RequestOp
             }
         val text = result.asText()
         if (result.isError == true) throw McpServerException(text)
+        result.content.mapNotNull { it.asAttachment() }.forEach { attach(it) }
         text
     }
 }
@@ -154,12 +158,13 @@ private fun ToolSchema.asJsonSchema(): JsonObject =
     }
 
 /**
- * The result as the text a model gets: its text parts, and one line for each part that is not text.
- * A result without parts is its structured content, or a sentence that says there was nothing.
+ * The result as the text a model gets: its text parts, and one line for each part that is neither
+ * text nor an attachment. A result without parts is its structured content, or a sentence that says
+ * there was nothing.
  */
 internal fun CallToolResult.asText(): String =
     when {
-        content.isNotEmpty() -> content.joinToString("\n") { it.asText() }
+        content.isNotEmpty() -> content.filter { it.asAttachment() == null }.joinToString("\n") { it.asText() }
         structuredContent != null -> structuredContent.toString()
         else -> "The tool returned no content."
     }
@@ -176,6 +181,20 @@ private fun ContentBlock.asText(): String =
                 is BlobResourceContents -> "[file: ${contents.mimeType ?: "unknown type"}, ${contents.uri}]"
                 else -> "[resource: ${contents.uri}]"
             }
+    }
+
+/** The media types that a model class sends as a file. */
+private val attachable = listOf("image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf")
+
+/** The part as a file for the model, when it is an image or a file of a type that model classes send. */
+internal fun ContentBlock.asAttachment(): Attachment? =
+    when (this) {
+        is ImageContent -> Attachment.Data(data, mimeType).takeIf { mimeType in attachable }
+        is EmbeddedResource ->
+            (resource as? BlobResourceContents)?.let { blob ->
+                blob.mimeType?.takeIf { it in attachable }?.let { Attachment.Data(blob.blob, it) }
+            }
+        else -> null
     }
 
 private val notInAName = Regex("[^a-zA-Z0-9_-]")

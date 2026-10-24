@@ -1,6 +1,7 @@
 package dev.deeptelar.telar.anthropic
 
 import dev.deeptelar.telar.GraphValidationException
+import dev.deeptelar.telar.agent.Attachment
 import dev.deeptelar.telar.agent.ChatEvent
 import dev.deeptelar.telar.agent.ChatMessage
 import dev.deeptelar.telar.agent.ChatModel
@@ -46,6 +47,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
@@ -113,10 +115,11 @@ public class AnthropicChatModel(
      * Claude declines the request.
      */
     override suspend fun chat(request: ChatRequest): ChatResponse {
+        val body = body(request)
         val status: Int
         val text: String
         try {
-            val response = client.post(url) { messages(body(request)) }
+            val response = client.post(url) { messages(body) }
             status = response.status.value
             text = response.bodyAsText()
         } catch (e: CancellationException) {
@@ -410,11 +413,22 @@ private fun turns(messages: List<ChatMessage>): JsonArray =
                             addJsonObject {
                                 put("type", "tool_result")
                                 put("tool_use_id", result.toolCallId)
-                                put("content", result.text)
+                                if (result.attachments.isEmpty()) {
+                                    put("content", result.text)
+                                } else {
+                                    putJsonArray("content") {
+                                        if (result.text.isNotEmpty()) add(textBlock(result.text))
+                                        result.attachments.forEach { add(attachmentBlock(it)) }
+                                    }
+                                }
                                 if (result.isError) put("is_error", true)
                             }
                         }
-                        turn.filterIsInstance<ChatMessage.User>().forEach { add(textBlock(it.text)) }
+                        turn.filterIsInstance<ChatMessage.User>().forEach { message ->
+                            // Claude reads a file best when it comes before the question about it.
+                            message.attachments.forEach { add(attachmentBlock(it)) }
+                            if (message.text.isNotEmpty() || message.attachments.isEmpty()) add(textBlock(message.text))
+                        }
                     },
                 )
                 index = end
@@ -441,6 +455,40 @@ private fun blocks(message: ChatMessage.Assistant): JsonArray =
             }
         }
     }
+
+private val IMAGE_TYPES = listOf("image/jpeg", "image/png", "image/gif", "image/webp")
+
+/**
+ * Returns [attachment] as an image or a document block, with the file itself or its address.
+ *
+ * @throws ChatModelException if Claude does not read files of its type.
+ */
+private fun attachmentBlock(attachment: Attachment): JsonObject {
+    val type =
+        when (attachment.mediaType) {
+            in IMAGE_TYPES -> "image"
+            "application/pdf" -> "document"
+            else -> throw ChatModelException(
+                "AnthropicChatModel sends images (${IMAGE_TYPES.joinToString()}) and PDFs, but not ${attachment.mediaType}.",
+            )
+        }
+    return buildJsonObject {
+        put("type", type)
+        putJsonObject("source") {
+            when (attachment) {
+                is Attachment.Data -> {
+                    put("type", "base64")
+                    put("media_type", attachment.mediaType)
+                    put("data", attachment.base64)
+                }
+                is Attachment.Url -> {
+                    put("type", "url")
+                    put("url", attachment.url)
+                }
+            }
+        }
+    }
+}
 
 private fun textBlock(text: String): JsonObject =
     buildJsonObject {

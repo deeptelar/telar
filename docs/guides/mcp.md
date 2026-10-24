@@ -85,9 +85,10 @@ tools. See [Agents with tools](agents-with-tools.md).
 ## What the model gets back
 
 - **Text.** The text parts of a result, joined.
-- **Anything else as one line.** An image, a sound or a file becomes a line that says what it was,
-  such as `[image: image/png]` or `[resource: Report, file:///report.pdf]`. A message of Telar
-  holds text only for now.
+- **Images and PDFs as files.** A JPEG, PNG, GIF or WebP image and a PDF reach the model as
+  [attachments](ai-models.md#images-and-pdfs) of the result.
+- **Anything else as one line.** Another image, a sound or a file becomes a line that says what it
+  was, such as `[audio: audio/wav]` or `[resource: Report, file:///report.pdf]`.
 - **An error as an error.** A result the server marks as failed reaches the model as an error
   result, like a tool of your own that throws. So does a call the server refused, and a call that
   got no answer in time. The run goes on, and the model can react.

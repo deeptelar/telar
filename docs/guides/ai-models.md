@@ -157,3 +157,36 @@ On the JVM, `telar-langchain4j` also builds a node straight from a
 The [`ChatAgent`](https://github.com/deeptelar/telar/blob/main/samples/src/main/kotlin/dev/deeptelar/telar/samples/ChatAgent.kt) sample uses them, and
 hands the same model to `ChatDecisionModel` through `LangChain4jChatModel` to decide when a person
 takes over. With `OLLAMA_MODEL` set, it runs on that model of a local Ollama.
+
+## Images and PDFs
+
+A model that reads images or PDFs gets them with the prompt as `attachments`: the photo of a
+receipt, a screenshot, a contract. `Attachment.of` takes the bytes of a file and its media type,
+and `Attachment.url` an address that the model's API downloads itself:
+
+```kotlin
+val photo = Attachment.of(File("receipt.jpg").readBytes(), "image/jpeg")
+
+val total = model.ask<Receipt>("Read the total of this receipt.", attachments = listOf(photo))
+val summary = model.chat("Summarize this contract.", attachments = listOf(Attachment.url("https://example.com/contract.pdf", "application/pdf")))
+
+// In a conversation, the files belong to a user message.
+val question = ChatMessage.User("Which of these two is cheaper?", attachments = listOf(first, second))
+```
+
+The model classes send JPEG, PNG, GIF and WebP images and PDFs:
+
+| | Images | PDFs |
+|---|---|---|
+| `AnthropicChatModel` | bytes or address | bytes or address |
+| `OpenAiChatModel` | bytes or address | bytes |
+| `LangChain4jChatModel` | bytes or address | bytes or address, if the LangChain4j model takes PDFs |
+
+A file of another type, or a PDF from an address for `OpenAiChatModel`, fails before the request
+with a `ChatModelException`. Whether the model reads the file is up to the model: with Ollama, pick
+one that lists "vision" among what it can do, such as Gemma 4, and send the bytes, since Ollama
+does not download addresses.
+
+A file is part of its message, so a checkpoint of a state that holds the message holds the file
+too, after every step. For a large file, keep its path or its address in the state and attach it
+in the node that calls the model, as above.

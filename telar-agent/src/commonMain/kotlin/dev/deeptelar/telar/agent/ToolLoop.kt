@@ -416,6 +416,10 @@ public data class AgentState(
     public val answerTruncated: Boolean
         get() = (messages.lastOrNull() as? ChatMessage.Assistant)?.truncated == true
 
-    /** Returns this state with [text] added as the user's next message, to continue the conversation. */
-    public fun withUserMessage(text: String): AgentState = copy(messages = messages + ChatMessage.User(text))
+    /**
+     * Returns this state with [text] and its [attachments] added as the user's next message, to
+     * continue the conversation.
+     */
+    public fun withUserMessage(text: String, attachments: List<Attachment> = emptyList()): AgentState =
+        copy(messages = messages + ChatMessage.User(text, attachments))
 }

@@ -1,5 +1,6 @@
 package dev.deeptelar.telar.langchain4j
 
+import dev.deeptelar.telar.agent.Attachment
 import dev.deeptelar.telar.agent.ChatEvent
 import dev.deeptelar.telar.agent.ChatMessage
 import dev.deeptelar.telar.agent.ChatModel
@@ -14,7 +15,11 @@ import dev.langchain4j.agent.tool.ToolSpecification
 import dev.langchain4j.data.message.AiMessage
 import dev.langchain4j.data.message.ChatMessageDeserializer
 import dev.langchain4j.data.message.ChatMessageSerializer
+import dev.langchain4j.data.message.Content
+import dev.langchain4j.data.message.ImageContent
+import dev.langchain4j.data.message.PdfFileContent
 import dev.langchain4j.data.message.SystemMessage
+import dev.langchain4j.data.message.TextContent
 import dev.langchain4j.data.message.ToolExecutionResultMessage
 import dev.langchain4j.data.message.UserMessage
 import dev.langchain4j.model.chat.StreamingChatModel
@@ -52,6 +57,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
+import java.net.URI
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
 import dev.langchain4j.data.message.ChatMessage as LangChain4jMessage
@@ -165,7 +171,8 @@ public class LangChain4jChatModel(
 }
 
 private fun failed(cause: Throwable): ChatModelException =
-    ChatModelException("The LangChain4j model failed: ${cause.message ?: cause::class.simpleName}", cause)
+    cause as? ChatModelException
+        ?: ChatModelException("The LangChain4j model failed: ${cause.message ?: cause::class.simpleName}", cause)
 
 private fun request(request: ChatRequest): LangChain4jRequest {
     val messages = listOfNotNull(request.system?.let { SystemMessage.from(it) }) + request.messages.mapNotNull(::message)
@@ -177,17 +184,57 @@ private fun request(request: ChatRequest): LangChain4jRequest {
 /** Returns [message] as a LangChain4j message, or `null` for an assistant message with nothing in it. */
 private fun message(message: ChatMessage): LangChain4jMessage? =
     when (message) {
-        is ChatMessage.User -> UserMessage.from(message.text)
-        is ChatMessage.ToolResult ->
-            ToolExecutionResultMessage
-                .builder()
-                .id(message.toolCallId)
-                .toolName(message.toolName)
-                .text(message.text)
-                .isError(message.isError)
-                .build()
+        is ChatMessage.User ->
+            if (message.attachments.isEmpty()) {
+                UserMessage.from(message.text)
+            } else {
+                UserMessage.from(contents(message.text, message.attachments))
+            }
+        is ChatMessage.ToolResult -> {
+            val builder =
+                ToolExecutionResultMessage
+                    .builder()
+                    .id(message.toolCallId)
+                    .toolName(message.toolName)
+                    .isError(message.isError)
+            if (message.attachments.isEmpty()) {
+                builder.text(message.text)
+            } else {
+                builder.contents(contents(message.text, message.attachments))
+            }
+            builder.build()
+        }
         is ChatMessage.Assistant -> kept(message) ?: rebuilt(message)
     }
+
+/** Returns [text] and the files [attachments] as the contents of a LangChain4j message. */
+private fun contents(text: String, attachments: List<Attachment>): List<Content> =
+    listOfNotNull(text.takeIf { it.isNotEmpty() }?.let(::TextContent)) + attachments.map(::content)
+
+/**
+ * Returns [attachment] as an image or a PDF of LangChain4j, which the model of LangChain4j sends as
+ * its provider takes it.
+ *
+ * @throws ChatModelException if LangChain4j has no content for files of its type.
+ */
+private fun content(attachment: Attachment): Content =
+    when (attachment.mediaType) {
+        in IMAGE_TYPES ->
+            when (attachment) {
+                is Attachment.Data -> ImageContent.from(attachment.base64, attachment.mediaType)
+                is Attachment.Url -> ImageContent.from(URI(attachment.url))
+            }
+        "application/pdf" ->
+            when (attachment) {
+                is Attachment.Data -> PdfFileContent.from(attachment.base64, attachment.mediaType)
+                is Attachment.Url -> PdfFileContent.from(URI(attachment.url))
+            }
+        else -> throw ChatModelException(
+            "LangChain4jChatModel sends images (${IMAGE_TYPES.joinToString()}) and PDFs, but not ${attachment.mediaType}.",
+        )
+    }
+
+private val IMAGE_TYPES = listOf("image/jpeg", "image/png", "image/gif", "image/webp")
 
 /** Returns the `AiMessage` that [response] stored in [message], if it is one. */
 private fun kept(message: ChatMessage.Assistant): AiMessage? {
