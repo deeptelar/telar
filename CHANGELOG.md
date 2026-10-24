@@ -23,7 +23,7 @@ breaking changes.
   because the Chat Completions API takes text only in a tool message. Conversations saved before
   read as they did. See [Images and PDFs](https://deeptelar.github.io/telar/guides/ai-models#images-and-pdfs).
 
-## [0.1.0-alpha14] - 2026-10-22
+## [0.1.0-alpha13] - 2026-10-22
 
 ### Fixed
 
@@ -587,7 +587,8 @@ First public release. Everything below is new compared with the unpublished beta
 - `FileCheckpointer` did not write the format version into its files.
 
 [Unreleased]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha14...HEAD
-[0.1.0-alpha14]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha12...v0.1.0-alpha14
+[0.1.0-alpha14]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha13...v0.1.0-alpha14
+[0.1.0-alpha13]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha12...v0.1.0-alpha13
 [0.1.0-alpha12]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha11...v0.1.0-alpha12
 [0.1.0-alpha11]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha10...v0.1.0-alpha11
 [0.1.0-alpha10]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha09...v0.1.0-alpha10
