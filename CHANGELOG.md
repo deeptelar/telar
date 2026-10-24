@@ -7,6 +7,8 @@ breaking changes.
 
 ## [Unreleased]
 
+## [0.1.0-alpha14] - 2026-10-24
+
 ### Added
 
 - Images and PDFs in messages ([#103](https://github.com/deeptelar/telar/issues/103)). A
@@ -584,7 +586,8 @@ First public release. Everything below is new compared with the unpublished beta
 - `START` counted toward `maxIterations`.
 - `FileCheckpointer` did not write the format version into its files.
 
-[Unreleased]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha13...HEAD
+[Unreleased]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha14...HEAD
+[0.1.0-alpha14]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha13...v0.1.0-alpha14
 [0.1.0-alpha13]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha12...v0.1.0-alpha13
 [0.1.0-alpha12]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha11...v0.1.0-alpha12
 [0.1.0-alpha11]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha10...v0.1.0-alpha11

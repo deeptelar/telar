@@ -111,9 +111,9 @@ after a restart: [Human-in-the-loop](guides/human-in-the-loop.md).
 
 ```kotlin
 // build.gradle.kts
-implementation("dev.deeptelar:telar-core:0.1.0-alpha13")      // graphs: all the workflow above needs
-implementation("dev.deeptelar:telar-agent:0.1.0-alpha13")     // chat models, tools and the agent
-implementation("dev.deeptelar:telar-anthropic:0.1.0-alpha13") // Claude. Or telar-openai: OpenAI, Gemini, Ollama, Groq, ...
+implementation("dev.deeptelar:telar-core:0.1.0-alpha14")      // graphs: all the workflow above needs
+implementation("dev.deeptelar:telar-agent:0.1.0-alpha14")     // chat models, tools and the agent
+implementation("dev.deeptelar:telar-anthropic:0.1.0-alpha14") // Claude. Or telar-openai: OpenAI, Gemini, Ollama, Groq, ...
 ```
 
 Telar is in alpha: the API can still change before `1.0`. [Installation](installation.md) lists

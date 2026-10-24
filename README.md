@@ -61,8 +61,8 @@ suspend fun main() {
 
 ```kotlin
 // build.gradle.kts. `@Serializable` needs the plugin kotlin("plugin.serialization").
-implementation("dev.deeptelar:telar-agent:0.1.0-alpha13")
-implementation("dev.deeptelar:telar-anthropic:0.1.0-alpha13") // or telar-openai: OpenAI, Gemini, Ollama, Groq, ...
+implementation("dev.deeptelar:telar-agent:0.1.0-alpha14")
+implementation("dev.deeptelar:telar-anthropic:0.1.0-alpha14") // or telar-openai: OpenAI, Gemini, Ollama, Groq, ...
 implementation("io.ktor:ktor-client-cio:3.6.0")                // any Ktor engine
 ```
 
@@ -140,10 +140,10 @@ LangGraph4j and LangChain4j.
 
 ```kotlin
 dependencies {
-    implementation("dev.deeptelar:telar-core:0.1.0-alpha13")      // the graph builder and the engine
-    implementation("dev.deeptelar:telar-agent:0.1.0-alpha13")     // chat models, tools and the tool-calling agent
-    implementation("dev.deeptelar:telar-anthropic:0.1.0-alpha13") // Claude
-    implementation("dev.deeptelar:telar-openai:0.1.0-alpha13")    // OpenAI, Gemini, Ollama and compatible servers
+    implementation("dev.deeptelar:telar-core:0.1.0-alpha14")      // the graph builder and the engine
+    implementation("dev.deeptelar:telar-agent:0.1.0-alpha14")     // chat models, tools and the tool-calling agent
+    implementation("dev.deeptelar:telar-anthropic:0.1.0-alpha14") // Claude
+    implementation("dev.deeptelar:telar-openai:0.1.0-alpha14")    // OpenAI, Gemini, Ollama and compatible servers
 }
 ```
 
@@ -151,7 +151,7 @@ The artifacts are on Maven Central and need Kotlin 2.x. There are more modules, 
 files or in a browser, for LangChain4j models and for decision models:
 [Installation](https://deeptelar.github.io/telar/installation) lists every module and its targets.
 
-Telar is in alpha. `0.1.0-alpha13` is the latest release. The API may still change before `1.0`; the
+Telar is in alpha. `0.1.0-alpha14` is the latest release. The API may still change before `1.0`; the
 [changelog](CHANGELOG.md) lists what changes in each version, and the [roadmap](ROADMAP.md) lists
 what is planned.
 
