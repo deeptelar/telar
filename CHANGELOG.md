@@ -7,6 +7,20 @@ breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- `interruptBefore` and `interruptAfter` reach the nodes of a subgraph, named by their path:
+  `GraphConfig(threadId, checkpointer, interruptBefore = setOf("research/ask"))` pauses before the
+  node `ask` of the subgraph node `research`, and `resume` continues inside the subgraph. A path can
+  go deeper (`"research/sources/ask"`), a pause after the last node of a subgraph comes before the
+  graph around goes on, and `toMermaid` marks the nodes that a path names. Before, a node of a
+  subgraph could only pause itself with `interrupt`. ([#34](https://github.com/deeptelar/telar/issues/34))
+
+### Changed
+
+- BREAKING: a node name cannot hold a `/`, which joins the names of a path. `StateGraph` throws a
+  `GraphValidationException` for such a name. Rename the node, for example with a `-`.
+
 ## [0.1.0-alpha14] - 2026-10-24
 
 ### Added

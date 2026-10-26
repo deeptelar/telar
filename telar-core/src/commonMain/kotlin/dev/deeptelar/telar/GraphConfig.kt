@@ -8,9 +8,12 @@ package dev.deeptelar.telar
  * @property checkpointer where checkpoints are stored. When set, a checkpoint is saved when a run
  * starts and after every step. Required for [interruptBefore], [interruptAfter], [interrupt] and
  * [CompiledGraph.resume].
- * @property interruptBefore node names to pause before, for human-in-the-loop review. A node that
- * decides while it runs whether to pause calls [interrupt] instead.
- * @property interruptAfter node names to pause after.
+ * @property interruptBefore node names to pause before, for human-in-the-loop review. A node of a
+ * subgraph is named by its path: the name of the subgraph node, a `/` and the name of the node in
+ * the subgraph, such as `"research/ask"`, or `"research/sources/ask"` for a subgraph inside it. A
+ * node that decides while it runs whether to pause calls [interrupt] instead.
+ * @property interruptAfter node names to pause after, and paths to nodes of subgraphs. A pause after
+ * the last node of a subgraph happens before the graph around it goes on.
  * @property maxIterations the maximum number of steps a single [CompiledGraph.invoke] or
  * [CompiledGraph.resume] call may execute before [MaxIterationsExceededException] is thrown.
  * @property observers are told how each run of this config goes, node by node, for example to

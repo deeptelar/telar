@@ -59,6 +59,9 @@ public suspend fun <State> interrupt(state: State): Nothing {
  * @property effectPath names this node in [effects]: its name, and for a node of a subgraph the
  * nodes and steps around it.
  * @property observed this node for [observer], which a subgraph tells about its run as well.
+ * @property interruptBefore the nodes of the subgraph of this node to pause before, named by their
+ * paths inside it. Empty for a node without a subgraph.
+ * @property interruptAfter the nodes of the subgraph of this node to pause after.
  */
 internal class RunningNode(
     val name: String,
@@ -70,6 +73,8 @@ internal class RunningNode(
     val effectPath: String,
     val observed: ObservedNode,
     val observer: GraphObserver,
+    val interruptBefore: Set<String>,
+    val interruptAfter: Set<String>,
 ) : AbstractCoroutineContextElement(Key) {
     /** The paths of the effects this try of the node has called. [effects] guards it. */
     val effectsUsed: MutableSet<String> = mutableSetOf()

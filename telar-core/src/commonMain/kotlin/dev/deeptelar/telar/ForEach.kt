@@ -107,6 +107,8 @@ private class ItemWork<State, Item, Result>(
                 path,
                 node.observed,
                 node.observer,
+                interruptBefore = emptySet(),
+                interruptAfter = emptySet(),
             )
         val reports = reporter?.let { around -> ProgressReporter { value -> around.report(ItemReport.Progress(index, value)) } }
         return withContext(running + (reports ?: EmptyCoroutineContext)) {

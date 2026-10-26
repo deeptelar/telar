@@ -56,8 +56,9 @@ import kotlin.time.Duration
  *
  * A node added with [StateGraph.subgraph] runs another graph. That graph takes its own steps inside
  * one step of this graph. When one of its nodes calls [interrupt], this run pauses as well, and
- * [resume] continues inside the subgraph, at the node that paused. A stream of this graph has the
- * events of the subgraph too, each inside a [GraphEvent.SubgraphEvent].
+ * [resume] continues inside the subgraph, at the node that paused. [GraphConfig.interruptBefore]
+ * and [GraphConfig.interruptAfter] name a node of a subgraph by its path, such as `"research/ask"`.
+ * A stream of this graph has the events of the subgraph too, each inside a [GraphEvent.SubgraphEvent].
  *
  * ## History
  *
@@ -372,7 +373,17 @@ public class CompiledGraph<State> internal constructor(
             // this graph go to that collector through it, like what a node reports.
             val reporter = currentCoroutineContext()[ProgressReporter]
             val events = FlowCollector<GraphEvent<State>> { event -> reporter?.report(SubgraphReport(event)) }
-            return events.run(config, start, progress = reporter != null, watch, canPause = parent.canPause, parent = parent)
+            return events.run(
+                config,
+                start,
+                progress = reporter != null,
+                watch,
+                canPause = parent.canPause,
+                parent = parent,
+                // A subgraph has no checkpointer, so its config cannot hold the pauses: they come with the node.
+                interruptBefore = parent.interruptBefore,
+                interruptAfter = parent.interruptAfter,
+            )
         } catch (failure: Throwable) {
             watch.failed(failure)
             throw failure
@@ -403,6 +414,8 @@ public class CompiledGraph<State> internal constructor(
      * checkpointer of its own and can pause when the graph around it can.
      * @param parent the node that runs this graph as its subgraph. The effects of this graph go
      * into the step of the graph around it.
+     * @param interruptBefore the nodes to pause before: their names, and the paths of nodes of subgraphs.
+     * @param interruptAfter the nodes to pause after, named the same way.
      */
     private suspend fun FlowCollector<GraphEvent<State>>.run(
         config: GraphConfig<State>,
@@ -411,6 +424,8 @@ public class CompiledGraph<State> internal constructor(
         watch: RunWatch,
         canPause: Boolean = config.checkpointer != null,
         parent: RunningNode? = null,
+        interruptBefore: Set<String> = config.interruptBefore,
+        interruptAfter: Set<String> = config.interruptAfter,
     ): RunEnd<State> {
         var state = start.state
         var activeNodes = start.activeNodes
@@ -436,7 +451,7 @@ public class CompiledGraph<State> internal constructor(
         }
 
         while (activeNodes.isNotEmpty()) {
-            if (!skipInterruptBefore && activeNodes.any { it in config.interruptBefore }) {
+            if (!skipInterruptBefore && activeNodes.any { it in interruptBefore }) {
                 val paused = save(Checkpoint(state, activeNodes, step, interruptedBefore = true, effects = effects))
                 watch.interrupted(activeNodes)
                 emit(GraphEvent.Interrupted(state, activeNodes))
@@ -450,7 +465,20 @@ public class CompiledGraph<State> internal constructor(
 
             val log = parent?.effects ?: EffectLog(effects) { saveEffects(it) }
             val effectPrefix = parent?.let { "${it.effectPath}/$step/" }.orEmpty()
-            val run = StepRun(step, config.threadId, canPause, config.maxIterations, subgraphs, progress, log, effectPrefix, watch)
+            val run =
+                StepRun(
+                    step,
+                    config.threadId,
+                    canPause,
+                    config.maxIterations,
+                    subgraphs,
+                    progress,
+                    log,
+                    effectPrefix,
+                    watch,
+                    interruptBefore,
+                    interruptAfter,
+                )
             state =
                 try {
                     runStep(run, activeNodes, state)
@@ -483,7 +511,8 @@ public class CompiledGraph<State> internal constructor(
             val saved = save(Checkpoint(state, nextNodes, step))
             emit(GraphEvent.StepCompleted(step, activeNodes, state))
 
-            if (nextNodes.isNotEmpty() && activeNodes.any { it in config.interruptAfter }) {
+            // A finished run has nothing to pause for, but a subgraph that finished has the graph around it.
+            if ((nextNodes.isNotEmpty() || parent != null) && activeNodes.any { it in interruptAfter }) {
                 watch.interrupted(nextNodes)
                 emit(GraphEvent.Interrupted(state, nextNodes))
                 return RunEnd.Paused(saved)
@@ -503,6 +532,7 @@ public class CompiledGraph<State> internal constructor(
      * @property effectPrefix what the path of a node in [effects] starts with: empty in the outermost
      * graph, and the node and step of the graph around it in a subgraph.
      * @property watch tells the observer of the run about the nodes.
+     * @property interruptBefore the pauses of the run, from which a subgraph node takes those inside it.
      */
     private class StepRun(
         val step: Int,
@@ -514,6 +544,8 @@ public class CompiledGraph<State> internal constructor(
         val effects: EffectLog,
         val effectPrefix: String,
         val watch: RunWatch,
+        val interruptBefore: Set<String>,
+        val interruptAfter: Set<String>,
     )
 
     private suspend fun FlowCollector<GraphEvent<State>>.runStep(run: StepRun, activeNodes: List<String>, state: State): State {
@@ -747,6 +779,8 @@ public class CompiledGraph<State> internal constructor(
                     run.effectPrefix + escapeEffectName(node.name),
                     observed,
                     run.watch.observer,
+                    run.interruptBefore.inside(node.name),
+                    run.interruptAfter.inside(node.name),
                 ),
         ) {
             if (node.forEach) {
@@ -803,7 +837,7 @@ public class CompiledGraph<State> internal constructor(
     }
 
     private fun validateInterrupts(config: GraphConfig<State>) {
-        val unknown = (config.interruptBefore + config.interruptAfter) - nodes.keys
+        val unknown = topology.unknownNodes(config.interruptBefore + config.interruptAfter)
         if (unknown.isNotEmpty()) {
             throw GraphValidationException("GraphConfig interrupts refer to nodes that are not in the graph: $unknown")
         }

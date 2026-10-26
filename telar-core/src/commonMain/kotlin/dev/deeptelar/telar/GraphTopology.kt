@@ -34,14 +34,15 @@ public data class GraphTopology(
      * and a node in [forEachNodes] one that it runs for each item.
      *
      * @param interruptBefore nodes the run pauses before, usually [GraphConfig.interruptBefore]. Their
-     * names start with ⏸ and their states are highlighted.
+     * names start with ⏸ and their states are highlighted. A node of a subgraph is named by its
+     * path, such as `"research/ask"`.
      * @param interruptAfter nodes the run pauses after, usually [GraphConfig.interruptAfter]. Their
      * names end with ⏸ and their states are highlighted.
      * @param edgeLabels a label for an edge, by the names of its two ends, such as
      * `("read" to "refund") to "refund request"`. Use [START] and [END] for those ends. It takes
      * the place of the [GraphEdge.label] of the edge.
      * @throws GraphValidationException if [interruptBefore] or [interruptAfter] name a node that is
-     * not in [nodes], or [edgeLabels] an edge that is not in [edges].
+     * not in [nodes] or in a subgraph, or [edgeLabels] an edge that is not in [edges].
      */
     public fun toMermaid(
         interruptBefore: Set<String> = emptySet(),
