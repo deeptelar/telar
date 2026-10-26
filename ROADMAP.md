@@ -2,6 +2,9 @@
 
 Telar aims to be the open-source library a Kotlin developer reaches for to build AI agents and
 workflows: agents first, simple to start with, and with the most complete set of workflow features.
+Its strongest point is the device: the same graph runs on a phone, a handheld scanner, a till or a
+small Linux box, with a model on the device's own NPU, and keeps working when the network is gone.
+A store, a warehouse or a vehicle is the place Telar is built for, next to the server.
 Models, and the ways of working with them, change fast. This plan changes with them: what
 developers need for their agents goes on this page, and the order follows what they ask for.
 
@@ -29,9 +32,11 @@ modules for tests and for OpenTelemetry. The API can still change in any release
 Section 1 is done, a node can run once for each item of a list, and a message can carry images and
 PDFs ([#103]). Section 2 is what is worked on now, and it is the last part that changes an API that
 exists: first a subgraph that can pause before one of its nodes ([#34]), then the order of the
-reducer and the updates of a step ([#101]). After that comes section 3, which starts with long
-conversations ([#105]), because a long conversation is still sent to the model in full every time,
-and then teams of agents ([#170]) and a memory that an agent keeps across conversations ([#171]).
+reducer and the updates of a step ([#101]). After that comes section 3, agents on the device: it
+starts with long conversations ([#105]), because a small model on a device reads only a short
+conversation, and then a model module for the runtime of each platform, so that a graph calls the
+device's NPU without a server. Section 4 follows, with teams of agents ([#170]) and a memory that an
+agent keeps across conversations ([#171]).
 
 ## The way to 1.0
 
@@ -47,10 +52,12 @@ The features are numbered in the order they are worked on. Two rules decide it:
   when choosing a library, and the things the samples of Telar had to write by hand.
 - **A change to an API that exists comes before a new module.** Sections 1 and 2 change
   `telar-core` and `telar-agent`, so that their API can stop moving as early as possible. Most of
-  section 3 is new modules, which change nothing that exists.
+  sections 3 and 4 is new modules, which change nothing that exists.
+- **Among the new modules, the device comes first.** Running on the device is Telar's strongest
+  point, so section 3 comes before the rest of production in section 4.
 
 The issues have the same order as labels: `priority: now` for section 2, the one worked on now
-(section 1 is done), and `priority: later` for section 3.
+(section 1 is done), and `priority: later` for sections 3 and 4.
 
 Each item has one of four states:
 
@@ -81,21 +88,38 @@ These change how a graph runs or what a message holds, so they come before the b
 | 9 | Subgraphs | A compiled graph becomes a node of another graph, with a mapping between the two states and one thread for both. Released: `subgraph`, a run that pauses inside a subgraph and resumes there, the events of a subgraph in the stream of the graph around it, and the subgraph in `topology`. Still to come, and the next thing to be built: `interruptBefore` for a node of a subgraph, and a retry after a failure that continues inside the subgraph. | In progress | [#34] |
 | 10 | One rule for parallel nodes that write the same property | You decide what happens, and the rule is the same for both ways to write a node: `compile(rules = mergeRules { ... })`, or the same rules given as `reducer`, merges every node of a step, so a node with `work` and `update` no longer overwrites another without a word. Released: `compile(rules = mergeRules { ... })`, and `mergeRules` given as the reducer holds for every node too. Still open: the order of the reducer and the updates when no rules are given. | In progress | [#101] |
 
-## 3. Run it in production
+## 3. Run it on the device
+
+An agent that runs where the work is: on a handheld, a till, a kiosk or a small box in the back
+room, with a model on the device's NPU or GPU, and without a network for hours or days. Most of it
+is new modules. Graph versions (17) adds to `Checkpoint`, so it is the one item here that changes an
+API that exists. The issues of these items are still to be opened.
+
+| | Feature | What you get | State | Issue |
+|---|---|---|---|---|
+| 11 | Long conversations | A conversation that is kept short for the model, by dropping or summarizing old messages, and that pays less for what the provider already read. Today every request sends everything, which a small model on a device with a short context cannot read. | Planned | [#105] |
+| 12 | Models on the device | A `ChatModel` for the model runtime of each platform, so that a graph calls a model on the device's NPU or GPU without a server in between: LiteRT-LM on Android, llama.cpp on Linux, Windows and macOS, and Apple's Foundation Models on iOS and macOS. Today a local model works through `OpenAiChatModel` and a local server such as Ollama. | Planned | |
+| 13 | One accelerator for many nodes | A device has one NPU. Parallel nodes and the items of a `forEach` node wait for it in turn instead of loading the model twice or running out of memory, and a stream shows when a node waits. | Planned | |
+| 14 | The device first, the cloud when needed | A model that asks the model on the device, and asks a hosted model only when the first fails, takes too long, is not sure, or the network is there to allow it. A rule says which data may never leave the device. | Planned | |
+| 15 | Answers a small model gets right | Tool calls and typed answers that a small model cannot get wrong: the runtime is held to the JSON schema of the tool or the answer where it can do so, and a broken tool call is sent back to the model once with the error. | Planned | |
+| 16 | Traces from a device that is offline | `telar-otel` keeps the spans of a device on the device while the network is gone and sends them when it is back, with a limit on what it keeps. | Planned | |
+| 17 | Graph versions for a fleet | A checkpoint names the version of the graph that wrote it. An update of the app that changes the graph resumes the runs of the old version, or says why it cannot, instead of failing in the middle of a run on a thousand devices. | Planned | |
+| 18 | A guide and a sample for the device | A guide to agents on a device: choosing and loading a model, the NPU, memory, battery and heat, and working offline. And a sample from a store: a gap on a shelf, a stock check, a task for a store associate that the associate approves, on a handheld and on a box in the back room. | Planned | |
+
+## 4. Run it in production
 
 New modules and additions. They change nothing that exists. The maintainers build them in the order
 of this table, and someone who needs one sooner can build it at any time.
 
 | | Feature | What you get | State | Issue |
 |---|---|---|---|---|
-| 11 | Long conversations | A conversation that is kept short for the model, by dropping or summarizing old messages, and that pays less for what the provider already read. Today every request sends everything. | Planned | [#105] |
-| 12 | Teams of agents | Ready-made graphs for more than one agent, built on subgraphs: a supervisor that gives each task to the agent that fits it, and agents that hand the conversation to each other. | Planned | [#170] |
-| 13 | Memory across threads | A store that an agent reads and writes in every conversation of a user, next to the checkpoint of one thread, so that it remembers what it learned last time. | Planned | [#171] |
-| 14 | Tracing | Hooks in the engine that report every node, edge, tool call and token count, and a module that sends them to OpenTelemetry. Released: `GraphObserver` for runs, nodes, steps and checkpoints, `AgentObserver` for each call to a model and each tool call, with its token count, and `telar-otel`, which sends runs to OpenTelemetry on every platform, the browser included. Still to come: a span in `telar-otel` for each call to a model and each tool call ([#138]), and a report of the calls that an edge condition makes, such as the model of a `decisionEdge` ([#157]). | In progress | [#38] |
-| 15 | Database checkpointer | Saves runs in a SQL database. Released: SQLite through SQLDelight, `telar-checkpoint-sqldelight`, for Android, iOS, desktop and the browser. Still to come: a database server such as PostgreSQL ([#137]). | In progress | [#84] |
-| 16 | One version for all modules | `telar-bom`: a bill of materials. An app names the version of Telar once, and every module it adds uses that version. | Planned | [#79] |
+| 19 | Teams of agents | Ready-made graphs for more than one agent, built on subgraphs: a supervisor that gives each task to the agent that fits it, and agents that hand the conversation to each other. | Planned | [#170] |
+| 20 | Memory across threads | A store that an agent reads and writes in every conversation of a user, next to the checkpoint of one thread, so that it remembers what it learned last time. | Planned | [#171] |
+| 21 | Tracing | Hooks in the engine that report every node, edge, tool call and token count, and a module that sends them to OpenTelemetry. Released: `GraphObserver` for runs, nodes, steps and checkpoints, `AgentObserver` for each call to a model and each tool call, with its token count, and `telar-otel`, which sends runs to OpenTelemetry on every platform, the browser included. Still to come: a span in `telar-otel` for each call to a model and each tool call ([#138]), and a report of the calls that an edge condition makes, such as the model of a `decisionEdge` ([#157]). | In progress | [#38] |
+| 22 | Database checkpointer | Saves runs in a SQL database. Released: SQLite through SQLDelight, `telar-checkpoint-sqldelight`, for Android, iOS, desktop and the browser. Still to come: a database server such as PostgreSQL ([#137]). | In progress | [#84] |
+| 23 | One version for all modules | `telar-bom`: a bill of materials. An app names the version of Telar once, and every module it adds uses that version. | Planned | [#79] |
 
-## 4. Beta: make it stable
+## 5. Beta: make it stable
 
 - **API review.** Every public declaration is checked once more: its name, its defaults, and whether
   it can be `internal`. `apiCheck` already fails a build that changes the public API by accident.
@@ -123,6 +147,7 @@ Ideas without a place in the plan yet. Say so in the issue or in a discussion if
 | More model providers | Modules of their own for Gemini and Amazon Bedrock. Gemini works today through `OpenAiChatModel` and its `baseUrl`. | |
 | Ktor and Spring Boot | A plugin or a starter, so that a server app adds Telar with one dependency and gets its models and checkpointer from its configuration. | |
 | A graph that others call | Offer a compiled graph as a tool of an MCP server, or to other agents over the Agent2Agent protocol, from inside your app. | |
+| Devices that work together | A handheld that hands a run to the box in the back room over the network of the store, and a box that gives a task to the handhelds, built on a graph that others call. | |
 | Evaluations | Run a graph over a list of inputs and score its answers, next to the helpers of `telar-test`. | |
 
 ## Not planned
@@ -133,6 +158,8 @@ Ideas without a place in the plan yet. Say so in the issue or in a discussion if
 - **The same API as LangGraph for Python.** A feature comes over when it fits Kotlin: typed
   immutable state, coroutines, and checks in `compile()`.
 - **Reading checkpoints written by LangGraph for Python.**
+- **A model runtime of its own.** Telar calls the runtime of the platform, such as LiteRT-LM,
+  llama.cpp or Core ML. It does not run, train or convert models, and it ships no model.
 
 ## Helping
 
