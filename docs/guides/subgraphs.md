@@ -50,6 +50,20 @@ Runnable version: [`Subgraph`](https://github.com/deeptelar/telar/blob/main/samp
   property of the outer state, as `payout` above. A subgraph that never pauses can get a new state
   on every visit and give back only its result:
   `state = { Payout(it.customer, it.items) }, update = { case, payout -> case.copy(reply = payout.log.last()) }`.
+- `interruptBefore` and `interruptAfter` of the `GraphConfig` reach the nodes of a subgraph by
+  their path: the name of the subgraph node, a `/` and the name of the node inside it. The graph
+  around pauses in the step of the subgraph node, and `resume` continues inside the subgraph:
+
+  ```kotlin
+  // Pause before the node "pay" of payoutGraph for every payout, not only a large one.
+  val config = GraphConfig("return-7", checkpointer, interruptBefore = setOf("payout/pay"))
+  ```
+
+  `GraphResult.Interrupted.nextNodes` names the subgraph node (`payout`), and the
+  `subgraphs` of the checkpoint say where inside it the run stands. A path can go deeper, such
+  as `"payout/checks/limit"` for a node of a subgraph inside the subgraph, and a pause after the
+  last node of a subgraph comes before the graph around goes on. That is why a node name cannot
+  hold a `/`.
 - A subgraph with the same state class needs no functions: `subgraph("payout", payoutGraph)`.
 - A stream of the graph around has the events of the subgraph too, each inside a
   `GraphEvent.SubgraphEvent` that names the subgraph's node. They are the events a stream of the

@@ -140,6 +140,40 @@ class MermaidTest {
     }
 
     @Test
+    fun `marks the nodes of a subgraph that a path names`() {
+        val inner =
+            StateGraph<TestState> {
+                val draft = node("draft") { it }
+                val check = node("check") { it }
+                START then draft then check then END
+            }.compile()
+        val graph =
+            StateGraph<TestState> {
+                val write = subgraph("write", inner)
+                START then write then END
+            }.compile()
+
+        assertEquals(
+            """
+            stateDiagram-v2
+                state "write" as n0 {
+                    state "draft ⏸" as n0_n0
+                    state "⏸ check" as n0_n1
+                    [*] --> n0_n0
+                    n0_n0 --> n0_n1
+                    n0_n1 --> [*]
+                }
+                [*] --> n0
+                n0 --> [*]
+                classDef interrupt fill:#fff4e5,stroke:#e8590c,stroke-width:2px,stroke-dasharray:4 3
+                class n0_n0,n0_n1 interrupt
+            """.trimIndent(),
+            graph.topology.toMermaid(interruptBefore = setOf("write/check"), interruptAfter = setOf("write/draft")),
+        )
+        assertFailsWith<GraphValidationException> { graph.topology.toMermaid(interruptBefore = setOf("write/missing")) }
+    }
+
+    @Test
     fun `notes a dynamic route and escapes names`() {
         val graph =
             StateGraph<TestState> {

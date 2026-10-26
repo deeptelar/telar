@@ -46,7 +46,8 @@ public class StateGraph<State> {
     /**
      * Adds a node named [name] that runs [action] and returns a reference to it for use with [then].
      *
-     * @throws GraphValidationException if the name is blank, reserved ([START], [END]) or already used.
+     * @throws GraphValidationException if the name is blank, reserved ([START], [END]), holds a `/` or is
+     * already used.
      */
     public fun node(name: String, action: NodeAction<State>): NodeRef = add(stateNode(name, action = action))
 
@@ -75,8 +76,8 @@ public class StateGraph<State> {
      *
      * @param retry how the node is tried again after a failure. `null` runs it once.
      * @param timeout how long one try may take. `null` is no limit.
-     * @throws GraphValidationException if the name is blank, reserved ([START], [END]) or already
-     * used, or [timeout] is not positive.
+     * @throws GraphValidationException if the name is blank, reserved ([START], [END]), holds a `/` or
+     * is already used, or [timeout] is not positive.
      */
     public fun node(name: String, retry: Retry? = null, timeout: Duration? = null, action: NodeAction<State>): NodeRef =
         add(stateNode(name, retry, checked(name, timeout), action))
@@ -102,7 +103,8 @@ public class StateGraph<State> {
      * [update] must only build the new state. The engine may call it more than once for one run of
      * the node.
      *
-     * @throws GraphValidationException if the name is blank, reserved ([START], [END]) or already used.
+     * @throws GraphValidationException if the name is blank, reserved ([START], [END]), holds a `/` or is
+     * already used.
      */
     public fun <Result> node(name: String, work: suspend (State) -> Result, update: suspend (State, Result) -> State): NodeRef =
         add(workNode(name, work, update = update))
@@ -125,8 +127,8 @@ public class StateGraph<State> {
      *
      * @param retry how the node is tried again after a failure. `null` runs it once.
      * @param timeout how long one try may take. `null` is no limit.
-     * @throws GraphValidationException if the name is blank, reserved ([START], [END]) or already
-     * used, or [timeout] is not positive.
+     * @throws GraphValidationException if the name is blank, reserved ([START], [END]), holds a `/` or
+     * is already used, or [timeout] is not positive.
      */
     public fun <Result> node(
         name: String,
@@ -187,8 +189,8 @@ public class StateGraph<State> {
      * @param concurrency how many items may run at the same time.
      * @param retry how an item is tried again after a failure. `null` runs it once.
      * @param timeout how long one try of an item may take. `null` is no limit.
-     * @throws GraphValidationException if the name is blank, reserved ([START], [END]) or already
-     * used, [concurrency] is not positive, or [timeout] is not positive.
+     * @throws GraphValidationException if the name is blank, reserved ([START], [END]), holds a `/` or
+     * is already used, [concurrency] is not positive, or [timeout] is not positive.
      */
     public fun <Item, Result> node(
         name: String,
@@ -248,7 +250,8 @@ public class StateGraph<State> {
      * [NodeExecutionException], and [GraphConfig.maxIterations] limits the steps of the subgraph
      * on their own, for each visit.
      *
-     * @throws GraphValidationException if the name is blank, reserved ([START], [END]) or already used.
+     * @throws GraphValidationException if the name is blank, reserved ([START], [END]), holds a `/` or is
+     * already used.
      */
     public fun <Child> subgraph(
         name: String,
@@ -264,7 +267,8 @@ public class StateGraph<State> {
      * A node of the subgraph can pause the run with [interrupt], and [CompiledGraph.resume]
      * continues inside the subgraph. See the overload with a `state` and an `update`.
      *
-     * @throws GraphValidationException if the name is blank, reserved ([START], [END]) or already used.
+     * @throws GraphValidationException if the name is blank, reserved ([START], [END]), holds a `/` or is
+     * already used.
      */
     public fun subgraph(name: String, graph: CompiledGraph<State>): NodeRef =
         add(subgraphNode(name, graph, returnsState = true, state = { it }, update = { _, result -> result }))
@@ -273,6 +277,11 @@ public class StateGraph<State> {
         val name = node.name
         if (name.isBlank()) throw GraphValidationException("Node name must not be blank.")
         if (name == START || name == END) throw GraphValidationException("'$name' is a reserved node name.")
+        if (PATH_SEPARATOR in name) {
+            throw GraphValidationException(
+                "Node name '$name' must not contain '$PATH_SEPARATOR', which joins the names in the path to a node of a subgraph.",
+            )
+        }
         if (name in nodes) throw GraphValidationException("Node with name '$name' already exists.")
         nodes[name] = node
         return NodeRef(name)

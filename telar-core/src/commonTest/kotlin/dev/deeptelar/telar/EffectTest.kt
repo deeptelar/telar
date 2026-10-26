@@ -291,12 +291,12 @@ class EffectTest {
         }
 
     @Test
-    fun `a slash in a name does not mix up two effects`() =
+    fun `a slash in the key of an effect does not mix it up with another`() =
         runTest {
             val graph =
                 StateGraph<Order> {
                     val a = node("a", work = { _ -> effect("b/c", Text) { "first" } }) { order, _ -> order }
-                    val ab = node("a/b", work = { _ -> effect("c", Text) { "second" } }) { order, _ -> order }
+                    val ab = node("a%2Fb", work = { _ -> effect("c", Text) { "second" } }) { order, _ -> order }
                     val fail =
                         node("fail", work = { _ ->
                             delay(10)
@@ -309,7 +309,7 @@ class EffectTest {
 
             assertFailsWith<NodeExecutionException> { graph.invoke(Order(30), config) }
 
-            assertEquals(mapOf("a/b%2Fc" to "first", "a%2Fb/c" to "second"), checkpointer.load("t")?.effects)
+            assertEquals(mapOf("a/b%2Fc" to "first", "a%252Fb/c" to "second"), checkpointer.load("t")?.effects)
         }
 
     @Test

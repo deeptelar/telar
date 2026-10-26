@@ -28,7 +28,7 @@ modules for tests and for OpenTelemetry. The API can still change in any release
 
 Section 1 is done, a node can run once for each item of a list, and a message can carry images and
 PDFs ([#103]). Section 2 is what is worked on now, and it is the last part that changes an API that
-exists: first a subgraph that can pause before one of its nodes ([#34]), then the order of the
+exists: first a retry that continues inside a subgraph ([#34]), then the order of the
 reducer and the updates of a step ([#101]). After that comes section 3, which starts with long
 conversations ([#105]), because a long conversation is still sent to the model in full every time,
 and then teams of agents ([#170]) and a memory that an agent keeps across conversations ([#171]).
@@ -78,7 +78,7 @@ These change how a graph runs or what a message holds, so they come before the b
 |---|---|---|---|---|
 | 7 | Fan-out over a list | One node runs once per item of a list, all at the same time, when the number of items is only known at run time: `node(name, forEach = { ... }, work = { ... }) { ... }`, with a retry and a time limit for each item, and with each result saved so that a resume runs only the items that are missing. | Done | [#82] |
 | 8 | Images and files in messages | Send a model a picture or a PDF with the question, and let a tool return one: `ChatMessage.User(text, attachments)`, `attach()` in a tool, and the images and PDFs of MCP results. Audio, video and images that a model makes are not part of it. | Done | [#103] |
-| 9 | Subgraphs | A compiled graph becomes a node of another graph, with a mapping between the two states and one thread for both. Released: `subgraph`, a run that pauses inside a subgraph and resumes there, the events of a subgraph in the stream of the graph around it, and the subgraph in `topology`. Still to come, and the next thing to be built: `interruptBefore` for a node of a subgraph, and a retry after a failure that continues inside the subgraph. | In progress | [#34] |
+| 9 | Subgraphs | A compiled graph becomes a node of another graph, with a mapping between the two states and one thread for both. Released: `subgraph`, a run that pauses inside a subgraph and resumes there, the events of a subgraph in the stream of the graph around it, and the subgraph in `topology`. In `main`: `interruptBefore` and `interruptAfter` for a node of a subgraph, by its path. Still to come, and the next thing to be built: a retry after a failure that continues inside the subgraph. | In progress | [#34] |
 | 10 | One rule for parallel nodes that write the same property | You decide what happens, and the rule is the same for both ways to write a node: `compile(rules = mergeRules { ... })`, or the same rules given as `reducer`, merges every node of a step, so a node with `work` and `update` no longer overwrites another without a word. Released: `compile(rules = mergeRules { ... })`, and `mergeRules` given as the reducer holds for every node too. Still open: the order of the reducer and the updates when no rules are given. | In progress | [#101] |
 
 ## 3. Run it in production

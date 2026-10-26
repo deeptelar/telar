@@ -62,6 +62,8 @@ Runnable version: [`HumanInTheLoop`](https://github.com/deeptelar/telar/blob/mai
   kept: continue with `resume(config)` and no update. Giving the update again applies it twice,
   which adds an answer that appends to a list a second time.
 - `interruptAfter` pauses after a node instead of before it.
+- Both reach a node of a subgraph by its path, such as `"payout/pay"`: see
+  [Subgraphs](subgraphs.md).
 - `MemoryCheckpointer` keeps checkpoints in memory, which is what tests want. `FileCheckpointer`
   keeps them in files, `SqlDelightCheckpointer` in a SQLite database on every platform, and
   `LocalStorageCheckpointer` in the storage of a browser.
