@@ -31,7 +31,7 @@ PDFs ([#103]). Section 2 is what is worked on now, and it is the last part that 
 exists: first a subgraph that can pause before one of its nodes ([#34]), then the order of the
 reducer and the updates of a step ([#101]). After that comes section 3, which starts with long
 conversations ([#105]), because a long conversation is still sent to the model in full every time,
-and then teams of agents and a memory that an agent keeps across conversations.
+and then teams of agents ([#170]) and a memory that an agent keeps across conversations ([#171]).
 
 ## The way to 1.0
 
@@ -89,8 +89,8 @@ of this table, and someone who needs one sooner can build it at any time.
 | | Feature | What you get | State | Issue |
 |---|---|---|---|---|
 | 11 | Long conversations | A conversation that is kept short for the model, by dropping or summarizing old messages, and that pays less for what the provider already read. Today every request sends everything. | Planned | [#105] |
-| 12 | Teams of agents | Ready-made graphs for more than one agent, built on subgraphs: a supervisor that gives each task to the agent that fits it, and agents that hand the conversation to each other. | Planned | |
-| 13 | Memory across threads | A store that an agent reads and writes in every conversation of a user, next to the checkpoint of one thread, so that it remembers what it learned last time. | Planned | |
+| 12 | Teams of agents | Ready-made graphs for more than one agent, built on subgraphs: a supervisor that gives each task to the agent that fits it, and agents that hand the conversation to each other. | Planned | [#170] |
+| 13 | Memory across threads | A store that an agent reads and writes in every conversation of a user, next to the checkpoint of one thread, so that it remembers what it learned last time. | Planned | [#171] |
 | 14 | Tracing | Hooks in the engine that report every node, edge, tool call and token count, and a module that sends them to OpenTelemetry. Released: `GraphObserver` for runs, nodes, steps and checkpoints, `AgentObserver` for each call to a model and each tool call, with its token count, and `telar-otel`, which sends runs to OpenTelemetry on every platform, the browser included. Still to come: a span in `telar-otel` for each call to a model and each tool call ([#138]), and a report of the calls that an edge condition makes, such as the model of a `decisionEdge` ([#157]). | In progress | [#38] |
 | 15 | Database checkpointer | Saves runs in a SQL database. Released: SQLite through SQLDelight, `telar-checkpoint-sqldelight`, for Android, iOS, desktop and the browser. Still to come: a database server such as PostgreSQL ([#137]). | In progress | [#84] |
 | 16 | One version for all modules | `telar-bom`: a bill of materials. An app names the version of Telar once, and every module it adds uses that version. | Planned | [#79] |
@@ -168,3 +168,5 @@ are larger, or need something the maintainers lack, such as a key for another mo
 [#153]: https://github.com/deeptelar/telar/issues/153
 [#154]: https://github.com/deeptelar/telar/issues/154
 [#157]: https://github.com/deeptelar/telar/issues/157
+[#170]: https://github.com/deeptelar/telar/issues/170
+[#171]: https://github.com/deeptelar/telar/issues/171
