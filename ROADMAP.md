@@ -12,7 +12,7 @@ what is already released.
 To ask for a feature or to move one up, add a 👍 to its issue or
 [start a discussion](https://github.com/deeptelar/telar/discussions).
 
-Last updated: 2026-10-22.
+Last updated: 2026-10-26.
 
 ## Where the project is
 
@@ -27,8 +27,11 @@ other servers with the Chat Completions API, for LangChain4j, and for Jev, a dec
 modules for tests and for OpenTelemetry. The API can still change in any release.
 
 Section 1 is done, a node can run once for each item of a list, and a message can carry images and
-PDFs ([#103]). Section 2 is what is worked on now: a subgraph cannot yet pause before one of its
-nodes. After that, a long conversation is still sent to the model in full every time (section 3).
+PDFs ([#103]). Section 2 is what is worked on now, and it is the last part that changes an API that
+exists: first a subgraph that can pause before one of its nodes ([#34]), then the order of the
+reducer and the updates of a step ([#101]). After that comes section 3, which starts with long
+conversations ([#105]), because a long conversation is still sent to the model in full every time,
+and then teams of agents and a memory that an agent keeps across conversations.
 
 ## The way to 1.0
 
@@ -73,22 +76,24 @@ These change how a graph runs or what a message holds, so they come before the b
 
 | | Feature | What you get | State | Issue |
 |---|---|---|---|---|
-| 7 | One rule for parallel nodes that write the same property | You decide what happens, and the rule is the same for both ways to write a node: `compile(rules = mergeRules { ... })`, or the same rules given as `reducer`, merges every node of a step, so a node with `work` and `update` no longer overwrites another without a word. Released: `compile(rules = mergeRules { ... })`, and `mergeRules` given as the reducer holds for every node too. Still open: the order of the reducer and the updates when no rules are given. | In progress | [#101] |
-| 8 | Fan-out over a list | One node runs once per item of a list, all at the same time, when the number of items is only known at run time: `node(name, forEach = { ... }, work = { ... }) { ... }`, with a retry and a time limit for each item, and with each result saved so that a resume runs only the items that are missing. | Done | [#82] |
-| 9 | Images and files in messages | Send a model a picture or a PDF with the question, and let a tool return one: `ChatMessage.User(text, attachments)`, `attach()` in a tool, and the images and PDFs of MCP results. Audio, video and images that a model makes are not part of it. | Done | [#103] |
-| 10 | Subgraphs | A compiled graph becomes a node of another graph, with a mapping between the two states and one thread for both. Released: `subgraph`, a run that pauses inside a subgraph and resumes there, the events of a subgraph in the stream of the graph around it, and the subgraph in `topology`. Still to come: `interruptBefore` for a node of a subgraph, and a retry after a failure that continues inside the subgraph. | In progress | [#34] |
+| 7 | Fan-out over a list | One node runs once per item of a list, all at the same time, when the number of items is only known at run time: `node(name, forEach = { ... }, work = { ... }) { ... }`, with a retry and a time limit for each item, and with each result saved so that a resume runs only the items that are missing. | Done | [#82] |
+| 8 | Images and files in messages | Send a model a picture or a PDF with the question, and let a tool return one: `ChatMessage.User(text, attachments)`, `attach()` in a tool, and the images and PDFs of MCP results. Audio, video and images that a model makes are not part of it. | Done | [#103] |
+| 9 | Subgraphs | A compiled graph becomes a node of another graph, with a mapping between the two states and one thread for both. Released: `subgraph`, a run that pauses inside a subgraph and resumes there, the events of a subgraph in the stream of the graph around it, and the subgraph in `topology`. Still to come, and the next thing to be built: `interruptBefore` for a node of a subgraph, and a retry after a failure that continues inside the subgraph. | In progress | [#34] |
+| 10 | One rule for parallel nodes that write the same property | You decide what happens, and the rule is the same for both ways to write a node: `compile(rules = mergeRules { ... })`, or the same rules given as `reducer`, merges every node of a step, so a node with `work` and `update` no longer overwrites another without a word. Released: `compile(rules = mergeRules { ... })`, and `mergeRules` given as the reducer holds for every node too. Still open: the order of the reducer and the updates when no rules are given. | In progress | [#101] |
 
 ## 3. Run it in production
 
-New modules and additions. They change nothing that exists, so one of them can be built at any
-time by someone who needs it.
+New modules and additions. They change nothing that exists. The maintainers build them in the order
+of this table, and someone who needs one sooner can build it at any time.
 
 | | Feature | What you get | State | Issue |
 |---|---|---|---|---|
-| 11 | Tracing | Hooks in the engine that report every node, edge, tool call and token count, and a module that sends them to OpenTelemetry. Released: `GraphObserver` for runs, nodes, steps and checkpoints, `AgentObserver` for each call to a model and each tool call, with its token count, and `telar-otel`, which sends runs to OpenTelemetry on every platform, the browser included. Still to come: a span in `telar-otel` for each call to a model and each tool call ([#138]), and a report of the calls that an edge condition makes, such as the model of a `decisionEdge` ([#157]). | In progress | [#38] |
-| 12 | Database checkpointer | Saves runs in a SQL database. Released: SQLite through SQLDelight, `telar-checkpoint-sqldelight`, for Android, iOS, desktop and the browser. Still to come: a database server such as PostgreSQL ([#137]). | In progress | [#84] |
-| 13 | Long conversations | A conversation that is kept short for the model, by dropping or summarizing old messages, and that pays less for what the provider already read. Today every request sends everything. | Planned | [#105] |
-| 14 | One version for all modules | `telar-bom`: a bill of materials. An app names the version of Telar once, and every module it adds uses that version. | Planned | [#79] |
+| 11 | Long conversations | A conversation that is kept short for the model, by dropping or summarizing old messages, and that pays less for what the provider already read. Today every request sends everything. | Planned | [#105] |
+| 12 | Teams of agents | Ready-made graphs for more than one agent, built on subgraphs: a supervisor that gives each task to the agent that fits it, and agents that hand the conversation to each other. | Planned | |
+| 13 | Memory across threads | A store that an agent reads and writes in every conversation of a user, next to the checkpoint of one thread, so that it remembers what it learned last time. | Planned | |
+| 14 | Tracing | Hooks in the engine that report every node, edge, tool call and token count, and a module that sends them to OpenTelemetry. Released: `GraphObserver` for runs, nodes, steps and checkpoints, `AgentObserver` for each call to a model and each tool call, with its token count, and `telar-otel`, which sends runs to OpenTelemetry on every platform, the browser included. Still to come: a span in `telar-otel` for each call to a model and each tool call ([#138]), and a report of the calls that an edge condition makes, such as the model of a `decisionEdge` ([#157]). | In progress | [#38] |
+| 15 | Database checkpointer | Saves runs in a SQL database. Released: SQLite through SQLDelight, `telar-checkpoint-sqldelight`, for Android, iOS, desktop and the browser. Still to come: a database server such as PostgreSQL ([#137]). | In progress | [#84] |
+| 16 | One version for all modules | `telar-bom`: a bill of materials. An app names the version of Telar once, and every module it adds uses that version. | Planned | [#79] |
 
 ## 4. Beta: make it stable
 
@@ -115,8 +120,10 @@ Ideas without a place in the plan yet. Say so in the issue or in a discussion if
 | Functional API | Write a small workflow as ordinary `suspend` functions, without a graph, and keep checkpoints and streaming. | [#39] |
 | More typed answers | The provider's own structured output, a sealed class as the answer, and a typed final answer from an agent that called tools. | [#134] |
 | More events for a run | How many items a node for each item of a list runs, and when an effect gives back its saved result instead of running. | [#153], [#154] |
-| Memory across threads | A store that an agent reads and writes in every conversation, next to the checkpoint of one thread. | |
-| Ready-made teams of agents | A supervisor and hand-offs between agents, built on subgraphs. | |
+| More model providers | Modules of their own for Gemini and Amazon Bedrock. Gemini works today through `OpenAiChatModel` and its `baseUrl`. | |
+| Ktor and Spring Boot | A plugin or a starter, so that a server app adds Telar with one dependency and gets its models and checkpointer from its configuration. | |
+| A graph that others call | Offer a compiled graph as a tool of an MCP server, or to other agents over the Agent2Agent protocol, from inside your app. | |
+| Evaluations | Run a graph over a list of inputs and score its answers, next to the helpers of `telar-test`. | |
 
 ## Not planned
 
