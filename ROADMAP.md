@@ -2,9 +2,10 @@
 
 Telar aims to be the open-source library a Kotlin developer reaches for to build AI agents and
 workflows: agents first, simple to start with, and with the most complete set of workflow features.
-Its strongest point is the device: the same graph runs on a phone, a handheld scanner, a till or a
+It is optimized for the device: the same graph runs on a phone, a handheld scanner, a till or a
 small Linux box, with a model on the device's own NPU, and keeps working when the network is gone.
-A store, a warehouse or a vehicle is the place Telar is built for, next to the server.
+The server matters as much, and so do the other parts of this plan: teams of agents, memory,
+tracing and a stable API.
 Models, and the ways of working with them, change fast. This plan changes with them: what
 developers need for their agents goes on this page, and the order follows what they ask for.
 
@@ -15,7 +16,7 @@ what is already released.
 To ask for a feature or to move one up, add a 👍 to its issue or
 [start a discussion](https://github.com/deeptelar/telar/discussions).
 
-Last updated: 2026-10-26.
+Last updated: 2026-10-27.
 
 ## Where the project is
 
@@ -53,8 +54,9 @@ The features are numbered in the order they are worked on. Two rules decide it:
 - **A change to an API that exists comes before a new module.** Sections 1 and 2 change
   `telar-core` and `telar-agent`, so that their API can stop moving as early as possible. Most of
   sections 3 and 4 is new modules, which change nothing that exists.
-- **Among the new modules, the device comes first.** Running on the device is Telar's strongest
-  point, so section 3 comes before the rest of production in section 4.
+- **Among the new modules, the device comes first.** Telar is optimized for running on the
+  device, so section 3 comes before the rest of production in section 4. The rest is no less
+  important; it comes after.
 
 The issues have the same order as labels: `priority: now` for section 2, the one worked on now
 (section 1 is done), and `priority: later` for sections 3 and 4.
