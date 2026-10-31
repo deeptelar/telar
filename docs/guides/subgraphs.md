@@ -83,4 +83,9 @@ Runnable version: [`Subgraph`](https://github.com/deeptelar/telar/blob/main/samp
   reads a model's text from any depth.
 - A failure inside the subgraph is the `cause` of the `NodeExecutionException` of its node.
   `maxIterations` limits the steps of the subgraph on their own.
+- With a checkpointer, `resume` after a failure continues at the step of the subgraph that failed,
+  and its finished nodes do not run again. The other nodes of the step around it do run again. This
+  takes the same thing as a pause: `state` has to read back what `update` wrote. The engine checks
+  that, so a subgraph that gets a new state on every visit starts again from its first node, as does
+  one that was cancelled because another node of the step failed.
 - A subgraph can contain subgraphs.

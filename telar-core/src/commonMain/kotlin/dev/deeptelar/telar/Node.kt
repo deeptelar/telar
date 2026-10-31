@@ -1,5 +1,6 @@
 package dev.deeptelar.telar
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlin.time.Duration
 
@@ -98,7 +99,14 @@ internal fun <State, Child> subgraphNode(
 ): Node<State> =
     Node(name, returnsState, subgraph = graph) { parent ->
         val running = checkNotNull(currentCoroutineContext()[RunningNode]) { "The engine runs every node with a RunningNode" }
-        when (val end = graph.runAsSubgraph(state(parent), running)) {
+        val end =
+            try {
+                graph.runAsSubgraph(state(parent), running)
+            } catch (failure: Throwable) {
+                if (failure !is CancellationException && failure.isFailure()) tellWhereItStopped(name, parent, running, state, update)
+                throw failure
+            }
+        when (end) {
             is RunEnd.Completed -> {
                 val result = end.state
                 NodeOutput(update(parent, result), update = if (returnsState) null else { combined -> update(combined, result) })
@@ -108,4 +116,45 @@ internal fun <State, Child> subgraphNode(
         }
     }
 
+/**
+ * Tells the run around [running] where the failed subgraph of the node [name] stands, so that a
+ * resume continues there.
+ *
+ * It does so only when [state] reads back what [update] writes. A subgraph that gets a new state on
+ * every visit and gives back only its result has no such state: it would continue without the work
+ * of its finished nodes, so it starts again. So does one whose [update] cannot take the state of a
+ * subgraph that did not finish. The failure of the node stays what the caller gets.
+ */
+private suspend fun <State, Child> tellWhereItStopped(
+    name: String,
+    parent: State,
+    running: RunningNode,
+    state: suspend (State) -> Child,
+    update: suspend (State, Child) -> State,
+) {
+    @Suppress("UNCHECKED_CAST")
+    val reached = running.reached as Checkpoint<Child>? ?: return
+    val saved =
+        try {
+            update(parent, reached.state).takeIf { state(it) == reached.state }
+        } catch (cause: Throwable) {
+            if (cause is CancellationException || !cause.isFailure()) throw cause
+            null
+        }
+    if (saved != null) running.stopped(SubgraphStop(name, saved, reached.position()))
+}
+
 private fun Checkpoint<*>.position(): SubgraphPosition = SubgraphPosition(nextNodes, step, interruptedBefore, subgraphs)
+
+/**
+ * Where a subgraph stands that failed.
+ *
+ * @property node the subgraph node.
+ * @property state the state of the graph around it, with the state of the subgraph in it.
+ * @property position what the failed subgraph had finished.
+ */
+internal class SubgraphStop(
+    val node: String,
+    val state: Any?,
+    val position: SubgraphPosition,
+)

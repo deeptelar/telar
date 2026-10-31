@@ -250,6 +250,10 @@ public class StateGraph<State> {
      * [NodeExecutionException], and [GraphConfig.maxIterations] limits the steps of the subgraph
      * on their own, for each visit.
      *
+     * After a failure, [CompiledGraph.resume] continues at the step of the subgraph that failed,
+     * when [state] reads back what [update] wrote. Otherwise the subgraph starts again from its
+     * first node.
+     *
      * @throws GraphValidationException if the name is blank, reserved ([START], [END]), holds a `/` or is
      * already used.
      */

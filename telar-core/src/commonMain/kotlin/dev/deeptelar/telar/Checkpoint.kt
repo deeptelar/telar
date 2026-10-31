@@ -12,13 +12,15 @@ import kotlinx.coroutines.sync.withLock
  * @property step the number of steps the thread has executed so far. `0` for the checkpoint that is
  * saved when a run starts.
  * @property interruptedBefore `true` when the run paused before [nextNodes] because of
- * [GraphConfig.interruptBefore], or because one of them called [interrupt] when it ran.
+ * [GraphConfig.interruptBefore], or because one of them called [interrupt] when it ran, or when a
+ * subgraph among them failed after some of its steps.
  * [CompiledGraph.resume] then runs those nodes without pausing before them again. A checkpoint saved
  * for any other reason is `false`, so resuming it still pauses before a node listed in
  * [GraphConfig.interruptBefore].
  * @property subgraphs where the run stands inside the subgraphs among [nextNodes], by the name of
- * their node. It has an entry for a subgraph that the run paused in, so that
- * [CompiledGraph.resume] continues inside it. A [Checkpointer] has to store it with the rest.
+ * their node. It has an entry for a subgraph that the run paused in or that failed after some of
+ * its steps, so that [CompiledGraph.resume] continues inside it. A [Checkpointer] has to store it
+ * with the rest.
  * @property effects the results of the [effect]s that finished in the step of [nextNodes], so that
  * they do not run again when [CompiledGraph.resume] runs that step again. The keys name the node and
  * the effect; the values are the results as the serializer of each effect wrote them. Empty until

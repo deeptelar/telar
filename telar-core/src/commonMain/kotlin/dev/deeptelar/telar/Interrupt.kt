@@ -62,6 +62,7 @@ public suspend fun <State> interrupt(state: State): Nothing {
  * @property interruptBefore the nodes of the subgraph of this node to pause before, named by their
  * paths inside it. Empty for a node without a subgraph.
  * @property interruptAfter the nodes of the subgraph of this node to pause after.
+ * @property stopped is told where the subgraph of this node stands when it failed.
  */
 internal class RunningNode(
     val name: String,
@@ -75,9 +76,13 @@ internal class RunningNode(
     val observer: GraphObserver,
     val interruptBefore: Set<String>,
     val interruptAfter: Set<String>,
+    val stopped: (SubgraphStop) -> Unit,
 ) : AbstractCoroutineContextElement(Key) {
     /** The paths of the effects this try of the node has called. [effects] guards it. */
     val effectsUsed: MutableSet<String> = mutableSetOf()
+
+    /** The last point that the subgraph of this node saved in this try, whether a checkpointer stored it or not. */
+    var reached: Checkpoint<*>? = null
 
     companion object Key : CoroutineContext.Key<RunningNode>
 }
