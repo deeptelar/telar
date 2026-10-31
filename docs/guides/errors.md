@@ -21,7 +21,8 @@ extends `TelarException`:
 
 A node that fails ends the run, unless it has a `retry`: see
 [Retries and time limits](retries.md). A run with a checkpointer that failed is continued with
-`resume`, which runs the failed step again.
+`resume`, which runs the failed step again. A failure inside a [subgraph](subgraphs.md) keeps the
+steps of the subgraph that finished.
 
 ## What counts as a failure
 

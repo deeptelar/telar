@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.concurrent.Volatile
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.time.Duration
@@ -72,6 +73,11 @@ import kotlin.time.Duration
  * whole step again, including the nodes of that step that had already finished. Run the side
  * effects of a node with [effect], which saves each one as soon as it finished, or make them safe to
  * repeat.
+ *
+ * A subgraph that failed keeps its finished steps: [resume] runs the step of the subgraph that
+ * failed, and the other nodes of this step again. That takes a subgraph whose state the state of
+ * this graph holds, as for a pause. Any other subgraph starts again from its first node, and so does
+ * one that was cancelled because another node of the step failed.
  *
  * The tries of a node with a [Retry] are not saved either. They do not count for
  * [GraphConfig.maxIterations], and a step that runs again after [resume] gives each of its nodes
@@ -443,6 +449,7 @@ public class CompiledGraph<State> internal constructor(
                     watch.observer.onCheckpointSaved(watch.run, it.step, it.nextNodes)
                 }
                 saved = it
+                parent?.reached = it
             }
 
         // An effect is saved into the checkpoint its step continues from, the one saved last.
@@ -501,6 +508,16 @@ public class CompiledGraph<State> internal constructor(
                     watch.interrupted(activeNodes)
                     emit(GraphEvent.Interrupted(asked, activeNodes))
                     return RunEnd.Paused(paused)
+                } catch (failure: NodeExecutionException) {
+                    // Saved like a pause, with what the subgraph had finished. Its failed step runs again.
+                    run.stopped?.let { stop ->
+                        @Suppress("UNCHECKED_CAST")
+                        val reached = stop.state as State
+                        val recorded = if (parent == null) log.close() else emptyMap()
+                        val inside = mapOf(stop.node to stop.position)
+                        save(Checkpoint(reached, activeNodes, step - 1, interruptedBefore = true, subgraphs = inside, effects = recorded))
+                    }
+                    throw failure
                 }
             if (parent == null) log.close()
             // Only the first step of a resumed run continues inside a subgraph, and has effects that ran before.
@@ -546,7 +563,11 @@ public class CompiledGraph<State> internal constructor(
         val watch: RunWatch,
         val interruptBefore: Set<String>,
         val interruptAfter: Set<String>,
-    )
+    ) {
+        /** Where a subgraph of this step stands that failed. With two, either one is right: the other starts again. */
+        @Volatile
+        var stopped: SubgraphStop? = null
+    }
 
     private suspend fun FlowCollector<GraphEvent<State>>.runStep(run: StepRun, activeNodes: List<String>, state: State): State {
         val step = run.step
@@ -781,6 +802,7 @@ public class CompiledGraph<State> internal constructor(
                     run.watch.observer,
                     run.interruptBefore.inside(node.name),
                     run.interruptAfter.inside(node.name),
+                    { run.stopped = it },
                 ),
         ) {
             if (node.forEach) {
