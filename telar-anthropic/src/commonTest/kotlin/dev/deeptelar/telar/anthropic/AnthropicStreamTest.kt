@@ -130,6 +130,17 @@ class AnthropicStreamTest {
         }
 
     @Test
+    fun `a refusal in a stream says why when the API does`() =
+        runTest {
+            val delta = """{"stop_reason": "refusal", "stop_details": {"type": "refusal", "category": "bio", "explanation": null}}"""
+            val model = model(events(start, """{"type": "message_delta", "delta": $delta}""", """{"type": "message_stop"}"""))
+
+            val failure = assertFailsWith<ChatModelException> { model.stream(hello).toList() }
+
+            assertEquals("Claude declined this request (bio).", failure.message)
+        }
+
+    @Test
     fun `a stream reports the reused tokens the API sends when it starts`() =
         runTest {
             val usage = """{"input_tokens": 25, "cache_read_input_tokens": 900, "cache_creation_input_tokens": 75, "output_tokens": 1}"""

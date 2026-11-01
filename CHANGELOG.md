@@ -26,6 +26,11 @@ breaking changes.
   Claude's thinking, which the API refuses in a conversation that lost its start.
   ([#105](https://github.com/deeptelar/telar/issues/105))
 
+### Changed
+
+- When Claude declines a request, the `ChatModelException` of `AnthropicChatModel` says why, with the
+  category and the explanation the API gives.
+
 ## [0.1.0-alpha15] - 2026-11-01
 
 ### Added
