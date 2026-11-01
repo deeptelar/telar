@@ -15,6 +15,11 @@ breaking changes.
   go deeper (`"research/sources/ask"`), a pause after the last node of a subgraph comes before the
   graph around goes on, and `toMermaid` marks the nodes that a path names. Before, a node of a
   subgraph could only pause itself with `interrupt`. ([#34](https://github.com/deeptelar/telar/issues/34))
+- `resume` after a failure inside a subgraph continues at the step of the subgraph that failed. Before,
+  the subgraph started again from its first node, and repeated the work of the nodes that had
+  finished. The checkpoint of the failed step now holds the state of the subgraph, as after a pause.
+  This takes a subgraph whose `state` reads back what its `update` wrote. Any other subgraph starts
+  again, as it did before. ([#34](https://github.com/deeptelar/telar/issues/34))
 
 ### Changed
 
