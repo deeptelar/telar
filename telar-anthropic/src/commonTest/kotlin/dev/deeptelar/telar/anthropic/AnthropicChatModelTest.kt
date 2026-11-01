@@ -315,7 +315,7 @@ class AnthropicChatModelTest {
             )
             assertNull(response.message.providerContent)
             assertFalse(response.message.truncated)
-            assertEquals(TokenUsage(inputTokens = 115, outputTokens = 7), response.usage)
+            assertEquals(TokenUsage(inputTokens = 115, outputTokens = 7, cacheReadTokens = 100, cacheWriteTokens = 5), response.usage)
         }
 
     @Test

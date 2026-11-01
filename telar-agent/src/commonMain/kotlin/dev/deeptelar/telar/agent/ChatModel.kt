@@ -196,20 +196,40 @@ public data class ChatResponse(
  * }
  * ```
  *
+ * A provider that reuses what it read before charges less for those tokens, and charges more for
+ * the ones it keeps for later. They are part of [inputTokens], so what was read at the full price
+ * is `inputTokens - cacheReadTokens - cacheWriteTokens`.
+ *
  * It is `@Serializable`, so a state that holds one can be saved by a checkpointer that uses
  * kotlinx.serialization.
+ *
+ * @property inputTokens all the tokens the model read, reused or not.
+ * @property outputTokens the tokens the model wrote.
+ * @property cacheReadTokens the part of [inputTokens] the provider reused from an earlier request.
+ * @property cacheWriteTokens the part of [inputTokens] the provider kept for later requests.
  */
 @Serializable
 public data class TokenUsage(
     val inputTokens: Int = 0,
     val outputTokens: Int = 0,
+    val cacheReadTokens: Int = 0,
+    val cacheWriteTokens: Int = 0,
 ) {
-    /** The tokens read and written together. */
+    /** The tokens read and written together, reused tokens included. */
     public val total: Int get() = inputTokens + outputTokens
 
     /** Returns these tokens and those of [other] added up. A call whose provider reports no usage has `null`, which adds nothing. */
     public operator fun plus(other: TokenUsage?): TokenUsage =
-        if (other == null) this else TokenUsage(inputTokens + other.inputTokens, outputTokens + other.outputTokens)
+        if (other == null) {
+            this
+        } else {
+            TokenUsage(
+                inputTokens + other.inputTokens,
+                outputTokens + other.outputTokens,
+                cacheReadTokens + other.cacheReadTokens,
+                cacheWriteTokens + other.cacheWriteTokens,
+            )
+        }
 }
 
 /**

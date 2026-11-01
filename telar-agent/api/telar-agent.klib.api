@@ -543,8 +543,12 @@ final class dev.deeptelar.telar.agent/ObservedToolCall { // dev.deeptelar.telar.
 }
 
 final class dev.deeptelar.telar.agent/TokenUsage { // dev.deeptelar.telar.agent/TokenUsage|null[0]
-    constructor <init>(kotlin/Int = ..., kotlin/Int = ...) // dev.deeptelar.telar.agent/TokenUsage.<init>|<init>(kotlin.Int;kotlin.Int){}[0]
+    constructor <init>(kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ...) // dev.deeptelar.telar.agent/TokenUsage.<init>|<init>(kotlin.Int;kotlin.Int;kotlin.Int;kotlin.Int){}[0]
 
+    final val cacheReadTokens // dev.deeptelar.telar.agent/TokenUsage.cacheReadTokens|{}cacheReadTokens[0]
+        final fun <get-cacheReadTokens>(): kotlin/Int // dev.deeptelar.telar.agent/TokenUsage.cacheReadTokens.<get-cacheReadTokens>|<get-cacheReadTokens>(){}[0]
+    final val cacheWriteTokens // dev.deeptelar.telar.agent/TokenUsage.cacheWriteTokens|{}cacheWriteTokens[0]
+        final fun <get-cacheWriteTokens>(): kotlin/Int // dev.deeptelar.telar.agent/TokenUsage.cacheWriteTokens.<get-cacheWriteTokens>|<get-cacheWriteTokens>(){}[0]
     final val inputTokens // dev.deeptelar.telar.agent/TokenUsage.inputTokens|{}inputTokens[0]
         final fun <get-inputTokens>(): kotlin/Int // dev.deeptelar.telar.agent/TokenUsage.inputTokens.<get-inputTokens>|<get-inputTokens>(){}[0]
     final val outputTokens // dev.deeptelar.telar.agent/TokenUsage.outputTokens|{}outputTokens[0]
@@ -554,7 +558,9 @@ final class dev.deeptelar.telar.agent/TokenUsage { // dev.deeptelar.telar.agent/
 
     final fun component1(): kotlin/Int // dev.deeptelar.telar.agent/TokenUsage.component1|component1(){}[0]
     final fun component2(): kotlin/Int // dev.deeptelar.telar.agent/TokenUsage.component2|component2(){}[0]
-    final fun copy(kotlin/Int = ..., kotlin/Int = ...): dev.deeptelar.telar.agent/TokenUsage // dev.deeptelar.telar.agent/TokenUsage.copy|copy(kotlin.Int;kotlin.Int){}[0]
+    final fun component3(): kotlin/Int // dev.deeptelar.telar.agent/TokenUsage.component3|component3(){}[0]
+    final fun component4(): kotlin/Int // dev.deeptelar.telar.agent/TokenUsage.component4|component4(){}[0]
+    final fun copy(kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ...): dev.deeptelar.telar.agent/TokenUsage // dev.deeptelar.telar.agent/TokenUsage.copy|copy(kotlin.Int;kotlin.Int;kotlin.Int;kotlin.Int){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // dev.deeptelar.telar.agent/TokenUsage.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // dev.deeptelar.telar.agent/TokenUsage.hashCode|hashCode(){}[0]
     final fun plus(dev.deeptelar.telar.agent/TokenUsage?): dev.deeptelar.telar.agent/TokenUsage // dev.deeptelar.telar.agent/TokenUsage.plus|plus(dev.deeptelar.telar.agent.TokenUsage?){}[0]

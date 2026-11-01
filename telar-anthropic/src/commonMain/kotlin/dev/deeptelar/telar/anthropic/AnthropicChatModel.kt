@@ -263,8 +263,10 @@ public class AnthropicChatModel(
             )
         val usage =
             (body["usage"] as? JsonObject)?.let { usage ->
-                val input = inputCounters.sumOf { usage.int(it) }
-                TokenUsage(inputTokens = input, outputTokens = usage.int("output_tokens"))
+                // The API counts tokens that were read from or written to the cache apart from the rest of the input.
+                val read = usage.int("cache_read_input_tokens")
+                val written = usage.int("cache_creation_input_tokens")
+                TokenUsage(usage.int("input_tokens") + read + written, usage.int("output_tokens"), read, written)
             }
         return ChatResponse(message, usage)
     }
@@ -277,9 +279,6 @@ public class AnthropicChatModel(
 
         private val rebuilt = setOf("text", "tool_use")
         private val truncating = setOf("max_tokens", "model_context_window_exceeded")
-
-        /** The API counts tokens that were written to or read from the prompt cache apart from the rest of the input. */
-        private val inputCounters = listOf("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")
     }
 }
 

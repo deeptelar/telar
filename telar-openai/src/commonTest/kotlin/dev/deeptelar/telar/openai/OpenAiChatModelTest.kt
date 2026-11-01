@@ -429,6 +429,17 @@ class OpenAiChatModelTest {
         }
 
     @Test
+    fun `the usage says how much of the input was reused`() =
+        runTest {
+            val usage = """{"prompt_tokens": 40, "completion_tokens": 9, "prompt_tokens_details": {"cached_tokens": 32}}"""
+            val body = """{"choices": [{"message": {"content": "Hi"}, "finish_reason": "stop"}], "usage": $usage}"""
+
+            val response = model(body).chat(ChatRequest(listOf(ChatMessage.User("Hello"))))
+
+            assertEquals(TokenUsage(inputTokens = 40, outputTokens = 9, cacheReadTokens = 32), response.usage)
+        }
+
+    @Test
     fun `an answer that only asks for tools has no text and no usage`() =
         runTest {
             val response =

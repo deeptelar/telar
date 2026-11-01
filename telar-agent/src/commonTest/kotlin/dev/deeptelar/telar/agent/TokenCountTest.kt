@@ -33,6 +33,15 @@ class TokenCountTest {
     }
 
     @Test
+    fun `reused tokens add up and stay part of the total`() {
+        val sum =
+            TokenUsage(40, 5, cacheReadTokens = 30, cacheWriteTokens = 10) + TokenUsage(60, 2, cacheReadTokens = 40, cacheWriteTokens = 15)
+
+        assertEquals(TokenUsage(100, 7, cacheReadTokens = 70, cacheWriteTokens = 25), sum)
+        assertEquals(107, sum.total)
+    }
+
+    @Test
     fun `an agent counts the tokens of every answer of the model`() =
         runTest {
             val model = ScriptedModel(calls(lookUp("call-1")).using(100, 20), says("Here it is.").using(150, 30))

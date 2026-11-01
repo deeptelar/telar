@@ -291,6 +291,8 @@ public class OpenAiChatModel(
                 TokenUsage(
                     inputTokens = it.int("prompt_tokens"),
                     outputTokens = it.int("completion_tokens"),
+                    // OpenAI reuses a long start of a request on its own. Other servers may not say.
+                    cacheReadTokens = (it["prompt_tokens_details"] as? JsonObject)?.int("cached_tokens") ?: 0,
                 )
             }
         return ChatResponse(message, usage)
