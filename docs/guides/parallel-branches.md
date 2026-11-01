@@ -249,14 +249,18 @@ Changing the form of a node no longer changes the policy: the rules decide for b
 
 ## Where the order counts
 
-The nodes of a step run at the same time, but their results are put together one after the other.
-The two forms do this in different orders:
+The nodes of a step run at the same time, but their results are put together one after the other,
+in the order of the `node(...)` lines. That holds for every form, and it does not matter in which
+order the edges reach the nodes, or which node a `conditionalFanOut` names first. So moving a
+`node(...)` line can change a result, and moving a `then` line cannot.
 
-| The nodes are written as | Their results are put together in | What a node reads |
-|---|---|---|
-| `node(name, work) { state, result -> ... }` | The order of the `node(...)` lines | `work` reads the state from before the step. `update` gets the state that the update before it returned |
-| `node(name) { ... }`, with a reducer of your own | The order in which the edges reach the nodes. For two edges that leave the same node, that is the order of the two `then` lines | The state from before the step |
-| Either form, in a graph compiled with `mergeRules` (as `rules` or as `reducer`) | The order of the `node(...)` lines | The state from before the step, `update` too |
+What differs is what a node reads:
+
+| The nodes are written as | What a node reads |
+|---|---|
+| `node(name, work) { state, result -> ... }` | `work` reads the state from before the step. `update` gets the state that the update before it returned |
+| `node(name) { ... }`, with a reducer of your own | The state from before the step |
+| Either form, in a graph compiled with `mergeRules` (as `rules` or as `reducer`) | The state from before the step, `update` too |
 
 An update can depend on that order even when no other node writes its property:
 
@@ -274,7 +278,8 @@ val docs = node("docs", work = { searchDocs() }) { job, _ -> job.copy(label = "$
 - A rule does not make a step independent of the order by itself. `replace`, and a `combine` such as
   `changed.max()` or a sum, return the same value in any order. `changed.last()`, `changed.first()`
   and a `combine` that joins texts do not, and `append` adds the items in that order.
-- The same holds for a reducer of your own that picks by position, such as `updates.last()`.
+- The same holds for a reducer of your own that picks by position: `updates.last()` is the state of
+  the node added last.
 
 Which one to use: `work` and `update` when a node does slow work and then adds its result;
 `mergeRules` when nodes change different properties, or add to the same list, or must not

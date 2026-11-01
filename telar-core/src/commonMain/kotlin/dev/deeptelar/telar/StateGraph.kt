@@ -455,10 +455,10 @@ public class StateGraph<State> {
      * @param rules merge the results of all nodes that ran in the same step, whatever form they
      * have.
      * @param reducer merges the states of nodes that ran in the same step and each returned a whole
-     * state. Required when two such nodes can run in the same step, unless [rules] are given. Nodes
-     * added with a `work` and an `update` do not need it, unless it is a [MergeRules], which then
-     * merges them too, as [rules] do. It comes last so that it can be written as a trailing lambda;
-     * give it by name otherwise.
+     * state, given in the order the nodes were added. Required when two such nodes can run in the
+     * same step, unless [rules] are given. Nodes added with a `work` and an `update` do not need it,
+     * unless it is a [MergeRules], which then merges them too, as [rules] do. It comes last so that
+     * it can be written as a trailing lambda; give it by name otherwise.
      * @throws GraphValidationException listing every problem found in the graph definition.
      */
     public fun compile(rules: MergeRules<State>? = null, reducer: Reducer<State>? = null): CompiledGraph<State> {
