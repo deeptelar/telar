@@ -293,6 +293,60 @@ What to know:
 - **A node of your own counts with `+`.** `chat(ChatRequest)` and `ask(ChatRequest)` return the
   usage of their calls: `order.copy(tokens = order.tokens + response.usage)`.
 
+## A long conversation
+
+A model reads a limited amount, and a local one reads little. `shorten` keeps a long conversation
+within that limit. It changes only what the model is sent: the state keeps the whole conversation,
+so a checkpoint, `history` and your screens have all of it.
+
+```kotlin
+val agent = toolAgent(model, tools = listOf(menuPrice, orderStatus), shorten = keepLast(messages = 40))
+```
+
+`toolLoop` takes `shorten` as well. `keepLast` leaves out the oldest messages. What to know:
+
+- **What is left out is forgotten.** The model only has what it reads. The first message of the user
+  stays, because it usually says what the conversation is about. If the agent needs a result for
+  longer, have it write that down in a message, or in the state with a `StateTool`.
+- **It counts messages, not tokens.** A tool that returns long results needs a smaller number. A
+  model's limit is in tokens, so try a number on a long run and read `state.tokens`.
+- **A tool call stays with its results.** A provider refuses one without the other, so the model can
+  read a few messages more than you asked for when the last round has many results.
+- **The cut moves by half of the number at a time.** A provider only reuses a start that stays the
+  same, so a cut with every new message would [pay in full](ai-models.md#pay-less-for-what-the-model-already-read)
+  for every request. This way, it reads everything again once per half.
+- **Claude loses its thinking.** The API refuses thinking of current models in a conversation that
+  lost its start, so `AnthropicChatModel` leaves it out of a shortened conversation. Text and tool
+  calls stay. Claude can also clear old tool results on its own server, which is no such change:
+  see [context editing](https://platform.claude.com/docs/en/build-with-claude/context-editing), and
+  pass it in `parameters` and `headers`.
+
+For a summary in place of dropped messages, write it in a node of your own between two questions,
+store it as a message of the conversation, and start reading there. A message that holds a summary is
+the start of what the model reads, so the rest of the conversation is left out:
+
+```kotlin
+const val SUMMARY = "Summary of the conversation so far: "
+
+val summarize = node("summarize", work = { chat -> model.chat("Summarize this conversation: ${chat.messages.joinToString("\n") { it.text }}") }) { chat, summary ->
+    chat.copy(messages = chat.messages + ChatMessage.User(SUMMARY + summary))
+}
+
+val agent = toolLoop(
+    model = model,
+    tools = tools,
+    messages = { it.messages },
+    append = { chat, new -> chat.copy(messages = chat.messages + new) },
+    shorten = { messages -> messages.drop(messages.indexOfLast { it.text.startsWith(SUMMARY) }.coerceAtLeast(0)) },
+)
+```
+
+A summary costs a call, and it changes the start of the conversation, so the provider reads
+everything once more. Write one when a conversation has grown, not with every question, and not in
+the middle of a round of tools.
+
+## When a call fails
+
 A call to the model that fails ends the run: the provider is overloaded, or the connection breaks.
 With a `retry`, the agent asks the model again first:
 

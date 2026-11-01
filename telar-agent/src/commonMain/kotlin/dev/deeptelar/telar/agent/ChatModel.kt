@@ -165,11 +165,15 @@ public suspend fun ChatModel.chat(prompt: String, system: String? = null, attach
  * @property messages the conversation so far, oldest first.
  * @property system instructions for the model that are not part of the conversation.
  * @property tools the tools the model may ask for.
+ * @property shortened `true` when [messages] leave out a part of the conversation, as with `shorten`
+ * of [toolLoop]. A provider can tie what it returned to everything that came before it, as Claude
+ * does with its thinking. The [ChatModel] then leaves such content out instead of sending it back.
  */
 public data class ChatRequest(
     val messages: List<ChatMessage>,
     val system: String? = null,
     val tools: List<ToolSpec> = emptyList(),
+    val shortened: Boolean = false,
 )
 
 /**

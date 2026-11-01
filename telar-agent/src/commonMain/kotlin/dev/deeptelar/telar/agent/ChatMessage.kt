@@ -1,5 +1,6 @@
 package dev.deeptelar.telar.agent
 
+import dev.deeptelar.telar.GraphValidationException
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -85,6 +86,44 @@ public data class ToolCall(
     val input: JsonObject,
     val invalidInput: String? = null,
 )
+
+/**
+ * Returns a function for `shorten` of [toolLoop] that leaves out the oldest messages of a conversation
+ * of more than [messages] messages, so that a long conversation stays within what a model can read:
+ *
+ * ```kotlin
+ * val agent = toolAgent(model, tools = tools, shorten = keepLast(messages = 40))
+ * ```
+ *
+ * The messages up to the first [ChatMessage.User] stay, because they usually say what the
+ * conversation is about. A cut never separates a tool call from its results, which a provider would
+ * refuse. Those two rules can leave a few messages more than asked for, when the last round has more
+ * results than [messages].
+ *
+ * The cut moves by half of [messages] at a time, so a conversation that is read has between half of
+ * [messages] and all of them. A cut that moved with every new message would change the start of
+ * every request, and a provider can only reuse a start that stays the same.
+ *
+ * @param messages the most messages the model reads. At least 2.
+ * @throws GraphValidationException if [messages] is less than 2.
+ */
+public fun keepLast(messages: Int): (List<ChatMessage>) -> List<ChatMessage> {
+    if (messages < 2) throw GraphValidationException("keepLast needs at least 2 messages, but was $messages.")
+    return shorten@{ conversation ->
+        val opening = conversation.indexOfFirst { it is ChatMessage.User } + 1
+        val room = messages - opening.coerceAtMost(messages - 1)
+        val rest = conversation.size - opening
+        if (rest <= room) return@shorten conversation
+        val step = (room / 2).coerceAtLeast(1)
+        // A whole number of steps, so that the cut only depends on how long the conversation is.
+        val cut = opening + (rest - room + step - 1) / step * step
+
+        fun clean(index: Int) =
+            conversation[index] !is ChatMessage.ToolResult && conversation.subList(0, index).pendingToolCalls().isEmpty()
+        val start = (cut until conversation.size).firstOrNull(::clean) ?: (cut - 1 downTo opening).firstOrNull(::clean)
+        if (start == null) conversation else conversation.take(opening) + conversation.drop(start)
+    }
+}
 
 /**
  * Returns the tool calls of the last assistant message that have no [ChatMessage.ToolResult] yet.

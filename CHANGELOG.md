@@ -18,6 +18,12 @@ breaking changes.
   reports both and `OpenAiChatModel` reports `cacheReadTokens`. `inputTokens` and `total` count what
   they counted before, so a `tokenBudget` holds as it did.
   ([#105](https://github.com/deeptelar/telar/issues/105))
+- `shorten` of `toolLoop` and `toolAgent` changes what the model reads while the state keeps the whole
+  conversation. `shorten = keepLast(messages = 40)` leaves out the oldest messages, keeps a tool call
+  with its results, and moves its cut in steps, so that a provider can go on reusing the start.
+  `ChatRequest.shortened` says that a part is missing, and `AnthropicChatModel` then leaves out
+  Claude's thinking, which the API refuses in a conversation that lost its start.
+  ([#105](https://github.com/deeptelar/telar/issues/105))
 
 ## [0.1.0-alpha15] - 2026-11-01
 

@@ -358,6 +358,43 @@ class AnthropicChatModelTest {
         }
 
     @Test
+    fun `a shortened conversation goes without the thinking of its answers`() =
+        runTest {
+            val model = model(text("Hi"))
+            val thinking = """{"type": "thinking", "thinking": "Hm.", "signature": "abc"}"""
+            val hidden = """{"type": "redacted_thinking", "data": "xyz"}"""
+            val answer = """{"type": "text", "text": "Let me look."}"""
+            val call = """{"type": "tool_use", "id": "toolu_1", "name": "menu_price", "input": {}}"""
+            val assistant =
+                ChatMessage.Assistant(
+                    "Let me look.",
+                    listOf(ToolCall("toolu_1", "menu_price", JsonObject(emptyMap()))),
+                    providerContent = json("[$thinking, $hidden, $answer, $call]"),
+                )
+
+            model.chat(
+                ChatRequest(
+                    listOf(ChatMessage.User("Hello"), assistant, ChatMessage.ToolResult("toolu_1", "menu_price", "2")),
+                    shortened = true,
+                ),
+            )
+
+            assertEquals(json("[$answer, $call]"), (sentBody()["messages"] as JsonArray)[1].let { it as JsonObject }["content"])
+        }
+
+    @Test
+    fun `a whole conversation keeps the thinking of its answers`() =
+        runTest {
+            val model = model(text("Hi"))
+            val content = json("""[{"type": "thinking", "thinking": "Hm.", "signature": "abc"}, {"type": "text", "text": "Hello"}]""")
+            val assistant = ChatMessage.Assistant("Hello", providerContent = content)
+
+            model.chat(ChatRequest(listOf(ChatMessage.User("Hi"), assistant, ChatMessage.User("Well?"))))
+
+            assertEquals(content, (sentBody()["messages"] as JsonArray)[1].let { it as JsonObject }["content"])
+        }
+
+    @Test
     fun `a request without a system prompt only has the mark at the top`() =
         runTest {
             val model =
