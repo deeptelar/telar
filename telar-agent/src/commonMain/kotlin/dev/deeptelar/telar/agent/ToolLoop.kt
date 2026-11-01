@@ -184,8 +184,9 @@ import kotlinx.serialization.json.Json
  * @param retry how the model node is tried again when a call to the model fails. `null` ends the
  * run at the first failure.
  * @param shorten returns the part of the conversation the model reads, from all of it. A function
- * of your own must keep each tool call together with its results, and should cut in a place that
- * stays the same for a while, because a provider only reuses a start that does not change.
+ * of your own must keep each tool call together with its results, and must tell the model that
+ * something is missing, because a model that sees a gap does the work again. It should cut in a place
+ * that stays the same for a while, because a provider only reuses a start that does not change.
  * @throws GraphValidationException if two tools have the same name, or a node name is already used.
  */
 public fun <State> StateGraph<State>.toolLoop(
