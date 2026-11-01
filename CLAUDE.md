@@ -128,9 +128,9 @@ made under that name keep it. The repository is `deeptelar/telar` and the demo i
    at a time in the scope (`viewModelScope`). A failure becomes `GraphSnapshot.Stopped`.
 
 The engine (`CompiledGraph.kt`) runs in steps: all active nodes run in parallel on the same input
-state, their results are combined (the `Reducer` merges whole states, then the updates of
-work/update nodes are applied in the order the nodes were added), and outgoing edges select the
-next active nodes. A checkpoint is saved after every step when a checkpointer is configured.
+state, their results are combined in the order the nodes were added (the `Reducer` merges whole
+states, then the updates of work/update nodes are applied), and outgoing edges select the next
+active nodes. A checkpoint is saved after every step when a checkpointer is configured.
 
 ### Core Abstractions
 

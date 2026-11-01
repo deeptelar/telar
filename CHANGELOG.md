@@ -25,6 +25,12 @@ breaking changes.
 
 - BREAKING: a node name cannot hold a `/`, which joins the names of a path. `StateGraph` throws a
   `GraphValidationException` for such a name. Rename the node, for example with a `-`.
+- BREAKING: a reducer gets the states in the order the nodes were added to the graph, like the updates
+  of a step and the rules of `mergeRules`, and `ReducerException.nodes` has the same order. Before,
+  it got them in the order the edges reached the nodes, so moving a `then` line could change a
+  result. Only a reducer that picks by position, such as `updates.last()`, can give a different
+  result: put its `node(...)` lines in the order it expects.
+  ([#101](https://github.com/deeptelar/telar/issues/101))
 
 ## [0.1.0-alpha14] - 2026-10-24
 

@@ -5,7 +5,8 @@ package dev.deeptelar.telar
  *
  * Such nodes each produce their own copy of the state. The reducer takes the state before the step
  * and those copies, and returns the one state the run continues with. Whatever it does not carry
- * over from the copies is lost.
+ * over from the copies is lost. The copies come in the order the nodes were added to the graph, so
+ * `updates.last()` is the state of the node added last, in whatever order the edges reach the nodes.
  *
  * [mergeRules] builds a reducer from one rule for each property, such as "add to this list", so
  * that nothing has to be carried over by hand.

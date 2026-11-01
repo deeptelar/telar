@@ -73,6 +73,53 @@ class ReducerTest {
         }
 
     @Test
+    fun `a reducer gets the states in the order the nodes were added and not the order the edges reach them`() =
+        runTest {
+            val app =
+                StateGraph<ParallelState> {
+                    val a = node("a") { it.copy(messages = listOf("A")) }
+                    val b = node("b") { it.copy(messages = listOf("B")) }
+
+                    // "a" was added first, but the edge to "b" was written first.
+                    START then b then END
+                    START then a then END
+                }.compile { current, updates -> current.copy(messages = updates.flatMap { it.messages }) }
+
+            assertEquals(listOf("A", "B"), app.invoke(ParallelState()).state.messages)
+        }
+
+    @Test
+    fun `a reducer gets the states in the order the nodes were added whatever a fan-out chose first`() =
+        runTest {
+            val app =
+                StateGraph<ParallelState> {
+                    val a = node("a") { it.copy(messages = listOf("A")) }
+                    val b = node("b") { it.copy(messages = listOf("B")) }
+                    val pick = node("pick") { it }
+
+                    START then pick
+                    conditionalFanOut(pick, targets = setOf(a, b)) { setOf(b, a) }
+                }.compile { current, updates -> current.copy(messages = updates.flatMap { it.messages }) }
+
+            assertEquals(listOf("A", "B"), app.invoke(ParallelState()).state.messages)
+        }
+
+    @Test
+    fun `a reducer that keeps the last state lets the node added last win`() =
+        runTest {
+            val app =
+                StateGraph<ParallelState> {
+                    val first = node("first") { it.copy(messages = listOf("first")) }
+                    val last = node("last") { it.copy(messages = listOf("last")) }
+
+                    START then last then END
+                    START then first then END
+                }.compile { _, updates -> updates.last() }
+
+            assertEquals(listOf("last"), app.invoke(ParallelState()).state.messages)
+        }
+
+    @Test
     fun `a failing branch cancels its siblings`() =
         runTest {
             var siblingCancelled = false
@@ -97,6 +144,21 @@ class ReducerTest {
 
             assertEquals("fails", exception.nodeName)
             assertTrue(siblingCancelled)
+        }
+
+    @Test
+    fun `a failing reducer names its nodes in the order they were added`() =
+        runTest {
+            val app =
+                StateGraph<ParallelState> {
+                    val a = node("a") { it }
+                    val b = node("b") { it }
+
+                    START then b then END
+                    START then a then END
+                }.compile(reducer = { _, _ -> error("cannot merge") })
+
+            assertEquals(listOf("a", "b"), assertFailsWith<ReducerException> { app.invoke(ParallelState()) }.nodes)
         }
 
     @Test
