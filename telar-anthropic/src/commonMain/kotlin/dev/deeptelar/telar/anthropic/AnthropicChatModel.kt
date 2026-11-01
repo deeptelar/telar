@@ -247,7 +247,7 @@ public class AnthropicChatModel(
                         }
                     }
                 }
-                put("messages", turns(request.messages))
+                put("messages", turns(request.messages, request.shortened))
             }
         return JsonObject(body + parameters)
     }
@@ -429,14 +429,23 @@ private fun parse(text: String): JsonObject? =
  * Returns [messages] as the turns of the Messages API. Tool results travel in a user turn, and all
  * results of one assistant turn must be in the same one, so neighbouring user messages and tool
  * results become a single turn, with the results first.
+ *
+ * Claude's thinking is tied to everything that came before it, and the API refuses it in a
+ * conversation that lost its start. So a [shortened] conversation goes without it.
  */
-private fun turns(messages: List<ChatMessage>): JsonArray =
+private fun turns(messages: List<ChatMessage>, shortened: Boolean): JsonArray =
     buildJsonArray {
         var index = 0
         while (index < messages.size) {
             val message = messages[index]
             if (message is ChatMessage.Assistant) {
-                val content = message.providerContent as? JsonArray ?: blocks(message)
+                val returned = message.providerContent as? JsonArray
+                val content =
+                    when {
+                        returned == null -> blocks(message)
+                        shortened -> JsonArray(returned.filter { (it as? JsonObject).string("type") !in THINKING_TYPES })
+                        else -> returned
+                    }
                 if (content.isNotEmpty()) addTurn("assistant", content)
                 index++
             } else {
@@ -491,6 +500,8 @@ private fun blocks(message: ChatMessage.Assistant): JsonArray =
             }
         }
     }
+
+private val THINKING_TYPES = setOf("thinking", "redacted_thinking")
 
 private val IMAGE_TYPES = listOf("image/jpeg", "image/png", "image/gif", "image/webp")
 
