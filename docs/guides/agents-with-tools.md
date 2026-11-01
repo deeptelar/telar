@@ -247,7 +247,8 @@ and the next node reads it. What changes in a loop with state tools:
   it needs none.
 
 An agent sends the whole conversation with every request, so a long run costs more with each
-round. The state of a `toolAgent` counts the tokens of the conversation, and `tokenBudget` limits
+round. [Reusing what the model already read](ai-models.md#pay-less-for-what-the-model-already-read)
+makes that cheaper. The state of a `toolAgent` counts the tokens of the conversation, and `tokenBudget` limits
 them:
 
 ```kotlin

@@ -1,12 +1,20 @@
 public final class dev/deeptelar/telar/anthropic/AnthropicChatModel : dev/deeptelar/telar/agent/ChatModel {
 	public static final field Companion Ldev/deeptelar/telar/anthropic/AnthropicChatModel$Companion;
 	public static final field DEFAULT_MAX_TOKENS I
-	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/lang/String;ILkotlinx/serialization/json/JsonObject;Ljava/util/Map;Ljava/lang/String;Lkotlin/time/Duration;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/lang/String;ILkotlinx/serialization/json/JsonObject;Ljava/util/Map;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/lang/String;ILkotlinx/serialization/json/JsonObject;Ljava/util/Map;Ljava/lang/String;Lkotlin/time/Duration;Ldev/deeptelar/telar/anthropic/PromptCache;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/lang/String;ILkotlinx/serialization/json/JsonObject;Ljava/util/Map;Ljava/lang/String;Lkotlin/time/Duration;Ldev/deeptelar/telar/anthropic/PromptCache;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun chat (Ldev/deeptelar/telar/agent/ChatRequest;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun stream (Ldev/deeptelar/telar/agent/ChatRequest;)Lkotlinx/coroutines/flow/Flow;
 }
 
 public final class dev/deeptelar/telar/anthropic/AnthropicChatModel$Companion {
+}
+
+public final class dev/deeptelar/telar/anthropic/PromptCache : java/lang/Enum {
+	public static final field FIVE_MINUTES Ldev/deeptelar/telar/anthropic/PromptCache;
+	public static final field ONE_HOUR Ldev/deeptelar/telar/anthropic/PromptCache;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Ldev/deeptelar/telar/anthropic/PromptCache;
+	public static fun values ()[Ldev/deeptelar/telar/anthropic/PromptCache;
 }
 

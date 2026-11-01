@@ -130,6 +130,20 @@ class AnthropicStreamTest {
         }
 
     @Test
+    fun `a stream reports the reused tokens the API sends when it starts`() =
+        runTest {
+            val usage = """{"input_tokens": 25, "cache_read_input_tokens": 900, "cache_creation_input_tokens": 75, "output_tokens": 1}"""
+            val cached = """{"type": "message_start", "message": {"content": [], "usage": $usage}}"""
+
+            val completed = model(events(cached, *stop("end_turn"))).stream(hello).toList().last()
+
+            assertEquals(
+                TokenUsage(inputTokens = 1000, outputTokens = 12, cacheReadTokens = 900, cacheWriteTokens = 75),
+                assertIs<ChatEvent.Completed>(completed).response.usage,
+            )
+        }
+
+    @Test
     fun `a streamed tool call has the input that arrived in pieces`() =
         runTest {
             val model =

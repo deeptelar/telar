@@ -72,6 +72,10 @@ import kotlin.time.Duration.Companion.minutes
  * `toolAgent` uses [stream] when its run is collected with `stream`. Claude's thinking and other
  * content that the API wants back unchanged travels in [ChatMessage.Assistant.providerContent].
  *
+ * A conversation sends everything again with every request. With `cache`, Claude keeps what it read
+ * and reads it again at a fraction of the price, and [TokenUsage] tells the tokens apart. The
+ * guide [AI models](https://deeptelar.github.io/telar/guides/ai-models.html) says when that pays.
+ *
  * In a browser the API only accepts a request with the header
  * `anthropic-dangerous-direct-browser-access: true`; pass it in [headers]. That is acceptable when
  * each user enters a key of their own. Never ship an app that contains a key of yours.
@@ -88,6 +92,7 @@ import kotlin.time.Duration.Companion.minutes
  * @param timeout how long one call may take, from the request to the end of the answer, and how
  * long it may wait for the next piece of the answer. It replaces the limits of [client] and of its
  * engine for the requests of this model. `null` leaves those limits in place.
+ * @param cache how long Claude keeps what it read for the next requests. `null` asks for nothing.
  * @throws GraphValidationException if [timeout] is not positive.
  */
 public class AnthropicChatModel(
@@ -99,6 +104,7 @@ public class AnthropicChatModel(
     private val headers: Map<String, String> = emptyMap(),
     private val baseUrl: String = "https://api.anthropic.com",
     private val timeout: Duration? = 5.minutes,
+    private val cache: PromptCache? = null,
 ) : ChatModel {
     init {
         if (timeout != null && !timeout.isPositive()) throw GraphValidationException("timeout must be positive, was $timeout.")
@@ -214,11 +220,22 @@ public class AnthropicChatModel(
     }
 
     private fun body(request: ChatRequest): JsonObject {
+        val cacheControl = cache?.control
         val body =
             buildJsonObject {
                 put("model", model)
                 put("max_tokens", maxTokens)
-                request.system?.let { put("system", it) }
+                // The field at the top of the request follows the end of the conversation. The mark
+                // on the system prompt also keeps the tools and the prompt, which come before it, for
+                // a conversation that starts anew or changes its older messages.
+                cacheControl?.let { put("cache_control", it) }
+                request.system?.let { system ->
+                    if (cacheControl == null) {
+                        put("system", system)
+                    } else {
+                        putJsonArray("system") { add(JsonObject(textBlock(system) + ("cache_control" to cacheControl))) }
+                    }
+                }
                 if (request.tools.isNotEmpty()) {
                     putJsonArray("tools") {
                         request.tools.forEach { tool ->
@@ -263,8 +280,10 @@ public class AnthropicChatModel(
             )
         val usage =
             (body["usage"] as? JsonObject)?.let { usage ->
-                val input = inputCounters.sumOf { usage.int(it) }
-                TokenUsage(inputTokens = input, outputTokens = usage.int("output_tokens"))
+                // The API counts tokens that were read from or written to the cache apart from the rest of the input.
+                val read = usage.int("cache_read_input_tokens")
+                val written = usage.int("cache_creation_input_tokens")
+                TokenUsage(usage.int("input_tokens") + read + written, usage.int("output_tokens"), read, written)
             }
         return ChatResponse(message, usage)
     }
@@ -277,10 +296,27 @@ public class AnthropicChatModel(
 
         private val rebuilt = setOf("text", "tool_use")
         private val truncating = setOf("max_tokens", "model_context_window_exceeded")
-
-        /** The API counts tokens that were written to or read from the prompt cache apart from the rest of the input. */
-        private val inputCounters = listOf("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")
     }
+}
+
+/**
+ * How long Claude keeps what it read, for `cache` of [AnthropicChatModel]. Each request that reuses
+ * it starts the time again. Keeping tokens costs more than reading them once: a quarter more for
+ * [FIVE_MINUTES] and twice the price for [ONE_HOUR].
+ */
+public enum class PromptCache(
+    internal val control: JsonObject,
+) {
+    /** For requests that follow each other within five minutes, such as the rounds of an agent. */
+    FIVE_MINUTES(buildJsonObject { put("type", "ephemeral") }),
+
+    /** For a conversation with pauses, such as a person who answers after a quarter of an hour. */
+    ONE_HOUR(
+        buildJsonObject {
+            put("type", "ephemeral")
+            put("ttl", "1h")
+        },
+    ),
 }
 
 /**

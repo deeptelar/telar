@@ -158,6 +158,48 @@ The [`ChatAgent`](https://github.com/deeptelar/telar/blob/main/samples/src/main/
 hands the same model to `ChatDecisionModel` through `LangChain4jChatModel` to decide when a person
 takes over. With `OLLAMA_MODEL` set, it runs on that model of a local Ollama.
 
+## Pay less for what the model already read
+
+A conversation sends everything again with every request, so most of what an agent reads is a start
+the provider has seen before. Providers reuse that start, at a fraction of the price and faster.
+OpenAI does it on its own. Claude does it when you ask, with `cache`:
+
+```kotlin
+val model = AnthropicChatModel(HttpClient(), apiKey = key, model = "claude-opus-5-5", cache = PromptCache.FIVE_MINUTES)
+```
+
+`TokenUsage` then tells the tokens apart. `inputTokens` is still everything the model read, and two
+of its parts have a price of their own:
+
+```kotlin
+val tokens = state.tokens
+val fullPrice = tokens.inputTokens - tokens.cacheReadTokens - tokens.cacheWriteTokens
+println("$fullPrice read at full price, ${tokens.cacheReadTokens} reused, ${tokens.cacheWriteTokens} kept for later")
+```
+
+What to know:
+
+- **It pays from the second request on.** Claude charges a quarter more for what it keeps, and
+  reading it again costs a tenth of the price or less. That suits an agent, whose rounds share all
+  but their last messages, and it does not suit a single question that is never asked again. So
+  `cache` is off until you set it.
+- **Choose by the pause between two requests.** `PromptCache.FIVE_MINUTES` is for the rounds of an
+  agent. `PromptCache.ONE_HOUR` is for a person who answers after a quarter of an hour: keeping
+  costs twice the price, so it pays only when the pauses are that long. Each reuse starts the time again.
+- **Only the same start is reused.** The tools come first, then `system`, then the messages, and a
+  change discards everything after it. Today's date in `system` means that nothing is reused
+  tomorrow, so put it in a message. Changing `thinking` or the effort in `parameters` between
+  requests has the same effect.
+- **Short requests are not cached.** Below a minimum, 512 tokens on current models, Claude reads
+  the request as usual and reports no reused tokens.
+- **A proxy has to know it.** With `baseUrl`, the server must accept the field `cache_control` at the top of
+  the request.
+- **`LangChain4jChatModel` reports no reused tokens.** It sees only the token counts that every
+  LangChain4j provider has.
+
+The reused tokens count towards `total`, and so towards a `tokenBudget`, because a budget also
+guards the limit of what a model can read.
+
 ## Images and PDFs
 
 A model that reads images or PDFs gets them with the prompt as `attachments`: the photo of a
