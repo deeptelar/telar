@@ -7,6 +7,8 @@ breaking changes.
 
 ## [Unreleased]
 
+## [0.1.0-alpha15] - 2026-11-01
+
 ### Added
 
 - `interruptBefore` and `interruptAfter` reach the nodes of a subgraph, named by their path:
@@ -611,7 +613,8 @@ First public release. Everything below is new compared with the unpublished beta
 - `START` counted toward `maxIterations`.
 - `FileCheckpointer` did not write the format version into its files.
 
-[Unreleased]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha14...HEAD
+[Unreleased]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha15...HEAD
+[0.1.0-alpha15]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha14...v0.1.0-alpha15
 [0.1.0-alpha14]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha13...v0.1.0-alpha14
 [0.1.0-alpha13]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha12...v0.1.0-alpha13
 [0.1.0-alpha12]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha11...v0.1.0-alpha12
