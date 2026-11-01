@@ -88,6 +88,12 @@ public data class ToolCall(
 )
 
 /**
+ * What [keepLast] tells a model in place of the messages it leaves out. Without it a model takes the
+ * gap for work it never did, and does the work again from the start.
+ */
+internal const val LEFT_OUT: String = "[Older messages of this conversation were left out to save space. What was done in them was done.]"
+
+/**
  * Returns a function for `shorten` of [toolLoop] that leaves out the oldest messages of a conversation
  * of more than [messages] messages, so that a long conversation stays within what a model can read:
  *
@@ -96,24 +102,25 @@ public data class ToolCall(
  * ```
  *
  * The messages up to the first [ChatMessage.User] stay, because they usually say what the
- * conversation is about. A cut never separates a tool call from its results, which a provider would
- * refuse. Those two rules can leave a few messages more than asked for, when the last round has more
- * results than [messages].
+ * conversation is about, and after them a short message tells the model that older messages were
+ * left out. A cut never separates a tool call from its results, which a provider would refuse. These
+ * rules can leave more messages than asked for, when the last round has more results than [messages].
  *
- * The cut moves by half of [messages] at a time, so a conversation that is read has between half of
- * [messages] and all of them. A cut that moved with every new message would change the start of
- * every request, and a provider can only reuse a start that stays the same.
+ * The cut moves by half of [messages] at a time, so a model reads between half of [messages] and all
+ * of them. A cut that moved with every new message would change the start of every request, and a
+ * provider can only reuse a start that stays the same.
  *
- * @param messages the most messages the model reads. At least 2.
- * @throws GraphValidationException if [messages] is less than 2.
+ * @param messages the most messages the model reads. At least 3.
+ * @throws GraphValidationException if [messages] is less than 3.
  */
 public fun keepLast(messages: Int): (List<ChatMessage>) -> List<ChatMessage> {
-    if (messages < 2) throw GraphValidationException("keepLast needs at least 2 messages, but was $messages.")
+    if (messages < 3) throw GraphValidationException("keepLast needs at least 3 messages, but was $messages.")
     return shorten@{ conversation ->
         val opening = conversation.indexOfFirst { it is ChatMessage.User } + 1
-        val room = messages - opening.coerceAtMost(messages - 1)
         val rest = conversation.size - opening
-        if (rest <= room) return@shorten conversation
+        if (rest <= messages - opening) return@shorten conversation
+        // One place goes to the message that says that older ones were left out.
+        val room = (messages - opening - 1).coerceAtLeast(1)
         val step = (room / 2).coerceAtLeast(1)
         // A whole number of steps, so that the cut only depends on how long the conversation is.
         val cut = opening + (rest - room + step - 1) / step * step
@@ -121,7 +128,11 @@ public fun keepLast(messages: Int): (List<ChatMessage>) -> List<ChatMessage> {
         fun clean(index: Int) =
             conversation[index] !is ChatMessage.ToolResult && conversation.subList(0, index).pendingToolCalls().isEmpty()
         val start = (cut until conversation.size).firstOrNull(::clean) ?: (cut - 1 downTo opening).firstOrNull(::clean)
-        if (start == null) conversation else conversation.take(opening) + conversation.drop(start)
+        if (start == null || start == opening) {
+            conversation
+        } else {
+            conversation.take(opening) + ChatMessage.User(LEFT_OUT) + conversation.drop(start)
+        }
     }
 }
 

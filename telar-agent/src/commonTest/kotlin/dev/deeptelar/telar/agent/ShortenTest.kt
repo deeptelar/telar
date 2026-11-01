@@ -44,8 +44,8 @@ class ShortenTest {
 
         val kept = keepLast(messages = 10)(messages)
 
-        assertEquals(messages.first(), kept.first())
-        assertEquals(messages.takeLast(kept.size - 1), kept.drop(1))
+        assertEquals(listOf(messages.first(), ChatMessage.User(LEFT_OUT)), kept.take(2))
+        assertEquals(messages.takeLast(kept.size - 2), kept.drop(2))
         assertTrue(kept.size in 6..10, "kept ${kept.size} messages")
     }
 
@@ -54,7 +54,7 @@ class ShortenTest {
         val messages = conversation(rounds = 60)
 
         for (size in 1..messages.size) {
-            for (limit in 2..30) {
+            for (limit in 3..30) {
                 assertTrue(
                     complete(keepLast(limit)(messages.take(size).dropLastUnanswered())),
                     "$size messages, limit $limit",
@@ -74,7 +74,7 @@ class ShortenTest {
 
         val kept = keepLast(messages = 4)(messages)
 
-        assertEquals(listOf(messages.first(), ChatMessage.Assistant(toolCalls = calls)) + results, kept)
+        assertEquals(listOf(messages.first(), ChatMessage.User(LEFT_OUT), ChatMessage.Assistant(toolCalls = calls)) + results, kept)
     }
 
     @Test
@@ -95,7 +95,7 @@ class ShortenTest {
 
         val kept = keepLast(messages = 4)(messages)
 
-        assertEquals(listOf(messages.first()) + messages.takeLast(2), kept)
+        assertEquals(listOf(messages.first(), ChatMessage.User(LEFT_OUT)) + messages.takeLast(2), kept)
     }
 
     @Test
@@ -104,8 +104,8 @@ class ShortenTest {
 
         val kept = keepLast(messages = 6)(listOf(greeting) + conversation(rounds = 10))
 
-        assertEquals(listOf(greeting, ChatMessage.User("Plan a week.")), kept.take(2))
-        assertIs<ChatMessage.Assistant>(kept[2])
+        assertEquals(listOf(greeting, ChatMessage.User("Plan a week."), ChatMessage.User(LEFT_OUT)), kept.take(3))
+        assertIs<ChatMessage.Assistant>(kept[3])
     }
 
     @Test
@@ -113,15 +113,25 @@ class ShortenTest {
         val messages = conversation(rounds = 50)
         val shorten = keepLast(messages = 20)
 
-        val starts = (2..messages.size step 2).map { size -> shorten(messages.take(size + 1)).drop(1).firstOrNull() }
+        val starts = (2..messages.size step 2).map { size -> shorten(messages.take(size + 1)).drop(2).firstOrNull() }
 
         // Rounds of two messages, and a cut every nine messages: a new start about every five rounds.
         assertTrue(starts.distinct().size <= 12, "${starts.distinct().size} different starts")
     }
 
     @Test
-    fun `keepLast needs room for a call and its result`() {
-        assertFailsWith<GraphValidationException> { keepLast(messages = 1) }
+    fun `nothing left out needs no note`() {
+        val calls = (1..6).map { call("$it", "lookup") }
+        val messages =
+            listOf(ChatMessage.User("Plan a week."), ChatMessage.Assistant(toolCalls = calls)) +
+                calls.map { ChatMessage.ToolResult(it.id, it.name, "Found.") }
+
+        assertEquals(messages, keepLast(messages = 4)(messages))
+    }
+
+    @Test
+    fun `keepLast needs room for the question and the note and a message`() {
+        assertFailsWith<GraphValidationException> { keepLast(messages = 2) }
     }
 
     @Test

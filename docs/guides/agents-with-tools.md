@@ -306,8 +306,12 @@ val agent = toolAgent(model, tools = listOf(menuPrice, orderStatus), shorten = k
 `toolLoop` takes `shorten` as well. `keepLast` leaves out the oldest messages. What to know:
 
 - **What is left out is forgotten.** The model only has what it reads. The first message of the user
-  stays, because it usually says what the conversation is about. If the agent needs a result for
-  longer, have it write that down in a message, or in the state with a `StateTool`.
+  stays, because it usually says what the conversation is about, and `keepLast` tells the model that
+  older messages are gone, because a model that sees a gap does the work again. If the agent needs a
+  result for longer, tell it to write that down in its answers, or in the state with a `StateTool`.
+- **Give a shortened agent a `tokenBudget`.** An agent that needs what it can no longer read fetches
+  it again. In a test on real models, an agent that had to compare ten pages while it could read
+  three went round and round until a limit stopped it. Its limit has to fit the task.
 - **It counts messages, not tokens.** A tool that returns long results needs a smaller number. A
   model's limit is in tokens, so try a number on a long run and read `state.tokens`.
 - **A tool call stays with its results.** A provider refuses one without the other, so the model can

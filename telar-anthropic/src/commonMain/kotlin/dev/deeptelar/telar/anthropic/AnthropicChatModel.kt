@@ -255,7 +255,7 @@ public class AnthropicChatModel(
     private fun response(body: JsonObject): ChatResponse {
         val stopReason = body.string("stop_reason")
         // A refusal is a successful response, so check the stop reason before reading the content.
-        if (stopReason == "refusal") throw ChatModelException("Claude declined this request.")
+        if (stopReason == "refusal") throw ChatModelException(refusal(body["stop_details"] as? JsonObject))
 
         val blocks = (body["content"] as? JsonArray).orEmpty().filterIsInstance<JsonObject>()
         // With the `fallbacks` parameter, another model can take over an answer. A `fallback` block
@@ -329,6 +329,7 @@ private class StreamedAnswer {
     private val blocks = mutableMapOf<Int, Block>()
     private val usage = mutableMapOf<String, JsonElement>()
     private var stopReason: String? = null
+    private var stopDetails: JsonElement? = null
     private var stopped = false
 
     private class Block(
@@ -380,6 +381,7 @@ private class StreamedAnswer {
             }
             "message_delta" -> {
                 delta.string("stop_reason")?.let { stopReason = it }
+                delta?.get("stop_details")?.let { stopDetails = it }
                 // These counts are totals, so they replace the ones the stream started with.
                 count(event["usage"])
             }
@@ -404,6 +406,7 @@ private class StreamedAnswer {
         if (!stopped && stopReason == null) throw ChatModelException("The Claude API ended its answer before it was complete.")
         return buildJsonObject {
             stopReason?.let { put("stop_reason", it) }
+            stopDetails?.let { put("stop_details", it) }
             putJsonArray("content") {
                 blocks.keys.sorted().forEach { index ->
                     val block = blocks.getValue(index)
@@ -415,6 +418,13 @@ private class StreamedAnswer {
             if (usage.isNotEmpty()) put("usage", JsonObject(usage))
         }
     }
+}
+
+/** The message for a request Claude declined, with the reason in the [details] of the API, when there are any. */
+private fun refusal(details: JsonObject?): String {
+    val category = details.string("category")?.let { " ($it)" }.orEmpty()
+    val explanation = details.string("explanation")?.let { ": $it" } ?: "."
+    return "Claude declined this request$category$explanation"
 }
 
 /** Returns [text] as a JSON object, or `null` when it is not one. */

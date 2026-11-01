@@ -358,6 +358,17 @@ class AnthropicChatModelTest {
         }
 
     @Test
+    fun `a refusal says why when the API does`() =
+        runTest {
+            val details = """{"type": "refusal", "category": "cyber", "explanation": "This looks like an attack."}"""
+            val model = model("""{"stop_reason": "refusal", "stop_details": $details, "content": []}""")
+
+            val failure = assertFailsWith<ChatModelException> { model.chat(hello) }
+
+            assertEquals("Claude declined this request (cyber): This looks like an attack.", failure.message)
+        }
+
+    @Test
     fun `a shortened conversation goes without the thinking of its answers`() =
         runTest {
             val model = model(text("Hi"))
