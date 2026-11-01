@@ -6,8 +6,19 @@
 // - Show declarations: true
 
 // Library unique name: <telar:telar-anthropic>
+final enum class dev.deeptelar.telar.anthropic/PromptCache : kotlin/Enum<dev.deeptelar.telar.anthropic/PromptCache> { // dev.deeptelar.telar.anthropic/PromptCache|null[0]
+    enum entry FIVE_MINUTES // dev.deeptelar.telar.anthropic/PromptCache.FIVE_MINUTES|null[0]
+    enum entry ONE_HOUR // dev.deeptelar.telar.anthropic/PromptCache.ONE_HOUR|null[0]
+
+    final val entries // dev.deeptelar.telar.anthropic/PromptCache.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<dev.deeptelar.telar.anthropic/PromptCache> // dev.deeptelar.telar.anthropic/PromptCache.entries.<get-entries>|<get-entries>#static(){}[0]
+
+    final fun valueOf(kotlin/String): dev.deeptelar.telar.anthropic/PromptCache // dev.deeptelar.telar.anthropic/PromptCache.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<dev.deeptelar.telar.anthropic/PromptCache> // dev.deeptelar.telar.anthropic/PromptCache.values|values#static(){}[0]
+}
+
 final class dev.deeptelar.telar.anthropic/AnthropicChatModel : dev.deeptelar.telar.agent/ChatModel { // dev.deeptelar.telar.anthropic/AnthropicChatModel|null[0]
-    constructor <init>(io.ktor.client/HttpClient, kotlin/String, kotlin/String, kotlin/Int = ..., kotlinx.serialization.json/JsonObject = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin/String = ..., kotlin.time/Duration? = ...) // dev.deeptelar.telar.anthropic/AnthropicChatModel.<init>|<init>(io.ktor.client.HttpClient;kotlin.String;kotlin.String;kotlin.Int;kotlinx.serialization.json.JsonObject;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.String;kotlin.time.Duration?){}[0]
+    constructor <init>(io.ktor.client/HttpClient, kotlin/String, kotlin/String, kotlin/Int = ..., kotlinx.serialization.json/JsonObject = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin/String = ..., kotlin.time/Duration? = ..., dev.deeptelar.telar.anthropic/PromptCache? = ...) // dev.deeptelar.telar.anthropic/AnthropicChatModel.<init>|<init>(io.ktor.client.HttpClient;kotlin.String;kotlin.String;kotlin.Int;kotlinx.serialization.json.JsonObject;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.String;kotlin.time.Duration?;dev.deeptelar.telar.anthropic.PromptCache?){}[0]
 
     final fun stream(dev.deeptelar.telar.agent/ChatRequest): kotlinx.coroutines.flow/Flow<dev.deeptelar.telar.agent/ChatEvent> // dev.deeptelar.telar.anthropic/AnthropicChatModel.stream|stream(dev.deeptelar.telar.agent.ChatRequest){}[0]
     final suspend fun chat(dev.deeptelar.telar.agent/ChatRequest): dev.deeptelar.telar.agent/ChatResponse // dev.deeptelar.telar.anthropic/AnthropicChatModel.chat|chat(dev.deeptelar.telar.agent.ChatRequest){}[0]

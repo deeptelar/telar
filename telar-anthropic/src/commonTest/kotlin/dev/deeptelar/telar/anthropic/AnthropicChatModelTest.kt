@@ -26,7 +26,9 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -316,6 +318,95 @@ class AnthropicChatModelTest {
             assertNull(response.message.providerContent)
             assertFalse(response.message.truncated)
             assertEquals(TokenUsage(inputTokens = 115, outputTokens = 7, cacheReadTokens = 100, cacheWriteTokens = 5), response.usage)
+        }
+
+    @Test
+    fun `a request asks for no cache unless the model has one`() =
+        runTest {
+            model(text("Hi")).chat(ChatRequest(hello.messages, "Be brief"))
+
+            assertNull(sentBody()["cache_control"])
+            assertEquals(json("\"Be brief\""), sentBody()["system"])
+        }
+
+    @Test
+    fun `a model with a cache marks the end of the conversation and the system prompt`() =
+        runTest {
+            val model =
+                AnthropicChatModel(client(HttpStatusCode.OK to text("Hi")), "test-key", "claude-opus-5-5", cache = PromptCache.FIVE_MINUTES)
+
+            model.chat(ChatRequest(hello.messages, "Be brief"))
+
+            assertEquals(json("""{"type": "ephemeral"}"""), sentBody()["cache_control"])
+            assertEquals(
+                json("""[{"type": "text", "text": "Be brief", "cache_control": {"type": "ephemeral"}}]"""),
+                sentBody()["system"],
+            )
+        }
+
+    @Test
+    fun `a cache of an hour says so in both places`() =
+        runTest {
+            val model =
+                AnthropicChatModel(client(HttpStatusCode.OK to text("Hi")), "test-key", "claude-opus-5-5", cache = PromptCache.ONE_HOUR)
+
+            model.chat(ChatRequest(hello.messages, "Be brief"))
+
+            val control = json("""{"type": "ephemeral", "ttl": "1h"}""")
+            assertEquals(control, sentBody()["cache_control"])
+            assertEquals(control, (sentBody()["system"] as JsonArray).single().let { it as JsonObject }["cache_control"])
+        }
+
+    @Test
+    fun `a request without a system prompt only has the mark at the top`() =
+        runTest {
+            val model =
+                AnthropicChatModel(client(HttpStatusCode.OK to text("Hi")), "test-key", "claude-opus-5-5", cache = PromptCache.FIVE_MINUTES)
+
+            model.chat(hello)
+
+            assertNull(sentBody()["system"])
+            assertEquals(json("""{"type": "ephemeral"}"""), sentBody()["cache_control"])
+        }
+
+    @Test
+    fun `parameters replace the cache mark at the top`() =
+        runTest {
+            val mine = buildJsonObject { put("cache_control", JsonNull) }
+            val model =
+                AnthropicChatModel(
+                    client(HttpStatusCode.OK to text("Hi")),
+                    "test-key",
+                    "claude-opus-5-5",
+                    parameters = mine,
+                    cache = PromptCache.FIVE_MINUTES,
+                )
+
+            model.chat(hello)
+
+            assertEquals(JsonNull, sentBody()["cache_control"])
+        }
+
+    @Test
+    fun `each round of an agent starts with exactly what the round before sent`() =
+        runTest {
+            val thinking = """{"type": "thinking", "thinking": "Hm.", "signature": "abc"}"""
+            val call = """{"type": "tool_use", "id": "toolu_1", "name": "menu_price", "input": {"item": "cola"}}"""
+            val client =
+                client(
+                    HttpStatusCode.OK to """{"stop_reason": "tool_use", "content": [$thinking, $call]}""",
+                    HttpStatusCode.OK to """{"stop_reason": "tool_use", "content": [$thinking, $call]}""",
+                    HttpStatusCode.OK to text("Two euros."),
+                )
+            val model = AnthropicChatModel(client, "test-key", "claude-opus-5-5", cache = PromptCache.FIVE_MINUTES)
+
+            toolAgent(model, listOf(menuPrice), system = "Be brief").invoke(AgentState("A cola?"))
+
+            // The provider reuses only a start that is the same, byte for byte.
+            val (first, second, third) = sent.map { (it.body as TextContent).text }
+            val start = { body: String -> body.substringBeforeLast("]}") }
+            assertTrue(second.startsWith(start(first)))
+            assertTrue(third.startsWith(start(second)))
         }
 
     @Test

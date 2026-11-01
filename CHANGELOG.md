@@ -9,6 +9,10 @@ breaking changes.
 
 ### Added
 
+- `AnthropicChatModel(cache = PromptCache.FIVE_MINUTES)` asks Claude to keep what it read, so that the
+  next request reads it again at a fraction of the price. `PromptCache.ONE_HOUR` is for conversations
+  with long pauses. It is off by default, because keeping tokens costs more than reading them once.
+  ([#105](https://github.com/deeptelar/telar/issues/105))
 - `TokenUsage` has `cacheReadTokens` and `cacheWriteTokens`, the parts of `inputTokens` that a
   provider reused or kept for later, so that an app can work out what a run cost. `AnthropicChatModel`
   reports both and `OpenAiChatModel` reports `cacheReadTokens`. `inputTokens` and `total` count what
