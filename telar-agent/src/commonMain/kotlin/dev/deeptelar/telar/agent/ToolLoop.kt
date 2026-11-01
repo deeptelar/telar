@@ -125,6 +125,20 @@ import kotlinx.serialization.json.Json
  * its tokens ends up to one call above it. A loop that was stopped ends with the results of its
  * last tools, or with the message of the user, and not with an answer of the model.
  *
+ * To keep a long conversation within what the model can read, give the loop [shorten]. It changes
+ * only what the model is sent: the state keeps the whole conversation, for a checkpoint and for the
+ * code that reads it. [keepLast] leaves out the oldest messages:
+ *
+ * ```kotlin
+ * toolLoop(
+ *     model = model,
+ *     tools = tools,
+ *     messages = { it.messages },
+ *     append = { order, new -> order.copy(messages = order.messages + new) },
+ *     shorten = keepLast(messages = 40),
+ * )
+ * ```
+ *
  * The tools node saves the result of each call of a [Tool] that succeeded as soon as the tool
  * returns, as an [effect] keyed by the [ToolCall.id]. When its step runs again, because another
  * call of the same answer called `interrupt`, another node of the step failed or the process
@@ -169,6 +183,9 @@ import kotlinx.serialization.json.Json
  * state says that a budget is used.
  * @param retry how the model node is tried again when a call to the model fails. `null` ends the
  * run at the first failure.
+ * @param shorten returns the part of the conversation the model reads, from all of it. A function
+ * of your own must keep each tool call together with its results, and should cut in a place that
+ * stays the same for a while, because a provider only reuses a start that does not change.
  * @throws GraphValidationException if two tools have the same name, or a node name is already used.
  */
 public fun <State> StateGraph<State>.toolLoop(
@@ -186,6 +203,7 @@ public fun <State> StateGraph<State>.toolLoop(
     countTokens: ((State, TokenUsage) -> State)? = null,
     stopWhen: ((State) -> Boolean)? = null,
     retry: Retry? = null,
+    shorten: ((List<ChatMessage>) -> List<ChatMessage>)? = null,
 ): NodeRef {
     val specs = tools.map { it.spec } + stateTools.map { it.spec }
     specs.groupingBy { it.name }.eachCount().filterValues { it > 1 }.keys.firstOrNull()?.let {
@@ -208,7 +226,9 @@ public fun <State> StateGraph<State>.toolLoop(
                         } else {
                             emptyList()
                         }
-                    val response = model.chatWithProgress(ChatRequest(opening + stored, system, specs))
+                    val conversation = opening + stored
+                    val read = shorten?.invoke(conversation) ?: conversation
+                    val response = model.chatWithProgress(ChatRequest(read, system, specs, shortened = read != conversation))
                     if (response.message.truncated && response.message.toolCalls.isNotEmpty()) {
                         throw ChatModelException("The model reached its output limit in the middle of a tool call. Raise the limit.")
                     }
@@ -296,6 +316,8 @@ public fun <State> StateGraph<State>.toolLoop(
  * call above it. `null` is no limit.
  * @param retry how the model is asked again when a call to it fails, for example
  * `Retry(attempts = 3)`. `null` ends the run at the first failure.
+ * @param shorten returns the part of the conversation the model reads, such as [keepLast]. The state
+ * keeps all of it. See [toolLoop].
  * @throws GraphValidationException if two tools have the same name, or [tokenBudget] is less than 1.
  */
 public fun toolAgent(
@@ -305,6 +327,7 @@ public fun toolAgent(
     inOrder: Boolean = false,
     tokenBudget: Int? = null,
     retry: Retry? = null,
+    shorten: ((List<ChatMessage>) -> List<ChatMessage>)? = null,
 ): CompiledGraph<AgentState> {
     if (tokenBudget != null && tokenBudget < 1) {
         throw GraphValidationException("A token budget must be at least 1, but was $tokenBudget.")
@@ -321,6 +344,7 @@ public fun toolAgent(
                 countTokens = { state, used -> state.copy(tokens = state.tokens + used) },
                 stopWhen = tokenBudget?.let { budget -> { state -> state.tokens.total >= budget } },
                 retry = retry,
+                shorten = shorten,
             )
     }.compile()
 }
