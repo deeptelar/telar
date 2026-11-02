@@ -30,8 +30,8 @@ Sections 1 and 2 are done. They were the last planned changes to an API that exi
 once for each item of a list, a message can carry images and PDFs ([#103]), a run can pause and
 continue at any node of a subgraph ([#34]), and a step has one order for its results ([#101]).
 Section 3 is what is worked on now. Long conversations are done ([#105]): a model reuses what it
-already read, and reads a shorter conversation while the state keeps all of it. Next come teams of
-agents ([#170]) and a memory that an agent keeps across conversations ([#171]).
+already read, and reads a shorter conversation while the state keeps all of it. Teams of agents are
+in the works ([#170]), and after them comes a memory that an agent keeps across conversations ([#171]).
 
 ## The way to 1.0
 
@@ -89,7 +89,7 @@ of this table, and someone who needs one sooner can build it at any time.
 | | Feature | What you get | State | Issue |
 |---|---|---|---|---|
 | 11 | Long conversations | A conversation that is kept short for the model while the state keeps all of it, and that pays less for what the provider already read: `shorten` of `toolLoop` and `toolAgent` with `keepLast`, `cache` of `AnthropicChatModel`, and `cacheReadTokens` and `cacheWriteTokens` in `TokenUsage`. A summary in place of dropped messages is a recipe in the guide. | Done | [#105] |
-| 12 | Teams of agents | Ready-made graphs for more than one agent, built on subgraphs: a supervisor that gives each task to the agent that fits it, and agents that hand the conversation to each other. | Planned | [#170] |
+| 12 | Teams of agents | Ready-made graphs for more than one agent, built on subgraphs: a supervisor that gives each task to the agent that fits it, and agents that hand the conversation to each other. In `main`, not yet released: `supervisor`. | In progress | [#170] |
 | 13 | Memory across threads | A store that an agent reads and writes in every conversation of a user, next to the checkpoint of one thread, so that it remembers what it learned last time. | Planned | [#171] |
 | 14 | Tracing | Hooks in the engine that report every node, edge, tool call and token count, and a module that sends them to OpenTelemetry. Released: `GraphObserver` for runs, nodes, steps and checkpoints, `AgentObserver` for each call to a model and each tool call, with its token count, and `telar-otel`, which sends runs to OpenTelemetry on every platform, the browser included. Still to come: a span in `telar-otel` for each call to a model and each tool call ([#138]), and a report of the calls that an edge condition makes, such as the model of a `decisionEdge` ([#157]). | In progress | [#38] |
 | 15 | Database checkpointer | Saves runs in a SQL database. Released: SQLite through SQLDelight, `telar-checkpoint-sqldelight`, for Android, iOS, desktop and the browser. Still to come: a database server such as PostgreSQL ([#137]). | In progress | [#84] |

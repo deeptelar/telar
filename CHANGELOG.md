@@ -7,6 +7,13 @@ breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- `supervisor` is a team of agents as a graph: a model reads the task, gives each part to the
+  `TeamAgent` that fits it, reads what comes back, and answers. An agent sees only its task and the
+  supervisor only the answer, and `TeamState.assignments` keeps each agent's conversation. Each agent
+  is a subgraph, so a run pauses and continues inside it, and `tokenBudget` limits the whole team.
+
 ## [0.1.0-alpha16] - 2026-11-01
 
 ### Added
