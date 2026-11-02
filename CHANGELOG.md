@@ -13,6 +13,8 @@ breaking changes.
   `TeamAgent` that fits it, reads what comes back, and answers. An agent sees only its task and the
   supervisor only the answer, and `TeamState.assignments` keeps each agent's conversation. Each agent
   is a subgraph, so a run pauses and continues inside it, and `tokenBudget` limits the whole team.
+- `handoffTeam` is a team whose agents hand one conversation to each other with a tool
+  `transfer_to_<name>`. `TeamState.agent` says who has it, and the next message goes to that agent.
 
 ## [0.1.0-alpha16] - 2026-11-01
 
