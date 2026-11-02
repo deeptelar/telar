@@ -58,7 +58,8 @@ made under that name keep it. The repository is `deeptelar/telar` and the demo i
   tool-calling loop: `toolLoop` adds a model node and a tools node to any graph, `toolAgent` is that
   loop as a graph over `AgentState`. Also `DecisionModel` (see `telar-typesafe`) and
   `ChatDecisionModel`, which decides with any `ChatModel`. `supervisor` (`Team.kt`) is a team as a graph over `TeamState`: each `TeamAgent` is a subgraph with
-  its own conversation, and the supervisor's tool call `ask_<name>` gives it a task. `AgentObserver` is a `GraphObserver` that is also
+  its own conversation, and the supervisor's tool call `ask_<name>` gives it a task. `handoffTeam` shares one conversation
+  between agents, which pass it on with `transfer_to_<name>`, and removes `providerContent` at each hand-off. `AgentObserver` is a `GraphObserver` that is also
   told about the calls to models and tools in a node; it reaches the run's observers with `forEachNodeObserver` of core
 - **`telar-anthropic`** (KMP): `AnthropicChatModel`, the Claude Messages API on Ktor client
   core. The app supplies the `HttpClient` and its engine
