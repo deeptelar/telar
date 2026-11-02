@@ -7,6 +7,8 @@ breaking changes.
 
 ## [Unreleased]
 
+## [0.1.0-alpha16] - 2026-11-01
+
 ### Added
 
 - `AnthropicChatModel(cache = PromptCache.FIVE_MINUTES)` asks Claude to keep what it read, so that the
@@ -637,7 +639,8 @@ First public release. Everything below is new compared with the unpublished beta
 - `START` counted toward `maxIterations`.
 - `FileCheckpointer` did not write the format version into its files.
 
-[Unreleased]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha15...HEAD
+[Unreleased]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha16...HEAD
+[0.1.0-alpha16]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha15...v0.1.0-alpha16
 [0.1.0-alpha15]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha14...v0.1.0-alpha15
 [0.1.0-alpha14]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha13...v0.1.0-alpha14
 [0.1.0-alpha13]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha12...v0.1.0-alpha13

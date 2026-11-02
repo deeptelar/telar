@@ -16,7 +16,7 @@ Last updated: 2026-10-26.
 
 ## Where the project is
 
-`0.1.0-alpha15` is the latest release on Maven Central. Telar has the graph builder and the engine:
+`0.1.0-alpha16` is the latest release on Maven Central. Telar has the graph builder and the engine:
 loops, parallel branches with rules for what they write, subgraphs, streaming, checkpoints with the
 history of a run, pausing for a person before a node or in the middle of its work, retries and time
 limits for a node, nodes that run once for each item of a list, and side effects that run once per
@@ -29,9 +29,9 @@ modules for tests and for OpenTelemetry. The API can still change in any release
 Sections 1 and 2 are done. They were the last planned changes to an API that exists: a node can run
 once for each item of a list, a message can carry images and PDFs ([#103]), a run can pause and
 continue at any node of a subgraph ([#34]), and a step has one order for its results ([#101]).
-Section 3 is what is worked on now. It starts with long conversations ([#105]), because a long
-conversation is still sent to the model in full every time, and then come teams of agents ([#170])
-and a memory that an agent keeps across conversations ([#171]).
+Section 3 is what is worked on now. Long conversations are done ([#105]): a model reuses what it
+already read, and reads a shorter conversation while the state keeps all of it. Next come teams of
+agents ([#170]) and a memory that an agent keeps across conversations ([#171]).
 
 ## The way to 1.0
 
@@ -88,7 +88,7 @@ of this table, and someone who needs one sooner can build it at any time.
 
 | | Feature | What you get | State | Issue |
 |---|---|---|---|---|
-| 11 | Long conversations | A conversation that is kept short for the model, by dropping or summarizing old messages, and that pays less for what the provider already read. In `main`, not yet released: `cache` of `AnthropicChatModel`, `cacheReadTokens` and `cacheWriteTokens` in `TokenUsage`, and `shorten` of `toolLoop` and `toolAgent` with `keepLast`. | In progress | [#105] |
+| 11 | Long conversations | A conversation that is kept short for the model while the state keeps all of it, and that pays less for what the provider already read: `shorten` of `toolLoop` and `toolAgent` with `keepLast`, `cache` of `AnthropicChatModel`, and `cacheReadTokens` and `cacheWriteTokens` in `TokenUsage`. A summary in place of dropped messages is a recipe in the guide. | Done | [#105] |
 | 12 | Teams of agents | Ready-made graphs for more than one agent, built on subgraphs: a supervisor that gives each task to the agent that fits it, and agents that hand the conversation to each other. | Planned | [#170] |
 | 13 | Memory across threads | A store that an agent reads and writes in every conversation of a user, next to the checkpoint of one thread, so that it remembers what it learned last time. | Planned | [#171] |
 | 14 | Tracing | Hooks in the engine that report every node, edge, tool call and token count, and a module that sends them to OpenTelemetry. Released: `GraphObserver` for runs, nodes, steps and checkpoints, `AgentObserver` for each call to a model and each tool call, with its token count, and `telar-otel`, which sends runs to OpenTelemetry on every platform, the browser included. Still to come: a span in `telar-otel` for each call to a model and each tool call ([#138]), and a report of the calls that an edge condition makes, such as the model of a `decisionEdge` ([#157]). | In progress | [#38] |
