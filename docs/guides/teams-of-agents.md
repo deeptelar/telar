@@ -131,16 +131,20 @@ val next = team.invoke(state.withUserMessage("How long will it take?")).state
 
 - **A hand-off is a tool call.** Each agent gets a tool `transfer_to_<name>` for every other agent,
   with the `description` of that agent.
-- **All agents share one conversation.** The agent that takes over reads all that was said and all
-  the tools that were called, under its own `system` and with its own tools.
+- **All agents share one conversation.** The agent that takes over reads all that was said and done
+  so far, under its own `system` and with its own tools.
 - **The run ends when an agent answers** without handing over. `state.agent` says who has the
   conversation, and is `null` while it is still with the first agent.
-- **Thinking does not go along.** A hand-off removes what only a provider can read from the
-  conversation, such as Claude's thinking, because the provider ties it to the instructions and tools
-  it was written under. The text and the tool calls stay.
+- **A hand-off changes the conversation in the state.** A model takes the turns of another agent for
+  its own: shown a tool call that it does not recognize, it tells the customer that it made a mistake.
+  So the tool calls and results of the agent that hands over become messages in brackets, such as
+  `[reception called the tool lookup with {"order":7}, which returned: Paid.]`, and the hand-off
+  becomes one too. What only a provider can read goes as well, such as Claude's thinking, because the
+  provider ties it to the instructions and tools it was written under. The agents' texts stay.
 
 `tokenBudget`, `state.tokens` and a stream work as for a supervisor. Each agent is a subgraph here too,
-with the nodes `model` and `tools`, so `interruptBefore = setOf("billing/tools")` approves its calls.
+with the nodes `model`, `tools` and `handover`, so `interruptBefore = setOf("billing/tools")` approves
+its calls.
 
 Two agents can keep handing the conversation to each other. That ends at `GraphConfig.maxIterations`
 with a `MaxIterationsExceededException`, or at the `tokenBudget`.
