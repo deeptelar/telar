@@ -211,41 +211,7 @@ public fun <State> StateGraph<State>.toolLoop(
         throw GraphValidationException("Two tools are named '$it'. Tool names must be unique.")
     }
 
-    val askModel =
-        node(
-            modelNode,
-            work = { state ->
-                if (stopWhen != null && stopWhen(state)) {
-                    null
-                } else {
-                    val stored = messages(state)
-                    val opening =
-                        if (stored.isEmpty() &&
-                            firstMessage != null
-                        ) {
-                            listOf(ChatMessage.User(firstMessage(state)))
-                        } else {
-                            emptyList()
-                        }
-                    val conversation = opening + stored
-                    val read = shorten?.invoke(conversation) ?: conversation
-                    val response = model.chatWithProgress(ChatRequest(read, system, specs, shortened = read != conversation))
-                    if (response.message.truncated && response.message.toolCalls.isNotEmpty()) {
-                        throw ChatModelException("The model reached its output limit in the middle of a tool call. Raise the limit.")
-                    }
-                    ModelTurn(opening + response.message, response.usage)
-                }
-            },
-            retry = retry,
-        ) { state, turn ->
-            // No turn: the loop was stopped before the model was asked.
-            if (turn == null) {
-                state
-            } else {
-                val answered = append(state, turn.messages)
-                if (countTokens != null && turn.usage != null) countTokens(answered, turn.usage) else answered
-            }
-        }
+    val askModel = askModelNode(modelNode, model, specs, messages, append, firstMessage, system, countTokens, stopWhen, retry, shorten)
     val runTools =
         when {
             stateTools.isNotEmpty() ->
@@ -280,6 +246,55 @@ public fun <State> StateGraph<State>.toolLoop(
     runTools then askModel
     return askModel
 }
+
+/** Adds the node of a [toolLoop] that asks [model]. See there for the parameters. */
+internal fun <State> StateGraph<State>.askModelNode(
+    name: String,
+    model: ChatModel,
+    specs: List<ToolSpec>,
+    messages: (State) -> List<ChatMessage>,
+    append: (State, List<ChatMessage>) -> State,
+    firstMessage: ((State) -> String)?,
+    system: String?,
+    countTokens: ((State, TokenUsage) -> State)?,
+    stopWhen: ((State) -> Boolean)?,
+    retry: Retry?,
+    shorten: ((List<ChatMessage>) -> List<ChatMessage>)?,
+): NodeRef =
+    node(
+        name,
+        work = { state ->
+            if (stopWhen != null && stopWhen(state)) {
+                null
+            } else {
+                val stored = messages(state)
+                val opening =
+                    if (stored.isEmpty() &&
+                        firstMessage != null
+                    ) {
+                        listOf(ChatMessage.User(firstMessage(state)))
+                    } else {
+                        emptyList()
+                    }
+                val conversation = opening + stored
+                val read = shorten?.invoke(conversation) ?: conversation
+                val response = model.chatWithProgress(ChatRequest(read, system, specs, shortened = read != conversation))
+                if (response.message.truncated && response.message.toolCalls.isNotEmpty()) {
+                    throw ChatModelException("The model reached its output limit in the middle of a tool call. Raise the limit.")
+                }
+                ModelTurn(opening + response.message, response.usage)
+            }
+        },
+        retry = retry,
+    ) { state, turn ->
+        // No turn: the loop was stopped before the model was asked.
+        if (turn == null) {
+            state
+        } else {
+            val answered = append(state, turn.messages)
+            if (countTokens != null && turn.usage != null) countTokens(answered, turn.usage) else answered
+        }
+    }
 
 /**
  * Returns a graph that is a tool-calling agent: [model] answers the conversation in the state, and
@@ -435,11 +450,11 @@ public data class AgentState(
      * The text is incomplete when [answerTruncated] is `true`.
      */
     public val answer: String?
-        get() = (messages.lastOrNull() as? ChatMessage.Assistant)?.takeIf { it.toolCalls.isEmpty() }?.text
+        get() = messages.finalAnswer()
 
     /** `true` when the model reached its output limit before it finished its last message, so [answer] is cut off. */
     public val answerTruncated: Boolean
-        get() = (messages.lastOrNull() as? ChatMessage.Assistant)?.truncated == true
+        get() = messages.endsTruncated()
 
     /**
      * Returns this state with [text] and its [attachments] added as the user's next message, to
@@ -448,3 +463,9 @@ public data class AgentState(
     public fun withUserMessage(text: String, attachments: List<Attachment> = emptyList()): AgentState =
         copy(messages = messages + ChatMessage.User(text, attachments))
 }
+
+/** The text of the last message, when it is an answer of the model that asks for no tools. */
+internal fun List<ChatMessage>.finalAnswer(): String? = (lastOrNull() as? ChatMessage.Assistant)?.takeIf { it.toolCalls.isEmpty() }?.text
+
+/** `true` when the last message is an answer of the model that reached its output limit. */
+internal fun List<ChatMessage>.endsTruncated(): Boolean = (lastOrNull() as? ChatMessage.Assistant)?.truncated == true

@@ -440,6 +440,50 @@ final class dev.deeptelar.telar.agent/AgentState { // dev.deeptelar.telar.agent/
     }
 }
 
+final class dev.deeptelar.telar.agent/Assignment { // dev.deeptelar.telar.agent/Assignment|null[0]
+    constructor <init>(kotlin/Int, kotlin/String, kotlin/String, kotlin/String, dev.deeptelar.telar.agent/AgentState, kotlin/Int? = ..., kotlin/Boolean = ...) // dev.deeptelar.telar.agent/Assignment.<init>|<init>(kotlin.Int;kotlin.String;kotlin.String;kotlin.String;dev.deeptelar.telar.agent.AgentState;kotlin.Int?;kotlin.Boolean){}[0]
+
+    final val agent // dev.deeptelar.telar.agent/Assignment.agent|{}agent[0]
+        final fun <get-agent>(): kotlin/String // dev.deeptelar.telar.agent/Assignment.agent.<get-agent>|<get-agent>(){}[0]
+    final val conversation // dev.deeptelar.telar.agent/Assignment.conversation|{}conversation[0]
+        final fun <get-conversation>(): dev.deeptelar.telar.agent/AgentState // dev.deeptelar.telar.agent/Assignment.conversation.<get-conversation>|<get-conversation>(){}[0]
+    final val finished // dev.deeptelar.telar.agent/Assignment.finished|{}finished[0]
+        final fun <get-finished>(): kotlin/Boolean // dev.deeptelar.telar.agent/Assignment.finished.<get-finished>|<get-finished>(){}[0]
+    final val index // dev.deeptelar.telar.agent/Assignment.index|{}index[0]
+        final fun <get-index>(): kotlin/Int // dev.deeptelar.telar.agent/Assignment.index.<get-index>|<get-index>(){}[0]
+    final val tokenBudget // dev.deeptelar.telar.agent/Assignment.tokenBudget|{}tokenBudget[0]
+        final fun <get-tokenBudget>(): kotlin/Int? // dev.deeptelar.telar.agent/Assignment.tokenBudget.<get-tokenBudget>|<get-tokenBudget>(){}[0]
+    final val toolCallId // dev.deeptelar.telar.agent/Assignment.toolCallId|{}toolCallId[0]
+        final fun <get-toolCallId>(): kotlin/String // dev.deeptelar.telar.agent/Assignment.toolCallId.<get-toolCallId>|<get-toolCallId>(){}[0]
+    final val toolName // dev.deeptelar.telar.agent/Assignment.toolName|{}toolName[0]
+        final fun <get-toolName>(): kotlin/String // dev.deeptelar.telar.agent/Assignment.toolName.<get-toolName>|<get-toolName>(){}[0]
+
+    final fun component1(): kotlin/Int // dev.deeptelar.telar.agent/Assignment.component1|component1(){}[0]
+    final fun component2(): kotlin/String // dev.deeptelar.telar.agent/Assignment.component2|component2(){}[0]
+    final fun component3(): kotlin/String // dev.deeptelar.telar.agent/Assignment.component3|component3(){}[0]
+    final fun component4(): kotlin/String // dev.deeptelar.telar.agent/Assignment.component4|component4(){}[0]
+    final fun component5(): dev.deeptelar.telar.agent/AgentState // dev.deeptelar.telar.agent/Assignment.component5|component5(){}[0]
+    final fun component6(): kotlin/Int? // dev.deeptelar.telar.agent/Assignment.component6|component6(){}[0]
+    final fun component7(): kotlin/Boolean // dev.deeptelar.telar.agent/Assignment.component7|component7(){}[0]
+    final fun copy(kotlin/Int = ..., kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., dev.deeptelar.telar.agent/AgentState = ..., kotlin/Int? = ..., kotlin/Boolean = ...): dev.deeptelar.telar.agent/Assignment // dev.deeptelar.telar.agent/Assignment.copy|copy(kotlin.Int;kotlin.String;kotlin.String;kotlin.String;dev.deeptelar.telar.agent.AgentState;kotlin.Int?;kotlin.Boolean){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // dev.deeptelar.telar.agent/Assignment.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // dev.deeptelar.telar.agent/Assignment.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // dev.deeptelar.telar.agent/Assignment.toString|toString(){}[0]
+
+    final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<dev.deeptelar.telar.agent/Assignment> { // dev.deeptelar.telar.agent/Assignment.$serializer|null[0]
+        final val descriptor // dev.deeptelar.telar.agent/Assignment.$serializer.descriptor|{}descriptor[0]
+            final fun <get-descriptor>(): kotlinx.serialization.descriptors/SerialDescriptor // dev.deeptelar.telar.agent/Assignment.$serializer.descriptor.<get-descriptor>|<get-descriptor>(){}[0]
+
+        final fun childSerializers(): kotlin/Array<kotlinx.serialization/KSerializer<*>> // dev.deeptelar.telar.agent/Assignment.$serializer.childSerializers|childSerializers(){}[0]
+        final fun deserialize(kotlinx.serialization.encoding/Decoder): dev.deeptelar.telar.agent/Assignment // dev.deeptelar.telar.agent/Assignment.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
+        final fun serialize(kotlinx.serialization.encoding/Encoder, dev.deeptelar.telar.agent/Assignment) // dev.deeptelar.telar.agent/Assignment.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;dev.deeptelar.telar.agent.Assignment){}[0]
+    }
+
+    final object Companion { // dev.deeptelar.telar.agent/Assignment.Companion|null[0]
+        final fun serializer(): kotlinx.serialization/KSerializer<dev.deeptelar.telar.agent/Assignment> // dev.deeptelar.telar.agent/Assignment.Companion.serializer|serializer(){}[0]
+    }
+}
+
 final class dev.deeptelar.telar.agent/ChatDecisionModel : dev.deeptelar.telar.agent/DecisionModel { // dev.deeptelar.telar.agent/ChatDecisionModel|null[0]
     constructor <init>(dev.deeptelar.telar.agent/ChatModel) // dev.deeptelar.telar.agent/ChatDecisionModel.<init>|<init>(dev.deeptelar.telar.agent.ChatModel){}[0]
 
@@ -543,6 +587,67 @@ final class dev.deeptelar.telar.agent/ObservedToolCall { // dev.deeptelar.telar.
         final fun <get-node>(): dev.deeptelar.telar/ObservedNode // dev.deeptelar.telar.agent/ObservedToolCall.node.<get-node>|<get-node>(){}[0]
 
     final fun toString(): kotlin/String // dev.deeptelar.telar.agent/ObservedToolCall.toString|toString(){}[0]
+}
+
+final class dev.deeptelar.telar.agent/TeamAgent { // dev.deeptelar.telar.agent/TeamAgent|null[0]
+    constructor <init>(kotlin/String, kotlin/String, dev.deeptelar.telar.agent/ChatModel, kotlin.collections/List<dev.deeptelar.telar.agent/Tool> = ..., kotlin/String? = ..., kotlin/Boolean = ..., dev.deeptelar.telar/Retry? = ..., kotlin/Function1<kotlin.collections/List<dev.deeptelar.telar.agent/ChatMessage>, kotlin.collections/List<dev.deeptelar.telar.agent/ChatMessage>>? = ...) // dev.deeptelar.telar.agent/TeamAgent.<init>|<init>(kotlin.String;kotlin.String;dev.deeptelar.telar.agent.ChatModel;kotlin.collections.List<dev.deeptelar.telar.agent.Tool>;kotlin.String?;kotlin.Boolean;dev.deeptelar.telar.Retry?;kotlin.Function1<kotlin.collections.List<dev.deeptelar.telar.agent.ChatMessage>,kotlin.collections.List<dev.deeptelar.telar.agent.ChatMessage>>?){}[0]
+
+    final val description // dev.deeptelar.telar.agent/TeamAgent.description|{}description[0]
+        final fun <get-description>(): kotlin/String // dev.deeptelar.telar.agent/TeamAgent.description.<get-description>|<get-description>(){}[0]
+    final val inOrder // dev.deeptelar.telar.agent/TeamAgent.inOrder|{}inOrder[0]
+        final fun <get-inOrder>(): kotlin/Boolean // dev.deeptelar.telar.agent/TeamAgent.inOrder.<get-inOrder>|<get-inOrder>(){}[0]
+    final val model // dev.deeptelar.telar.agent/TeamAgent.model|{}model[0]
+        final fun <get-model>(): dev.deeptelar.telar.agent/ChatModel // dev.deeptelar.telar.agent/TeamAgent.model.<get-model>|<get-model>(){}[0]
+    final val name // dev.deeptelar.telar.agent/TeamAgent.name|{}name[0]
+        final fun <get-name>(): kotlin/String // dev.deeptelar.telar.agent/TeamAgent.name.<get-name>|<get-name>(){}[0]
+    final val retry // dev.deeptelar.telar.agent/TeamAgent.retry|{}retry[0]
+        final fun <get-retry>(): dev.deeptelar.telar/Retry? // dev.deeptelar.telar.agent/TeamAgent.retry.<get-retry>|<get-retry>(){}[0]
+    final val shorten // dev.deeptelar.telar.agent/TeamAgent.shorten|{}shorten[0]
+        final fun <get-shorten>(): kotlin/Function1<kotlin.collections/List<dev.deeptelar.telar.agent/ChatMessage>, kotlin.collections/List<dev.deeptelar.telar.agent/ChatMessage>>? // dev.deeptelar.telar.agent/TeamAgent.shorten.<get-shorten>|<get-shorten>(){}[0]
+    final val system // dev.deeptelar.telar.agent/TeamAgent.system|{}system[0]
+        final fun <get-system>(): kotlin/String? // dev.deeptelar.telar.agent/TeamAgent.system.<get-system>|<get-system>(){}[0]
+    final val tools // dev.deeptelar.telar.agent/TeamAgent.tools|{}tools[0]
+        final fun <get-tools>(): kotlin.collections/List<dev.deeptelar.telar.agent/Tool> // dev.deeptelar.telar.agent/TeamAgent.tools.<get-tools>|<get-tools>(){}[0]
+}
+
+final class dev.deeptelar.telar.agent/TeamState { // dev.deeptelar.telar.agent/TeamState|null[0]
+    constructor <init>(kotlin.collections/List<dev.deeptelar.telar.agent/ChatMessage> = ..., dev.deeptelar.telar.agent/TokenUsage = ..., kotlin.collections/List<dev.deeptelar.telar.agent/Assignment> = ...) // dev.deeptelar.telar.agent/TeamState.<init>|<init>(kotlin.collections.List<dev.deeptelar.telar.agent.ChatMessage>;dev.deeptelar.telar.agent.TokenUsage;kotlin.collections.List<dev.deeptelar.telar.agent.Assignment>){}[0]
+    constructor <init>(kotlin/String) // dev.deeptelar.telar.agent/TeamState.<init>|<init>(kotlin.String){}[0]
+
+    final val answer // dev.deeptelar.telar.agent/TeamState.answer|{}answer[0]
+        final fun <get-answer>(): kotlin/String? // dev.deeptelar.telar.agent/TeamState.answer.<get-answer>|<get-answer>(){}[0]
+    final val answerTruncated // dev.deeptelar.telar.agent/TeamState.answerTruncated|{}answerTruncated[0]
+        final fun <get-answerTruncated>(): kotlin/Boolean // dev.deeptelar.telar.agent/TeamState.answerTruncated.<get-answerTruncated>|<get-answerTruncated>(){}[0]
+    final val assignments // dev.deeptelar.telar.agent/TeamState.assignments|{}assignments[0]
+        final fun <get-assignments>(): kotlin.collections/List<dev.deeptelar.telar.agent/Assignment> // dev.deeptelar.telar.agent/TeamState.assignments.<get-assignments>|<get-assignments>(){}[0]
+    final val messages // dev.deeptelar.telar.agent/TeamState.messages|{}messages[0]
+        final fun <get-messages>(): kotlin.collections/List<dev.deeptelar.telar.agent/ChatMessage> // dev.deeptelar.telar.agent/TeamState.messages.<get-messages>|<get-messages>(){}[0]
+    final val tokens // dev.deeptelar.telar.agent/TeamState.tokens|{}tokens[0]
+        final fun <get-tokens>(): dev.deeptelar.telar.agent/TokenUsage // dev.deeptelar.telar.agent/TeamState.tokens.<get-tokens>|<get-tokens>(){}[0]
+
+    final fun component1(): kotlin.collections/List<dev.deeptelar.telar.agent/ChatMessage> // dev.deeptelar.telar.agent/TeamState.component1|component1(){}[0]
+    final fun component2(): dev.deeptelar.telar.agent/TokenUsage // dev.deeptelar.telar.agent/TeamState.component2|component2(){}[0]
+    final fun component3(): kotlin.collections/List<dev.deeptelar.telar.agent/Assignment> // dev.deeptelar.telar.agent/TeamState.component3|component3(){}[0]
+    final fun copy(kotlin.collections/List<dev.deeptelar.telar.agent/ChatMessage> = ..., dev.deeptelar.telar.agent/TokenUsage = ..., kotlin.collections/List<dev.deeptelar.telar.agent/Assignment> = ...): dev.deeptelar.telar.agent/TeamState // dev.deeptelar.telar.agent/TeamState.copy|copy(kotlin.collections.List<dev.deeptelar.telar.agent.ChatMessage>;dev.deeptelar.telar.agent.TokenUsage;kotlin.collections.List<dev.deeptelar.telar.agent.Assignment>){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // dev.deeptelar.telar.agent/TeamState.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // dev.deeptelar.telar.agent/TeamState.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // dev.deeptelar.telar.agent/TeamState.toString|toString(){}[0]
+    final fun withUserMessage(kotlin/String, kotlin.collections/List<dev.deeptelar.telar.agent/Attachment> = ...): dev.deeptelar.telar.agent/TeamState // dev.deeptelar.telar.agent/TeamState.withUserMessage|withUserMessage(kotlin.String;kotlin.collections.List<dev.deeptelar.telar.agent.Attachment>){}[0]
+
+    final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<dev.deeptelar.telar.agent/TeamState> { // dev.deeptelar.telar.agent/TeamState.$serializer|null[0]
+        final val descriptor // dev.deeptelar.telar.agent/TeamState.$serializer.descriptor|{}descriptor[0]
+            final fun <get-descriptor>(): kotlinx.serialization.descriptors/SerialDescriptor // dev.deeptelar.telar.agent/TeamState.$serializer.descriptor.<get-descriptor>|<get-descriptor>(){}[0]
+
+        final fun childSerializers(): kotlin/Array<kotlinx.serialization/KSerializer<*>> // dev.deeptelar.telar.agent/TeamState.$serializer.childSerializers|childSerializers(){}[0]
+        final fun deserialize(kotlinx.serialization.encoding/Decoder): dev.deeptelar.telar.agent/TeamState // dev.deeptelar.telar.agent/TeamState.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
+        final fun serialize(kotlinx.serialization.encoding/Encoder, dev.deeptelar.telar.agent/TeamState) // dev.deeptelar.telar.agent/TeamState.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;dev.deeptelar.telar.agent.TeamState){}[0]
+    }
+
+    final object Companion { // dev.deeptelar.telar.agent/TeamState.Companion|null[0]
+        final val $childSerializers // dev.deeptelar.telar.agent/TeamState.Companion.$childSerializers|{}$childSerializers[0]
+
+        final fun serializer(): kotlinx.serialization/KSerializer<dev.deeptelar.telar.agent/TeamState> // dev.deeptelar.telar.agent/TeamState.Companion.serializer|serializer(){}[0]
+    }
 }
 
 final class dev.deeptelar.telar.agent/TokenUsage { // dev.deeptelar.telar.agent/TokenUsage|null[0]
@@ -660,6 +765,7 @@ final fun <#A: kotlin/Any?> (dev.deeptelar.telar/StateGraph<#A>).dev.deeptelar.t
 final fun <#A: kotlin/Any?> dev.deeptelar.telar.agent/Tool(kotlin/String, kotlin/String, kotlinx.serialization/KSerializer<#A>, kotlin.coroutines/SuspendFunction1<#A, kotlin/String>): dev.deeptelar.telar.agent/Tool // dev.deeptelar.telar.agent/Tool|Tool(kotlin.String;kotlin.String;kotlinx.serialization.KSerializer<0:0>;kotlin.coroutines.SuspendFunction1<0:0,kotlin.String>){0§<kotlin.Any?>}[0]
 final fun <#A: kotlin/Any?> dev.deeptelar.telar.agent/Tool(kotlin/String, kotlin/String, kotlinx.serialization/KSerializer<#A>, kotlin.coroutines/SuspendFunction1<#A, kotlin/String?>, kotlin.coroutines/SuspendFunction1<#A, kotlin/String>): dev.deeptelar.telar.agent/Tool // dev.deeptelar.telar.agent/Tool|Tool(kotlin.String;kotlin.String;kotlinx.serialization.KSerializer<0:0>;kotlin.coroutines.SuspendFunction1<0:0,kotlin.String?>;kotlin.coroutines.SuspendFunction1<0:0,kotlin.String>){0§<kotlin.Any?>}[0]
 final fun dev.deeptelar.telar.agent/keepLast(kotlin/Int): kotlin/Function1<kotlin.collections/List<dev.deeptelar.telar.agent/ChatMessage>, kotlin.collections/List<dev.deeptelar.telar.agent/ChatMessage>> // dev.deeptelar.telar.agent/keepLast|keepLast(kotlin.Int){}[0]
+final fun dev.deeptelar.telar.agent/supervisor(dev.deeptelar.telar.agent/ChatModel, kotlin.collections/List<dev.deeptelar.telar.agent/TeamAgent>, kotlin/String? = ..., kotlin/Int? = ..., dev.deeptelar.telar/Retry? = ..., kotlin/Function1<kotlin.collections/List<dev.deeptelar.telar.agent/ChatMessage>, kotlin.collections/List<dev.deeptelar.telar.agent/ChatMessage>>? = ...): dev.deeptelar.telar/CompiledGraph<dev.deeptelar.telar.agent/TeamState> // dev.deeptelar.telar.agent/supervisor|supervisor(dev.deeptelar.telar.agent.ChatModel;kotlin.collections.List<dev.deeptelar.telar.agent.TeamAgent>;kotlin.String?;kotlin.Int?;dev.deeptelar.telar.Retry?;kotlin.Function1<kotlin.collections.List<dev.deeptelar.telar.agent.ChatMessage>,kotlin.collections.List<dev.deeptelar.telar.agent.ChatMessage>>?){}[0]
 final fun dev.deeptelar.telar.agent/toolAgent(dev.deeptelar.telar.agent/ChatModel, kotlin.collections/List<dev.deeptelar.telar.agent/Tool> = ..., kotlin/String? = ..., kotlin/Boolean = ..., kotlin/Int? = ..., dev.deeptelar.telar/Retry? = ..., kotlin/Function1<kotlin.collections/List<dev.deeptelar.telar.agent/ChatMessage>, kotlin.collections/List<dev.deeptelar.telar.agent/ChatMessage>>? = ...): dev.deeptelar.telar/CompiledGraph<dev.deeptelar.telar.agent/AgentState> // dev.deeptelar.telar.agent/toolAgent|toolAgent(dev.deeptelar.telar.agent.ChatModel;kotlin.collections.List<dev.deeptelar.telar.agent.Tool>;kotlin.String?;kotlin.Boolean;kotlin.Int?;dev.deeptelar.telar.Retry?;kotlin.Function1<kotlin.collections.List<dev.deeptelar.telar.agent.ChatMessage>,kotlin.collections.List<dev.deeptelar.telar.agent.ChatMessage>>?){}[0]
 final inline fun <#A: kotlin/Any?, #B: reified kotlin/Any?> dev.deeptelar.telar.agent/StateTool(kotlin/String, kotlin/String, noinline kotlin.coroutines/SuspendFunction2<#A, #B, dev.deeptelar.telar.agent/ToolOutcome<#A>>): dev.deeptelar.telar.agent/StateTool<#A> // dev.deeptelar.telar.agent/StateTool|StateTool(kotlin.String;kotlin.String;kotlin.coroutines.SuspendFunction2<0:0,0:1,dev.deeptelar.telar.agent.ToolOutcome<0:0>>){0§<kotlin.Any?>;1§<kotlin.Any?>}[0]
 final inline fun <#A: reified kotlin/Any?> dev.deeptelar.telar.agent/Tool(kotlin/String, kotlin/String, noinline kotlin.coroutines/SuspendFunction1<#A, kotlin/String>): dev.deeptelar.telar.agent/Tool // dev.deeptelar.telar.agent/Tool|Tool(kotlin.String;kotlin.String;kotlin.coroutines.SuspendFunction1<0:0,kotlin.String>){0§<kotlin.Any?>}[0]
