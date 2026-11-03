@@ -18,13 +18,14 @@ import kotlinx.serialization.json.putJsonObject
  * An agent of a team: what it is good at, and the model, tools and instructions it works with.
  *
  * @property name how the team refers to the agent. It is the name of its node in the graph, and the
- * model that leads the team calls it with the tool `ask_<name>`: letters, digits, `_` and `-`.
- * @property description tells the model that leads the team what this agent does and when to use it.
+ * other models of the team reach it with a tool that has the name in it: letters, digits, `_` and `-`.
+ * @property description tells the other models of the team what this agent does and when to use it.
  * @property model the model of this agent. A team can use a fast model for simple work and a better
  * one for hard work.
  * @property tools the tools of this agent.
  * @property system the instructions of this agent.
- * @property inOrder `true` to run the tool calls of an answer one after the other. See [toolLoop].
+ * @property inOrder `true` to run the tool calls of an answer one after the other. See [toolLoop]. In
+ * a [handoffTeam] they always do.
  * @property retry how this agent's model is asked again when a call to it fails. See [toolLoop].
  * @property shorten returns the part of this agent's conversation its model reads. See [toolLoop].
  */
@@ -71,12 +72,15 @@ public data class Assignment(
  * @property tokens the tokens of every answer of the supervisor, and of the agents that finished.
  * @property assignments every task the supervisor gave in this conversation, oldest first, with what
  * the agent did on it.
+ * @property agent the [TeamAgent.name] of the agent that has the conversation in a [handoffTeam], or
+ * `null` while it is still with the first agent.
  */
 @Serializable
 public data class TeamState(
     val messages: List<ChatMessage> = emptyList(),
     val tokens: TokenUsage = TokenUsage(),
     val assignments: List<Assignment> = emptyList(),
+    val agent: String? = null,
 ) {
     /** Starts a conversation with [question] as the user's first message. */
     public constructor(question: String) : this(listOf(ChatMessage.User(question)))
@@ -217,6 +221,151 @@ public fun supervisor(
     }.compile()
 }
 
+/**
+ * Returns a graph that is a team of agents who hand the conversation to each other: the first of
+ * [agents] answers, and each agent can end its turn by handing the conversation to another, which
+ * goes on from there.
+ *
+ * ```kotlin
+ * val team = handoffTeam(
+ *     listOf(
+ *         TeamAgent("reception", "Greets the customer.", haiku, system = "Find out what the customer needs."),
+ *         TeamAgent("billing", "Handles invoices and refunds.", haiku, tools = listOf(refund), system = "You handle invoices."),
+ *         TeamAgent("orders", "Knows where an order is.", haiku, tools = listOf(orderStatus), system = "You track orders."),
+ *     ),
+ * )
+ *
+ * val state = team.invoke(TeamState("I want my money back for order 7.")).state
+ * println("${state.agent}: ${state.answer}")
+ *
+ * // The next message goes to the agent that has the conversation.
+ * val next = team.invoke(state.withUserMessage("How long will it take?")).state
+ * ```
+ *
+ * Each agent gets a tool `transfer_to_<name>` for every other agent. All agents share one
+ * conversation, so unlike with a [supervisor], the agent that takes over reads all that was said and
+ * done so far, under its own instructions. The run ends when an agent answers
+ * without handing over. [TeamState.agent] says who has the conversation.
+ *
+ * A hand-off changes the conversation in the state, because a model takes the turns of another agent
+ * for its own: the tool calls and their results of the agent that hands over become messages of the
+ * user that say who did what, in brackets, and the hand-off itself becomes one. It also removes
+ * [ChatMessage.Assistant.providerContent], such as Claude's thinking, which a provider ties to the
+ * instructions and tools it was written under. The texts of the agents stay.
+ *
+ * Each agent is a subgraph with its [TeamAgent.name], with the nodes `model` and `tools` of a
+ * [toolLoop] and a last node `handover`, so `interruptBefore = setOf("billing/tools")` approves its
+ * tool calls by hand. Two
+ * agents that keep handing the conversation to each other end at `GraphConfig.maxIterations`, or at
+ * a [tokenBudget].
+ *
+ * @param agents the team. The first one starts the conversation.
+ * @param tokenBudget the tokens the whole team may use. It works as in [toolAgent].
+ * @throws GraphValidationException if [agents] has fewer than two agents, two agents have the same
+ * name, a name cannot be part of a tool name, or [tokenBudget] is less than 1.
+ */
+public fun handoffTeam(agents: List<TeamAgent>, tokenBudget: Int? = null): CompiledGraph<TeamState> {
+    if (agents.size < 2) throw GraphValidationException("A hand-off needs at least two agents, but there were ${agents.size}.")
+    if (tokenBudget != null && tokenBudget < 1) {
+        throw GraphValidationException("A token budget must be at least 1, but was $tokenBudget.")
+    }
+    val first = agents.first().name
+    val stopped: (TeamState) -> Boolean = { state -> tokenBudget != null && state.tokens.total >= tokenBudget }
+
+    return StateGraph<TeamState> {
+        val nodes = agents.associate { agent -> agent.name to subgraph(agent.name, agent.handoffGraph(agents, first, stopped)) }
+
+        conditionalEdge(START, targets = nodes.values.toSet()) { state -> nodes[state.agent ?: first] ?: nodes.getValue(first) }
+        nodes.forEach { (name, node) ->
+            conditionalEdge(node, targets = nodes.values.toSet() - node + NodeRef.END) { state ->
+                val next = state.agent ?: first
+                if (next == name) NodeRef.END else nodes.getValue(next)
+            }
+        }
+    }.compile()
+}
+
+/** A [toolLoop] of this agent over the shared conversation, which stops when the conversation goes to another agent. */
+private fun TeamAgent.handoffGraph(team: List<TeamAgent>, first: String, stopped: (TeamState) -> Boolean): CompiledGraph<TeamState> =
+    StateGraph<TeamState> {
+        // Here and not in the transfer tool, because the other calls of its answer still have to run.
+        val handOver =
+            node("handover") { state ->
+                val next = state.agent ?: first
+                if (next == name) state else state.copy(messages = state.messages.handedOver(name, next))
+            }
+        handOver then END
+        START then
+            toolLoop(
+                model = model,
+                tools = tools,
+                messages = { it.messages },
+                append = { state, new -> state.copy(messages = state.messages + new) },
+                system = system,
+                then = handOver,
+                stateTools = team.filter { it.name != name }.map { it.transfer() },
+                countTokens = { state, used -> state.copy(tokens = state.tokens + used) },
+                stopWhen = { state -> (state.agent ?: first) != name || stopped(state) },
+                retry = retry,
+                shorten = shorten,
+            )
+    }.compile()
+
+/** The tool that hands the conversation to this agent. */
+private fun TeamAgent.transfer(): StateTool<TeamState> =
+    StateTool(
+        ToolSpec(
+            name = "$TRANSFER$name",
+            description = "$description Hand the conversation to this agent when the rest of the work is for it. It goes on from there.",
+            inputSchema =
+                buildJsonObject {
+                    put("type", "object")
+                    putJsonObject("properties") {}
+                },
+        ),
+    ) { state, _ ->
+        ToolOutcome(state.copy(agent = name), "$name has the conversation now.")
+    }
+
+/**
+ * Returns this conversation as the agent [to] reads it after the agent [from] handed it over.
+ *
+ * A model takes the assistant turns of a conversation for its own. Shown the tool calls of another
+ * agent, it tells the user that it made a mistake with a tool that it does not have, also when a
+ * message says that it did not make them. So the calls and their results become notes that name the
+ * agent. The hand-off leaves only a last note. The texts stay as they are.
+ *
+ * The notes also leave no tool call behind for another provider to read, and provider content goes,
+ * because what a provider wants back, such as Claude's thinking, belongs to the model, instructions
+ * and tools that wrote it. Later requests read the same conversation, so nothing else changes.
+ */
+private fun List<ChatMessage>.handedOver(from: String, to: String): List<ChatMessage> {
+    val calls = filterIsInstance<ChatMessage.Assistant>().flatMap { it.toolCalls }.associateBy { it.id }
+    val kept =
+        mapNotNull { message ->
+            when (message) {
+                is ChatMessage.User -> message
+                is ChatMessage.Assistant -> message.takeIf { it.text.isNotEmpty() }?.copy(toolCalls = emptyList(), providerContent = null)
+                is ChatMessage.ToolResult ->
+                    message
+                        .takeUnless {
+                            it.toolName.startsWith(
+                                TRANSFER,
+                            )
+                        }?.asNote(from, calls[message.toolCallId])
+            }
+        }
+    return kept +
+        ChatMessage.User(
+            "[$from handed this conversation to you, $to. Notes in brackets say what other agents of your team did, not you. Go on from here.]",
+        )
+}
+
+private fun ChatMessage.ToolResult.asNote(agent: String, call: ToolCall?): ChatMessage.User {
+    val outcome = if (isError) "failed" else "returned"
+    return ChatMessage.User("[$agent called the tool $toolName with ${call?.input ?: "{}"}, which $outcome: $text]", attachments)
+}
+
 /** What the model of a [supervisor] is told about this agent. */
 private fun TeamAgent.spec(): ToolSpec =
     ToolSpec(
@@ -313,6 +462,9 @@ private fun TeamState.withWork(work: Assignment): TeamState {
         )
     return saved.copy(messages = messages + result, tokens = tokens + work.conversation.tokens)
 }
+
+/** How the name of a tool that hands the conversation over starts. */
+private const val TRANSFER: String = "transfer_to_"
 
 /** The input of the tool that gives an agent a task. */
 private const val TASK: String = "task"
