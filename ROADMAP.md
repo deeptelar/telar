@@ -16,13 +16,13 @@ Last updated: 2026-10-26.
 
 ## Where the project is
 
-`0.1.0-alpha16` is the latest release on Maven Central. Telar has the graph builder and the engine:
+`0.1.0-alpha17` is the latest release on Maven Central. Telar has the graph builder and the engine:
 loops, parallel branches with rules for what they write, subgraphs, streaming, checkpoints with the
 history of a run, pausing for a person before a node or in the middle of its work, retries and time
 limits for a node, nodes that run once for each item of a list, and side effects that run once per
 step. Around the engine it has checkpointers for memory, files, the browser and SQLite on every
 platform, a tool-calling agent for every platform with tools that change the state, typed answers, a
-token budget and the tools of MCP servers, model modules for Claude, for OpenAI, Ollama and the
+token budget, long conversations, teams of agents and the tools of MCP servers, model modules for Claude, for OpenAI, Ollama and the
 other servers with the Chat Completions API, for LangChain4j, and for Jev, a decision model, and
 modules for tests and for OpenTelemetry. The API can still change in any release.
 
@@ -31,7 +31,8 @@ once for each item of a list, a message can carry images and PDFs ([#103]), a ru
 continue at any node of a subgraph ([#34]), and a step has one order for its results ([#101]).
 Section 3 is what is worked on now. Long conversations are done ([#105]): a model reuses what it
 already read, and reads a shorter conversation while the state keeps all of it. Teams of agents are
-in the works ([#170]), and after them comes a memory that an agent keeps across conversations ([#171]).
+done too ([#170]): a supervisor that gives out tasks, and agents that hand a conversation to each
+other. Next comes a memory that an agent keeps across conversations ([#171]).
 
 ## The way to 1.0
 
@@ -89,7 +90,7 @@ of this table, and someone who needs one sooner can build it at any time.
 | | Feature | What you get | State | Issue |
 |---|---|---|---|---|
 | 11 | Long conversations | A conversation that is kept short for the model while the state keeps all of it, and that pays less for what the provider already read: `shorten` of `toolLoop` and `toolAgent` with `keepLast`, `cache` of `AnthropicChatModel`, and `cacheReadTokens` and `cacheWriteTokens` in `TokenUsage`. A summary in place of dropped messages is a recipe in the guide. | Done | [#105] |
-| 12 | Teams of agents | Ready-made graphs for more than one agent, built on subgraphs: a supervisor that gives each task to the agent that fits it, and agents that hand the conversation to each other. In `main`, not yet released: `supervisor` and `handoffTeam`. | In progress | [#170] |
+| 12 | Teams of agents | Ready-made graphs for more than one agent, built on subgraphs: `supervisor`, which gives each task to the `TeamAgent` that fits it, and `handoffTeam`, whose agents hand the conversation to each other. | Done | [#170] |
 | 13 | Memory across threads | A store that an agent reads and writes in every conversation of a user, next to the checkpoint of one thread, so that it remembers what it learned last time. | Planned | [#171] |
 | 14 | Tracing | Hooks in the engine that report every node, edge, tool call and token count, and a module that sends them to OpenTelemetry. Released: `GraphObserver` for runs, nodes, steps and checkpoints, `AgentObserver` for each call to a model and each tool call, with its token count, and `telar-otel`, which sends runs to OpenTelemetry on every platform, the browser included. Still to come: a span in `telar-otel` for each call to a model and each tool call ([#138]), and a report of the calls that an edge condition makes, such as the model of a `decisionEdge` ([#157]). | In progress | [#38] |
 | 15 | Database checkpointer | Saves runs in a SQL database. Released: SQLite through SQLDelight, `telar-checkpoint-sqldelight`, for Android, iOS, desktop and the browser. Still to come: a database server such as PostgreSQL ([#137]). | In progress | [#84] |
