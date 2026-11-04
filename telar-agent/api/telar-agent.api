@@ -486,6 +486,11 @@ public final synthetic class dev/deeptelar/telar/agent/Description$Impl : dev/de
 	public final synthetic fun value ()Ljava/lang/String;
 }
 
+public final class dev/deeptelar/telar/agent/MemoryToolsKt {
+	public static final fun memoryTools (Ljava/util/List;I)Ljava/util/List;
+	public static synthetic fun memoryTools$default (Ljava/util/List;IILjava/lang/Object;)Ljava/util/List;
+}
+
 public final class dev/deeptelar/telar/agent/ObservedModelCall {
 	public final fun getModel ()Ldev/deeptelar/telar/agent/ChatModel;
 	public final fun getNode ()Ldev/deeptelar/telar/ObservedNode;
