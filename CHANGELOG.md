@@ -7,6 +7,18 @@ breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- `Store` keeps what an agent learned between conversations, as text under a namespace and a key,
+  for every thread that gets it. `GraphConfig(store = ...)` gives it to a run, and `store()` reaches it
+  from a node, a tool, a subgraph or a team. `store.within("users", userId)` gives each user a part of
+  it, so one graph serves every user. `MemoryStore` keeps it in memory, and `telar-serialization`
+  keeps `@Serializable` values as JSON. A write goes straight to the store and is not part of a
+  checkpoint. ([#171](https://github.com/deeptelar/telar/issues/171))
+- `memoryTools()` gives an agent `remember`, `forget` and `recall`, which keep a text under a name
+  that the model chooses in the store of the run. A call is made once, also when its step runs again.
+  ([#171](https://github.com/deeptelar/telar/issues/171))
+
 ## [0.1.0-alpha17] - 2026-11-04
 
 ### Added
