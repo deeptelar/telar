@@ -3,21 +3,21 @@
 ```kotlin
 dependencies {
     // The graph builder and the engine. This is all the quick start needs.
-    implementation("dev.deeptelar:telar-core:0.1.0-alpha16")
+    implementation("dev.deeptelar:telar-core:0.1.0-alpha17")
 
     // Optional modules. Add only the ones you use.
-    implementation("dev.deeptelar:telar-serialization:0.1.0-alpha16")      // save @Serializable states
-    implementation("dev.deeptelar:telar-checkpoint-file:0.1.0-alpha16")    // save runs as JSON files
-    implementation("dev.deeptelar:telar-checkpoint-browser:0.1.0-alpha16") // save runs in a browser's localStorage (JS and Wasm)
-    implementation("dev.deeptelar:telar-checkpoint-sqldelight:0.1.0-alpha16") // save runs in SQLite through SQLDelight, on every platform
-    implementation("dev.deeptelar:telar-agent:0.1.0-alpha16")              // chat models, tools and the tool-calling agent
-    implementation("dev.deeptelar:telar-anthropic:0.1.0-alpha16")          // call Claude, on every platform
-    implementation("dev.deeptelar:telar-openai:0.1.0-alpha16")             // call OpenAI, Ollama and compatible servers, on every platform
-    implementation("dev.deeptelar:telar-langchain4j:0.1.0-alpha16")        // call AI models through LangChain4j (JVM)
-    implementation("dev.deeptelar:telar-typesafe:0.1.0-alpha16")           // ask Jev, a decision model, on every platform
-    implementation("dev.deeptelar:telar-mcp:0.1.0-alpha16")                // the tools of an MCP server as tools of an agent
-    implementation("dev.deeptelar:telar-otel:0.1.0-alpha16")               // send runs to OpenTelemetry, on every platform
-    testImplementation("dev.deeptelar:telar-test:0.1.0-alpha16")           // scripted models and checks for the tests of a graph
+    implementation("dev.deeptelar:telar-serialization:0.1.0-alpha17")      // save @Serializable states
+    implementation("dev.deeptelar:telar-checkpoint-file:0.1.0-alpha17")    // save runs as JSON files
+    implementation("dev.deeptelar:telar-checkpoint-browser:0.1.0-alpha17") // save runs in a browser's localStorage (JS and Wasm)
+    implementation("dev.deeptelar:telar-checkpoint-sqldelight:0.1.0-alpha17") // save runs in SQLite through SQLDelight, on every platform
+    implementation("dev.deeptelar:telar-agent:0.1.0-alpha17")              // chat models, tools and the tool-calling agent
+    implementation("dev.deeptelar:telar-anthropic:0.1.0-alpha17")          // call Claude, on every platform
+    implementation("dev.deeptelar:telar-openai:0.1.0-alpha17")             // call OpenAI, Ollama and compatible servers, on every platform
+    implementation("dev.deeptelar:telar-langchain4j:0.1.0-alpha17")        // call AI models through LangChain4j (JVM)
+    implementation("dev.deeptelar:telar-typesafe:0.1.0-alpha17")           // ask Jev, a decision model, on every platform
+    implementation("dev.deeptelar:telar-mcp:0.1.0-alpha17")                // the tools of an MCP server as tools of an agent
+    implementation("dev.deeptelar:telar-otel:0.1.0-alpha17")               // send runs to OpenTelemetry, on every platform
+    testImplementation("dev.deeptelar:telar-test:0.1.0-alpha17")           // scripted models and checks for the tests of a graph
 }
 ```
 
@@ -45,6 +45,6 @@ Java 17 because LangChain4j does.
 
 ## Status
 
-Alpha. `0.1.0-alpha16` is the latest release, and it is on Maven Central. The API may still change
+Alpha. `0.1.0-alpha17` is the latest release, and it is on Maven Central. The API may still change
 before `1.0`; the [changelog](https://github.com/deeptelar/telar/blob/main/CHANGELOG.md) lists what changes in each version, and the
 [roadmap](https://github.com/deeptelar/telar/blob/main/ROADMAP.md) lists what is planned.

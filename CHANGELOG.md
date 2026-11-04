@@ -7,14 +7,20 @@ breaking changes.
 
 ## [Unreleased]
 
+## [0.1.0-alpha17] - 2026-11-04
+
 ### Added
 
 - `supervisor` is a team of agents as a graph: a model reads the task, gives each part to the
   `TeamAgent` that fits it, reads what comes back, and answers. An agent sees only its task and the
   supervisor only the answer, and `TeamState.assignments` keeps each agent's conversation. Each agent
   is a subgraph, so a run pauses and continues inside it, and `tokenBudget` limits the whole team.
+  ([#170](https://github.com/deeptelar/telar/issues/170))
 - `handoffTeam` is a team whose agents hand one conversation to each other with a tool
   `transfer_to_<name>`. `TeamState.agent` says who has it, and the next message goes to that agent.
+  At a hand-off, the tool calls of the agent that hands over become notes that name it, because a
+  model takes another agent's calls for its own.
+  ([#170](https://github.com/deeptelar/telar/issues/170))
 
 ## [0.1.0-alpha16] - 2026-11-01
 
@@ -648,7 +654,8 @@ First public release. Everything below is new compared with the unpublished beta
 - `START` counted toward `maxIterations`.
 - `FileCheckpointer` did not write the format version into its files.
 
-[Unreleased]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha16...HEAD
+[Unreleased]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha17...HEAD
+[0.1.0-alpha17]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha16...v0.1.0-alpha17
 [0.1.0-alpha16]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha15...v0.1.0-alpha16
 [0.1.0-alpha15]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha14...v0.1.0-alpha15
 [0.1.0-alpha14]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha13...v0.1.0-alpha14
