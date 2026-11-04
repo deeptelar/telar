@@ -14,3 +14,8 @@ public final class dev/deeptelar/telar/serialization/KotlinxStateSerializer : de
 	public fun serialize (Ljava/lang/Object;)Ljava/lang/String;
 }
 
+public final class dev/deeptelar/telar/serialization/StoreKt {
+	public static final fun getJson (Ldev/deeptelar/telar/Store;Ljava/util/List;Ljava/lang/String;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/json/Json;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun putJson (Ldev/deeptelar/telar/Store;Ljava/util/List;Ljava/lang/String;Ljava/lang/Object;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/json/Json;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+

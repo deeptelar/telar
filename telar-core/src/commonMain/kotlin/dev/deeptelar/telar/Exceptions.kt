@@ -153,3 +153,14 @@ public class CheckpointCorruptedException(
     message: String,
     cause: Throwable? = null,
 ) : TelarException("Checkpoint of thread '$threadId' cannot be read: $message", cause)
+
+/**
+ * The value under [key] in [namespace] of a [Store] could not be read, for example because the
+ * type it was written with changed.
+ */
+public class StoreCorruptedException(
+    public val namespace: List<String>,
+    public val key: String,
+    message: String,
+    cause: Throwable? = null,
+) : TelarException("The value of '$key' in the namespace $namespace of the store cannot be read: $message", cause)

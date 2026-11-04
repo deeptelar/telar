@@ -93,22 +93,24 @@ public final class dev/deeptelar/telar/GraphConfig {
 	public static final field Companion Ldev/deeptelar/telar/GraphConfig$Companion;
 	public static final field DEFAULT_MAX_ITERATIONS I
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ldev/deeptelar/telar/Checkpointer;Ljava/util/Set;Ljava/util/Set;ILjava/util/List;)V
-	public synthetic fun <init> (Ljava/lang/String;Ldev/deeptelar/telar/Checkpointer;Ljava/util/Set;Ljava/util/Set;ILjava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ldev/deeptelar/telar/Checkpointer;Ljava/util/Set;Ljava/util/Set;ILjava/util/List;Ldev/deeptelar/telar/Store;)V
+	public synthetic fun <init> (Ljava/lang/String;Ldev/deeptelar/telar/Checkpointer;Ljava/util/Set;Ljava/util/Set;ILjava/util/List;Ldev/deeptelar/telar/Store;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ldev/deeptelar/telar/Checkpointer;
 	public final fun component3 ()Ljava/util/Set;
 	public final fun component4 ()Ljava/util/Set;
 	public final fun component5 ()I
 	public final fun component6 ()Ljava/util/List;
-	public final fun copy (Ljava/lang/String;Ldev/deeptelar/telar/Checkpointer;Ljava/util/Set;Ljava/util/Set;ILjava/util/List;)Ldev/deeptelar/telar/GraphConfig;
-	public static synthetic fun copy$default (Ldev/deeptelar/telar/GraphConfig;Ljava/lang/String;Ldev/deeptelar/telar/Checkpointer;Ljava/util/Set;Ljava/util/Set;ILjava/util/List;ILjava/lang/Object;)Ldev/deeptelar/telar/GraphConfig;
+	public final fun component7 ()Ldev/deeptelar/telar/Store;
+	public final fun copy (Ljava/lang/String;Ldev/deeptelar/telar/Checkpointer;Ljava/util/Set;Ljava/util/Set;ILjava/util/List;Ldev/deeptelar/telar/Store;)Ldev/deeptelar/telar/GraphConfig;
+	public static synthetic fun copy$default (Ldev/deeptelar/telar/GraphConfig;Ljava/lang/String;Ldev/deeptelar/telar/Checkpointer;Ljava/util/Set;Ljava/util/Set;ILjava/util/List;Ldev/deeptelar/telar/Store;ILjava/lang/Object;)Ldev/deeptelar/telar/GraphConfig;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCheckpointer ()Ldev/deeptelar/telar/Checkpointer;
 	public final fun getInterruptAfter ()Ljava/util/Set;
 	public final fun getInterruptBefore ()Ljava/util/Set;
 	public final fun getMaxIterations ()I
 	public final fun getObservers ()Ljava/util/List;
+	public final fun getStore ()Ldev/deeptelar/telar/Store;
 	public final fun getThreadId ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -493,6 +495,16 @@ public final class dev/deeptelar/telar/MemoryCheckpointer : dev/deeptelar/telar/
 	public fun save (Ljava/lang/String;Ldev/deeptelar/telar/Checkpoint;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
+public final class dev/deeptelar/telar/MemoryStore : dev/deeptelar/telar/Store {
+	public fun <init> ()V
+	public fun <init> (Lkotlin/time/Clock;)V
+	public synthetic fun <init> (Lkotlin/time/Clock;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun delete (Ljava/util/List;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun get (Ljava/util/List;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun list (Ljava/util/List;ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun put (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
 public final class dev/deeptelar/telar/MergeRuleException : dev/deeptelar/telar/TelarException {
 	public fun <init> (Ljava/lang/String;)V
 }
@@ -613,6 +625,58 @@ public final class dev/deeptelar/telar/StateGraphKt {
 public abstract interface class dev/deeptelar/telar/StateSerializer {
 	public abstract fun deserialize (Ljava/lang/String;)Ljava/lang/Object;
 	public abstract fun serialize (Ljava/lang/Object;)Ljava/lang/String;
+}
+
+public abstract interface class dev/deeptelar/telar/Store {
+	public static final field Companion Ldev/deeptelar/telar/Store$Companion;
+	public static final field DEFAULT_LIMIT I
+	public abstract fun delete (Ljava/util/List;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun get (Ljava/util/List;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun list (Ljava/util/List;ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun list$default (Ldev/deeptelar/telar/Store;Ljava/util/List;ILkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public abstract fun put (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class dev/deeptelar/telar/Store$Companion {
+	public static final field DEFAULT_LIMIT I
+	public final fun checkAddress (Ljava/util/List;Ljava/lang/String;)V
+	public final fun checkLimit (I)V
+	public final fun checkNamespace (Ljava/util/List;)V
+}
+
+public final class dev/deeptelar/telar/Store$DefaultImpls {
+	public static synthetic fun list$default (Ldev/deeptelar/telar/Store;Ljava/util/List;ILkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class dev/deeptelar/telar/StoreCorruptedException : dev/deeptelar/telar/TelarException {
+	public fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getKey ()Ljava/lang/String;
+	public final fun getNamespace ()Ljava/util/List;
+}
+
+public final class dev/deeptelar/telar/StoreItem {
+	public fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Instant;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Lkotlin/time/Instant;
+	public final fun copy (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Instant;)Ldev/deeptelar/telar/StoreItem;
+	public static synthetic fun copy$default (Ldev/deeptelar/telar/StoreItem;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Instant;ILjava/lang/Object;)Ldev/deeptelar/telar/StoreItem;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getKey ()Ljava/lang/String;
+	public final fun getNamespace ()Ljava/util/List;
+	public final fun getUpdatedAt ()Lkotlin/time/Instant;
+	public final fun getValue ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/deeptelar/telar/StoreKt {
+	public static final fun get (Ldev/deeptelar/telar/Store;Ljava/util/List;Ljava/lang/String;Ldev/deeptelar/telar/StateSerializer;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun put (Ldev/deeptelar/telar/Store;Ljava/util/List;Ljava/lang/String;Ljava/lang/Object;Ldev/deeptelar/telar/StateSerializer;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun store (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun within (Ldev/deeptelar/telar/Store;[Ljava/lang/String;)Ldev/deeptelar/telar/Store;
 }
 
 public final class dev/deeptelar/telar/SubgraphPosition {

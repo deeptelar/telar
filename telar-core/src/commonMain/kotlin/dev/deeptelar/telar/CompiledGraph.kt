@@ -362,7 +362,7 @@ public class CompiledGraph<State> internal constructor(
      * paused inside it. Nothing is saved here: a pause is returned, and the graph around saves it.
      */
     internal suspend fun runAsSubgraph(state: State, parent: RunningNode): RunEnd<State> {
-        val config = GraphConfig<State>(threadId = parent.threadId, maxIterations = parent.maxIterations)
+        val config = GraphConfig<State>(threadId = parent.threadId, maxIterations = parent.maxIterations, store = parent.store)
         // The observers of the run around are told about this run too, as a run inside the node.
         val watch = RunWatch(parent.observer, ObservedRun(parent.threadId, parent.observed, currentCoroutineContext()))
         watch.started()
@@ -484,6 +484,7 @@ public class CompiledGraph<State> internal constructor(
                     watch,
                     interruptBefore,
                     interruptAfter,
+                    config.store,
                 )
             state =
                 try {
@@ -549,6 +550,7 @@ public class CompiledGraph<State> internal constructor(
      * graph, and the node and step of the graph around it in a subgraph.
      * @property watch tells the observer of the run about the nodes.
      * @property interruptBefore the pauses of the run, from which a subgraph node takes those inside it.
+     * @property store the store of the run, for [store].
      */
     private class StepRun(
         val step: Int,
@@ -562,6 +564,7 @@ public class CompiledGraph<State> internal constructor(
         val watch: RunWatch,
         val interruptBefore: Set<String>,
         val interruptAfter: Set<String>,
+        val store: Store?,
     ) {
         /** Where a subgraph of this step stands that failed. With two, either one is right: the other starts again. */
         @Volatile
@@ -803,6 +806,7 @@ public class CompiledGraph<State> internal constructor(
                     run.interruptBefore.inside(node.name),
                     run.interruptAfter.inside(node.name),
                     { run.stopped = it },
+                    run.store,
                 ),
         ) {
             if (node.forEach) {

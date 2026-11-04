@@ -18,6 +18,8 @@ package dev.deeptelar.telar
  * [CompiledGraph.resume] call may execute before [MaxIterationsExceededException] is thrown.
  * @property observers are told how each run of this config goes, node by node, for example to
  * send traces. See [GraphObserver].
+ * @property store what the run remembers across threads, which its nodes and tools reach with
+ * [store]. Give each user a part of it of their own with [within]. See [Store].
  * @throws GraphValidationException if [threadId] is blank, [maxIterations] is not positive, or
  * interrupts are configured without a [checkpointer].
  */
@@ -28,6 +30,7 @@ public data class GraphConfig<State>(
     val interruptAfter: Set<String> = emptySet(),
     val maxIterations: Int = DEFAULT_MAX_ITERATIONS,
     val observers: List<GraphObserver> = emptyList(),
+    val store: Store? = null,
 ) {
     init {
         if (threadId.isBlank()) throw GraphValidationException("threadId must not be blank.")
