@@ -43,10 +43,15 @@ abstract interface dev.deeptelar.telar/Store { // dev.deeptelar.telar/Store|null
     abstract suspend fun get(kotlin.collections/List<kotlin/String>, kotlin/String): dev.deeptelar.telar/StoreItem? // dev.deeptelar.telar/Store.get|get(kotlin.collections.List<kotlin.String>;kotlin.String){}[0]
     abstract suspend fun list(kotlin.collections/List<kotlin/String>, kotlin/Int = ...): kotlin.collections/List<dev.deeptelar.telar/StoreItem> // dev.deeptelar.telar/Store.list|list(kotlin.collections.List<kotlin.String>;kotlin.Int){}[0]
     abstract suspend fun put(kotlin.collections/List<kotlin/String>, kotlin/String, kotlin/String) // dev.deeptelar.telar/Store.put|put(kotlin.collections.List<kotlin.String>;kotlin.String;kotlin.String){}[0]
+    open suspend fun search(kotlin.collections/List<kotlin/String>, kotlin/String, kotlin/Int = ...): kotlin.collections/List<dev.deeptelar.telar/StoreItem> // dev.deeptelar.telar/Store.search|search(kotlin.collections.List<kotlin.String>;kotlin.String;kotlin.Int){}[0]
 
     final object Companion { // dev.deeptelar.telar/Store.Companion|null[0]
         final const val DEFAULT_LIMIT // dev.deeptelar.telar/Store.Companion.DEFAULT_LIMIT|{}DEFAULT_LIMIT[0]
             final fun <get-DEFAULT_LIMIT>(): kotlin/Int // dev.deeptelar.telar/Store.Companion.DEFAULT_LIMIT.<get-DEFAULT_LIMIT>|<get-DEFAULT_LIMIT>(){}[0]
+        final const val DEFAULT_SEARCH_LIMIT // dev.deeptelar.telar/Store.Companion.DEFAULT_SEARCH_LIMIT|{}DEFAULT_SEARCH_LIMIT[0]
+            final fun <get-DEFAULT_SEARCH_LIMIT>(): kotlin/Int // dev.deeptelar.telar/Store.Companion.DEFAULT_SEARCH_LIMIT.<get-DEFAULT_SEARCH_LIMIT>|<get-DEFAULT_SEARCH_LIMIT>(){}[0]
+        final const val SEARCH_SCOPE // dev.deeptelar.telar/Store.Companion.SEARCH_SCOPE|{}SEARCH_SCOPE[0]
+            final fun <get-SEARCH_SCOPE>(): kotlin/Int // dev.deeptelar.telar/Store.Companion.SEARCH_SCOPE.<get-SEARCH_SCOPE>|<get-SEARCH_SCOPE>(){}[0]
 
         final fun checkAddress(kotlin.collections/List<kotlin/String>, kotlin/String) // dev.deeptelar.telar/Store.Companion.checkAddress|checkAddress(kotlin.collections.List<kotlin.String>;kotlin.String){}[0]
         final fun checkLimit(kotlin/Int) // dev.deeptelar.telar/Store.Companion.checkLimit|checkLimit(kotlin.Int){}[0]

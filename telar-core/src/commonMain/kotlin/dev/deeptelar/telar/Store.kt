@@ -38,6 +38,9 @@ import kotlin.time.Instant
  * as a counter, uses [effect], as it would with any other service. A step that fails and is never
  * resumed keeps what it wrote.
  *
+ * [search] finds the items that a query is about. Here it looks for the words of the query; a store
+ * that ranks by meaning, such as `SemanticStore` of `telar-agent`, replaces it.
+ *
  * Every implementation checks what it is given with [checkAddress], [checkNamespace] and
  * [checkLimit], as [MemoryStore] does: a key and each part of a namespace are not empty, and a
  * limit is positive.
@@ -58,9 +61,38 @@ public interface Store {
      */
     public suspend fun list(namespace: List<String>, limit: Int = DEFAULT_LIMIT): List<StoreItem>
 
+    /**
+     * Returns the items of [namespace] and of the namespaces under it that [query] is about, the
+     * best first, at most [limit] of them.
+     *
+     * This one looks for the words of [query] in the key and the value of the [SEARCH_SCOPE] items
+     * that [list] returns first, whatever their case: an item with more of the words comes first,
+     * and of two with as many, the one changed last. An item without any of them is left out, and
+     * so are the words of fewer than two letters. A store that finds items by meaning overrides it.
+     */
+    public suspend fun search(namespace: List<String>, query: String, limit: Int = DEFAULT_SEARCH_LIMIT): List<StoreItem> {
+        checkNamespace(namespace)
+        checkLimit(limit)
+        val words = wordsOf(query)
+        if (words.isEmpty()) return emptyList()
+        return list(namespace, SEARCH_SCOPE)
+            .map { item -> item to wordsOf(item.key + " " + item.value).let { found -> words.count { it in found } } }
+            .filter { (_, matches) -> matches > 0 }
+            // A stable sort: of two items with as many words, the one that list returned first stays first.
+            .sortedByDescending { (_, matches) -> matches }
+            .take(limit)
+            .map { (item, _) -> item }
+    }
+
     public companion object {
         /** The default for the limit of [list]. */
         public const val DEFAULT_LIMIT: Int = 100
+
+        /** The default for the limit of [search]. */
+        public const val DEFAULT_SEARCH_LIMIT: Int = 10
+
+        /** How many items the [search] of a store that has none of its own looks at: the ones changed last. */
+        public const val SEARCH_SCOPE: Int = 1_000
 
         /**
          * Checks a key and a namespace as every [Store] does: neither the key nor a part of the namespace
@@ -165,6 +197,9 @@ private class NamespacedStore(
     override suspend fun list(namespace: List<String>, limit: Int): List<StoreItem> =
         store.list(prefix + namespace, limit).map { it.inside() }
 
+    override suspend fun search(namespace: List<String>, query: String, limit: Int): List<StoreItem> =
+        store.search(prefix + namespace, query, limit).map { it.inside() }
+
     private fun StoreItem.inside(): StoreItem = copy(namespace = namespace.drop(prefix.size))
 }
 
@@ -235,3 +270,26 @@ public suspend fun store(): Store {
 }
 
 private fun List<String>.startsWith(prefix: List<String>): Boolean = size >= prefix.size && subList(0, prefix.size) == prefix
+
+/** The words of [text] in lower case, of two letters or more. A letter or a digit is part of a word, anything else ends it. */
+private fun wordsOf(text: String): Set<String> =
+    text
+        .lowercase()
+        .splitAt { !it.isLetterOrDigit() }
+        .filter { it.length >= 2 }
+        .toSet()
+
+private inline fun String.splitAt(isSeparator: (Char) -> Boolean): List<String> {
+    val words = mutableListOf<String>()
+    val word = StringBuilder()
+    for (char in this) {
+        if (isSeparator(char)) {
+            if (word.isNotEmpty()) words += word.toString()
+            word.clear()
+        } else {
+            word.append(char)
+        }
+    }
+    if (word.isNotEmpty()) words += word.toString()
+    return words
+}

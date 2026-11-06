@@ -15,5 +15,6 @@ public final class dev/deeptelar/telar/checkpoint/file/FileStore : dev/deeptelar
 	public fun get (Ljava/util/List;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun list (Ljava/util/List;ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun put (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun search (Ljava/util/List;Ljava/lang/String;ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 

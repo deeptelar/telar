@@ -503,6 +503,7 @@ public final class dev/deeptelar/telar/MemoryStore : dev/deeptelar/telar/Store {
 	public fun get (Ljava/util/List;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun list (Ljava/util/List;ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun put (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun search (Ljava/util/List;Ljava/lang/String;ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class dev/deeptelar/telar/MergeRuleException : dev/deeptelar/telar/TelarException {
@@ -630,15 +631,21 @@ public abstract interface class dev/deeptelar/telar/StateSerializer {
 public abstract interface class dev/deeptelar/telar/Store {
 	public static final field Companion Ldev/deeptelar/telar/Store$Companion;
 	public static final field DEFAULT_LIMIT I
+	public static final field DEFAULT_SEARCH_LIMIT I
+	public static final field SEARCH_SCOPE I
 	public abstract fun delete (Ljava/util/List;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun get (Ljava/util/List;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun list (Ljava/util/List;ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun list$default (Ldev/deeptelar/telar/Store;Ljava/util/List;ILkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public abstract fun put (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun search (Ljava/util/List;Ljava/lang/String;ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun search$default (Ldev/deeptelar/telar/Store;Ljava/util/List;Ljava/lang/String;ILkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public final class dev/deeptelar/telar/Store$Companion {
 	public static final field DEFAULT_LIMIT I
+	public static final field DEFAULT_SEARCH_LIMIT I
+	public static final field SEARCH_SCOPE I
 	public final fun checkAddress (Ljava/util/List;Ljava/lang/String;)V
 	public final fun checkLimit (I)V
 	public final fun checkNamespace (Ljava/util/List;)V
@@ -646,6 +653,8 @@ public final class dev/deeptelar/telar/Store$Companion {
 
 public final class dev/deeptelar/telar/Store$DefaultImpls {
 	public static synthetic fun list$default (Ldev/deeptelar/telar/Store;Ljava/util/List;ILkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static fun search (Ldev/deeptelar/telar/Store;Ljava/util/List;Ljava/lang/String;ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun search$default (Ldev/deeptelar/telar/Store;Ljava/util/List;Ljava/lang/String;ILkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public final class dev/deeptelar/telar/StoreCorruptedException : dev/deeptelar/telar/TelarException {
