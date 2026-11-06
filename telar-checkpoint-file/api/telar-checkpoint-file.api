@@ -7,3 +7,13 @@ public final class dev/deeptelar/telar/checkpoint/file/FileCheckpointer : dev/de
 	public fun save (Ljava/lang/String;Ldev/deeptelar/telar/Checkpoint;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
+public final class dev/deeptelar/telar/checkpoint/file/FileStore : dev/deeptelar/telar/Store {
+	public static final field ITEMS Ljava/lang/String;
+	public fun <init> (Lkotlinx/io/files/Path;Lkotlinx/io/files/FileSystem;Lkotlin/time/Clock;)V
+	public synthetic fun <init> (Lkotlinx/io/files/Path;Lkotlinx/io/files/FileSystem;Lkotlin/time/Clock;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun delete (Ljava/util/List;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun get (Ljava/util/List;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun list (Ljava/util/List;ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun put (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+

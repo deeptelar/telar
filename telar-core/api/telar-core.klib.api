@@ -698,10 +698,10 @@ final class dev.deeptelar.telar/Retry { // dev.deeptelar.telar/Retry|null[0]
 }
 
 final class dev.deeptelar.telar/StoreCorruptedException : dev.deeptelar.telar/TelarException { // dev.deeptelar.telar/StoreCorruptedException|null[0]
-    constructor <init>(kotlin.collections/List<kotlin/String>, kotlin/String, kotlin/String, kotlin/Throwable? = ...) // dev.deeptelar.telar/StoreCorruptedException.<init>|<init>(kotlin.collections.List<kotlin.String>;kotlin.String;kotlin.String;kotlin.Throwable?){}[0]
+    constructor <init>(kotlin.collections/List<kotlin/String>, kotlin/String?, kotlin/String, kotlin/Throwable? = ...) // dev.deeptelar.telar/StoreCorruptedException.<init>|<init>(kotlin.collections.List<kotlin.String>;kotlin.String?;kotlin.String;kotlin.Throwable?){}[0]
 
     final val key // dev.deeptelar.telar/StoreCorruptedException.key|{}key[0]
-        final fun <get-key>(): kotlin/String // dev.deeptelar.telar/StoreCorruptedException.key.<get-key>|<get-key>(){}[0]
+        final fun <get-key>(): kotlin/String? // dev.deeptelar.telar/StoreCorruptedException.key.<get-key>|<get-key>(){}[0]
     final val namespace // dev.deeptelar.telar/StoreCorruptedException.namespace|{}namespace[0]
         final fun <get-namespace>(): kotlin.collections/List<kotlin/String> // dev.deeptelar.telar/StoreCorruptedException.namespace.<get-namespace>|<get-namespace>(){}[0]
 }

@@ -14,3 +14,12 @@ final class <#A: kotlin/Any?> dev.deeptelar.telar.checkpoint.file/FileCheckpoint
     final suspend fun load(kotlin/String): dev.deeptelar.telar/Checkpoint<#A>? // dev.deeptelar.telar.checkpoint.file/FileCheckpointer.load|load(kotlin.String){}[0]
     final suspend fun save(kotlin/String, dev.deeptelar.telar/Checkpoint<#A>) // dev.deeptelar.telar.checkpoint.file/FileCheckpointer.save|save(kotlin.String;dev.deeptelar.telar.Checkpoint<1:0>){}[0]
 }
+
+final class dev.deeptelar.telar.checkpoint.file/FileStore : dev.deeptelar.telar/Store { // dev.deeptelar.telar.checkpoint.file/FileStore|null[0]
+    constructor <init>(kotlinx.io.files/Path, kotlinx.io.files/FileSystem = ..., kotlin.time/Clock = ...) // dev.deeptelar.telar.checkpoint.file/FileStore.<init>|<init>(kotlinx.io.files.Path;kotlinx.io.files.FileSystem;kotlin.time.Clock){}[0]
+
+    final suspend fun delete(kotlin.collections/List<kotlin/String>, kotlin/String) // dev.deeptelar.telar.checkpoint.file/FileStore.delete|delete(kotlin.collections.List<kotlin.String>;kotlin.String){}[0]
+    final suspend fun get(kotlin.collections/List<kotlin/String>, kotlin/String): dev.deeptelar.telar/StoreItem? // dev.deeptelar.telar.checkpoint.file/FileStore.get|get(kotlin.collections.List<kotlin.String>;kotlin.String){}[0]
+    final suspend fun list(kotlin.collections/List<kotlin/String>, kotlin/Int): kotlin.collections/List<dev.deeptelar.telar/StoreItem> // dev.deeptelar.telar.checkpoint.file/FileStore.list|list(kotlin.collections.List<kotlin.String>;kotlin.Int){}[0]
+    final suspend fun put(kotlin.collections/List<kotlin/String>, kotlin/String, kotlin/String) // dev.deeptelar.telar.checkpoint.file/FileStore.put|put(kotlin.collections.List<kotlin.String>;kotlin.String;kotlin.String){}[0]
+}
