@@ -7,6 +7,8 @@ breaking changes.
 
 ## [Unreleased]
 
+## [0.1.0-alpha18] - 2026-11-06
+
 ### Added
 
 - `Store` keeps what an agent learned between conversations, as text under a namespace and a key,
@@ -677,7 +679,8 @@ First public release. Everything below is new compared with the unpublished beta
 - `START` counted toward `maxIterations`.
 - `FileCheckpointer` did not write the format version into its files.
 
-[Unreleased]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha17...HEAD
+[Unreleased]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha18...HEAD
+[0.1.0-alpha18]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha17...v0.1.0-alpha18
 [0.1.0-alpha17]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha16...v0.1.0-alpha17
 [0.1.0-alpha16]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha15...v0.1.0-alpha16
 [0.1.0-alpha15]: https://github.com/deeptelar/telar/compare/v0.1.0-alpha14...v0.1.0-alpha15

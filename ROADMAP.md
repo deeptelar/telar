@@ -12,17 +12,17 @@ what is already released.
 To ask for a feature or to move one up, add a 👍 to its issue or
 [start a discussion](https://github.com/deeptelar/telar/discussions).
 
-Last updated: 2026-10-26.
+Last updated: 2026-11-06.
 
 ## Where the project is
 
-`0.1.0-alpha17` is the latest release on Maven Central. Telar has the graph builder and the engine:
+`0.1.0-alpha18` is the latest release on Maven Central. Telar has the graph builder and the engine:
 loops, parallel branches with rules for what they write, subgraphs, streaming, checkpoints with the
 history of a run, pausing for a person before a node or in the middle of its work, retries and time
 limits for a node, nodes that run once for each item of a list, and side effects that run once per
 step. Around the engine it has checkpointers for memory, files, the browser and SQLite on every
 platform, a tool-calling agent for every platform with tools that change the state, typed answers, a
-token budget, long conversations, teams of agents and the tools of MCP servers, model modules for Claude, for OpenAI, Ollama and the
+token budget, long conversations, teams of agents, a memory across conversations and the tools of MCP servers, model modules for Claude, for OpenAI, Ollama and the
 other servers with the Chat Completions API, for LangChain4j, and for Jev, a decision model, and
 modules for tests and for OpenTelemetry. The API can still change in any release.
 
@@ -33,7 +33,8 @@ Section 3 is what is worked on now. Long conversations are done ([#105]): a mode
 already read, and reads a shorter conversation while the state keeps all of it. Teams of agents are
 done too ([#170]): a supervisor that gives out tasks, and agents that hand a conversation to each
 other. So is a memory that an agent keeps across conversations ([#171]): a store with the
-tools of an agent, kept in a file, in SQLite or in the browser, and searched by meaning.
+tools of an agent, kept in a file, in SQLite or in the browser, and searched by meaning. Next
+comes the rest of tracing ([#38]): a span for each call to a model and each tool call.
 
 ## The way to 1.0
 

@@ -180,17 +180,17 @@ dependency:
 
 ```kotlin
 dependencies {
-    implementation("dev.deeptelar:telar-core:0.1.0-alpha17")
+    implementation("dev.deeptelar:telar-core:0.1.0-alpha18")
 
     // Only if you need them:
-    implementation("dev.deeptelar:telar-serialization:0.1.0-alpha17")      // save @Serializable states
-    implementation("dev.deeptelar:telar-checkpoint-file:0.1.0-alpha17")    // FileCheckpointer
-    implementation("dev.deeptelar:telar-checkpoint-browser:0.1.0-alpha17") // LocalStorageCheckpointer (browser)
-    implementation("dev.deeptelar:telar-agent:0.1.0-alpha17")              // ChatModel, tools, toolAgent
-    implementation("dev.deeptelar:telar-anthropic:0.1.0-alpha17")          // AnthropicChatModel
-    implementation("dev.deeptelar:telar-openai:0.1.0-alpha17")             // OpenAiChatModel (OpenAI, Ollama)
-    implementation("dev.deeptelar:telar-langchain4j:0.1.0-alpha17")        // LangChain4j models (JVM, Java 17+)
-    implementation("dev.deeptelar:telar-typesafe:0.1.0-alpha17")           // TypeSafeDecisionModel (Jev)
+    implementation("dev.deeptelar:telar-serialization:0.1.0-alpha18")      // save @Serializable states
+    implementation("dev.deeptelar:telar-checkpoint-file:0.1.0-alpha18")    // FileCheckpointer
+    implementation("dev.deeptelar:telar-checkpoint-browser:0.1.0-alpha18") // LocalStorageCheckpointer (browser)
+    implementation("dev.deeptelar:telar-agent:0.1.0-alpha18")              // ChatModel, tools, toolAgent
+    implementation("dev.deeptelar:telar-anthropic:0.1.0-alpha18")          // AnthropicChatModel
+    implementation("dev.deeptelar:telar-openai:0.1.0-alpha18")             // OpenAiChatModel (OpenAI, Ollama)
+    implementation("dev.deeptelar:telar-langchain4j:0.1.0-alpha18")        // LangChain4j models (JVM, Java 17+)
+    implementation("dev.deeptelar:telar-typesafe:0.1.0-alpha18")           // TypeSafeDecisionModel (Jev)
 }
 ```
 
