@@ -97,7 +97,9 @@ node. In a tool, the model gets that as an error result.
   Remembering under a name that is used replaces what was there, so a preference that changes
   stays one memory.
 - `forget(key)` removes it, for a user who asks the agent to forget something.
-- `recall()` lists what is kept, the last changed first, at most `limit` items.
+- `recall()` lists what is kept, the last changed first, at most `limit` items. With a query,
+  `recall(query = "what the traveller eats")` lists what the query is about instead, the best first,
+  at most `searchLimit` items, with the `search` of the store (see [below](#finding-what-a-query-is-about)).
 
 Tell the model in its system prompt what is worth remembering. A model that is not told tends to
 remember nothing, or everything.
@@ -115,6 +117,45 @@ A write goes straight to the store, and is not part of the checkpoint:
   [`effect`](side-effects.md), as it would with any other service.
 - **A step that fails and is never resumed keeps what it wrote.** Deleting a thread, and `fork`,
   leave the store as it is.
+
+## Finding what a query is about
+
+`search` returns the items of a namespace that a query is about, the best first:
+
+```kotlin
+val found = store().search(listOf("memories"), "what does the traveller eat?", limit = 5)
+```
+
+Every store has it. By itself, a store looks for the words of the query in the keys and the values
+of its last changed 1,000 items, so "fish" finds "Piscivegetarian: fish, but no meat", and "what
+does she eat?" finds nothing. Wrap the store in a `SemanticStore` of `telar-agent`, with an
+`EmbeddingModel`, to find what the query means:
+
+```kotlin
+val client = HttpClient()
+val embeddings = OpenAiEmbeddingModel(client, apiKey = openAiKey)        // or OpenAiEmbeddingModel.ollama(client, "nomic-embed-text")
+val store = SemanticStore(FileStore(directory), embeddings)
+
+agent.invoke(AgentState("Plan my dinner."), GraphConfig("plan-3", store = store.within("users", userId)))
+```
+
+`OpenAiEmbeddingModel` of `telar-openai` calls the embeddings API of OpenAI, which Ollama and
+Gemini serve too. Give it the `baseUrl` of the server, as for `OpenAiChatModel`.
+
+What to know:
+
+- **A vector is made when a search first needs it.** `put` calls no model, and an item that other
+  code put into the store is found too. The vectors are kept in the same store, under the namespace
+  `SemanticStore.VECTORS`, so the next search only makes the vector of the query. `list` leaves that
+  namespace out.
+- **A vector is made again when its item changed**, or when the model did: the `id` of an
+  `EmbeddingModel` names it and its settings.
+- **Every item gets a score**, the cosine of its vector and the vector of the query, and a search
+  returns the best ones. `minScore` leaves out those below it. What a good limit is depends on the
+  model.
+- **A search looks at the last changed 1,000 items** of the namespace, or `scope` of them. That is
+  plenty for what one user tells an agent. A store of a million documents needs a database with a
+  vector index of its own.
 
 ## Stores that keep what they remember
 
