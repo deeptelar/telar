@@ -19,12 +19,14 @@ public final class dev/deeptelar/telar/checkpoint/sqldelight/SqlDelightCheckpoin
 
 public final class dev/deeptelar/telar/checkpoint/sqldelight/SqlDelightStore : dev/deeptelar/telar/Store {
 	public static final field DEFAULT_TABLE Ljava/lang/String;
-	public static final field NANOS_PER_SECOND J
+	public static final field MICROS_PER_SECOND J
+	public static final field NANOS_PER_MICRO J
 	public fun <init> (Lapp/cash/sqldelight/db/SqlDriver;Ljava/lang/String;Lkotlin/time/Clock;)V
 	public synthetic fun <init> (Lapp/cash/sqldelight/db/SqlDriver;Ljava/lang/String;Lkotlin/time/Clock;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun delete (Ljava/util/List;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun get (Ljava/util/List;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun list (Ljava/util/List;ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun put (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun search (Ljava/util/List;Ljava/lang/String;ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 

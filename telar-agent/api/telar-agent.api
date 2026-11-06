@@ -486,9 +486,19 @@ public final synthetic class dev/deeptelar/telar/agent/Description$Impl : dev/de
 	public final synthetic fun value ()Ljava/lang/String;
 }
 
+public abstract interface class dev/deeptelar/telar/agent/EmbeddingModel {
+	public abstract fun embed (Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun getId ()Ljava/lang/String;
+}
+
+public final class dev/deeptelar/telar/agent/EmbeddingModelException : dev/deeptelar/telar/TelarException {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+}
+
 public final class dev/deeptelar/telar/agent/MemoryToolsKt {
-	public static final fun memoryTools (Ljava/util/List;I)Ljava/util/List;
-	public static synthetic fun memoryTools$default (Ljava/util/List;IILjava/lang/Object;)Ljava/util/List;
+	public static final fun memoryTools (Ljava/util/List;II)Ljava/util/List;
+	public static synthetic fun memoryTools$default (Ljava/util/List;IIILjava/lang/Object;)Ljava/util/List;
 }
 
 public final class dev/deeptelar/telar/agent/ObservedModelCall {
@@ -548,6 +558,21 @@ public final class dev/deeptelar/telar/agent/Question$YesNo : dev/deeptelar/tela
 	public final fun getYes ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/deeptelar/telar/agent/SemanticStore : dev/deeptelar/telar/Store {
+	public static final field Companion Ldev/deeptelar/telar/agent/SemanticStore$Companion;
+	public static final field VECTORS Ljava/lang/String;
+	public fun <init> (Ldev/deeptelar/telar/Store;Ldev/deeptelar/telar/agent/EmbeddingModel;DI)V
+	public synthetic fun <init> (Ldev/deeptelar/telar/Store;Ldev/deeptelar/telar/agent/EmbeddingModel;DIILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun delete (Ljava/util/List;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun get (Ljava/util/List;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun list (Ljava/util/List;ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun put (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun search (Ljava/util/List;Ljava/lang/String;ILkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class dev/deeptelar/telar/agent/SemanticStore$Companion {
 }
 
 public final class dev/deeptelar/telar/agent/StateTool {

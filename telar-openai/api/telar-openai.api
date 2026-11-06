@@ -13,3 +13,17 @@ public final class dev/deeptelar/telar/openai/OpenAiChatModel$Companion {
 	public static synthetic fun ollama-jSaE0eg$default (Ldev/deeptelar/telar/openai/OpenAiChatModel$Companion;Lio/ktor/client/HttpClient;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Ljava/lang/String;Lkotlin/time/Duration;ILjava/lang/Object;)Ldev/deeptelar/telar/openai/OpenAiChatModel;
 }
 
+public final class dev/deeptelar/telar/openai/OpenAiEmbeddingModel : dev/deeptelar/telar/agent/EmbeddingModel {
+	public static final field Companion Ldev/deeptelar/telar/openai/OpenAiEmbeddingModel$Companion;
+	public static final field DEFAULT_MODEL Ljava/lang/String;
+	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/util/Map;Ljava/lang/String;Lkotlin/time/Duration;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/util/Map;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun embed (Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getId ()Ljava/lang/String;
+}
+
+public final class dev/deeptelar/telar/openai/OpenAiEmbeddingModel$Companion {
+	public final fun ollama-Q2Q30fc (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Duration;)Ldev/deeptelar/telar/openai/OpenAiEmbeddingModel;
+	public static synthetic fun ollama-Q2Q30fc$default (Ldev/deeptelar/telar/openai/OpenAiEmbeddingModel$Companion;Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/lang/String;Lkotlin/time/Duration;ILjava/lang/Object;)Ldev/deeptelar/telar/openai/OpenAiEmbeddingModel;
+}
+

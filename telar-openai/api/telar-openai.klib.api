@@ -21,3 +21,19 @@ final class dev.deeptelar.telar.openai/OpenAiChatModel : dev.deeptelar.telar.age
         final fun ollama(io.ktor.client/HttpClient, kotlin/String, kotlinx.serialization.json/JsonObject = ..., kotlin/String = ..., kotlin.time/Duration? = ...): dev.deeptelar.telar.openai/OpenAiChatModel // dev.deeptelar.telar.openai/OpenAiChatModel.Companion.ollama|ollama(io.ktor.client.HttpClient;kotlin.String;kotlinx.serialization.json.JsonObject;kotlin.String;kotlin.time.Duration?){}[0]
     }
 }
+
+final class dev.deeptelar.telar.openai/OpenAiEmbeddingModel : dev.deeptelar.telar.agent/EmbeddingModel { // dev.deeptelar.telar.openai/OpenAiEmbeddingModel|null[0]
+    constructor <init>(io.ktor.client/HttpClient, kotlin/String?, kotlin/String = ..., kotlin/Int? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin/String = ..., kotlin.time/Duration? = ...) // dev.deeptelar.telar.openai/OpenAiEmbeddingModel.<init>|<init>(io.ktor.client.HttpClient;kotlin.String?;kotlin.String;kotlin.Int?;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.String;kotlin.time.Duration?){}[0]
+
+    final val id // dev.deeptelar.telar.openai/OpenAiEmbeddingModel.id|{}id[0]
+        final fun <get-id>(): kotlin/String // dev.deeptelar.telar.openai/OpenAiEmbeddingModel.id.<get-id>|<get-id>(){}[0]
+
+    final suspend fun embed(kotlin.collections/List<kotlin/String>): kotlin.collections/List<kotlin/FloatArray> // dev.deeptelar.telar.openai/OpenAiEmbeddingModel.embed|embed(kotlin.collections.List<kotlin.String>){}[0]
+
+    final object Companion { // dev.deeptelar.telar.openai/OpenAiEmbeddingModel.Companion|null[0]
+        final const val DEFAULT_MODEL // dev.deeptelar.telar.openai/OpenAiEmbeddingModel.Companion.DEFAULT_MODEL|{}DEFAULT_MODEL[0]
+            final fun <get-DEFAULT_MODEL>(): kotlin/String // dev.deeptelar.telar.openai/OpenAiEmbeddingModel.Companion.DEFAULT_MODEL.<get-DEFAULT_MODEL>|<get-DEFAULT_MODEL>(){}[0]
+
+        final fun ollama(io.ktor.client/HttpClient, kotlin/String, kotlin/String = ..., kotlin.time/Duration? = ...): dev.deeptelar.telar.openai/OpenAiEmbeddingModel // dev.deeptelar.telar.openai/OpenAiEmbeddingModel.Companion.ollama|ollama(io.ktor.client.HttpClient;kotlin.String;kotlin.String;kotlin.time.Duration?){}[0]
+    }
+}

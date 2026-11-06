@@ -41,7 +41,9 @@ made under that name keep it. The repository is `deeptelar/telar` and the demo i
 ### Modules
 
 - **`telar-core`** (KMP, `commonMain` only, depends only on kotlinx-coroutines): graph
-  builder, engine, checkpoint interfaces
+  builder, engine, checkpoint interfaces, and `Store` (`Store.kt`): what runs remember across
+  threads, given with `GraphConfig.store` and reached with `store()`; `MemoryStore`, `within` views,
+  and a `search` that matches words unless a store overrides it
 - **`telar-serialization`** (KMP): `KotlinxStateSerializer` for `@Serializable` states,
   `CheckpointCodec` (the shared checkpoint format, also used by `FileCheckpointer`)
 - **`telar-checkpoint-file`** (KMP): `FileCheckpointer` and `FileStore` on kotlinx-io
@@ -61,12 +63,15 @@ made under that name keep it. The repository is `deeptelar/telar` and the demo i
   its own conversation, and the supervisor's tool call `ask_<name>` gives it a task. `handoffTeam` shares one conversation
   between agents, which pass it on with `transfer_to_<name>`; at each hand-off the node `handover` turns
   tool calls into notes and removes `providerContent`. `AgentObserver` is a `GraphObserver` that is also
-  told about the calls to models and tools in a node; it reaches the run's observers with `forEachNodeObserver` of core
+  told about the calls to models and tools in a node; it reaches the run's observers with `forEachNodeObserver` of core.
+  `memoryTools` (`remember`, `forget`, `recall`) work on the `Store` of the run (`store()` of core);
+  `SemanticStore` wraps any `Store` and makes its `search` find by meaning with an `EmbeddingModel`,
+  keeping the vectors in the store under `SemanticStore.VECTORS`
 - **`telar-anthropic`** (KMP): `AnthropicChatModel`, the Claude Messages API on Ktor client
   core. The app supplies the `HttpClient` and its engine
 - **`telar-openai`** (KMP): `OpenAiChatModel`, the Chat Completions API on Ktor client core. One
   class for OpenAI, Ollama (`OpenAiChatModel.ollama`) and every other server with that API, chosen
-  by `baseUrl`
+  by `baseUrl`. `OpenAiEmbeddingModel` is the `EmbeddingModel` of the same servers
 - **`telar-langchain4j`** (JVM): `LangChain4jChatModel` adapts a LangChain4j 1.x model to
   `ChatModel`; `chatNode` / `chatMessagesNode` build a node straight from a LangChain4j model
 - **`telar-typesafe`** (KMP): `TypeSafeDecisionModel`, the Jev decision model of TypeSafe AI
@@ -142,7 +147,7 @@ active nodes. A checkpoint is saved after every step when a checkpointer is conf
 | `NodeAction<State>` | `suspend (State) -> State`, a node's transformation |
 | `EdgeCondition<State>` | `suspend (State) -> String`, routes to the next node name or `END` |
 | `Reducer<State>` | `fun interface` with a suspend `reduce`; merges whole states of parallel nodes; not needed for work/update nodes. `mergeRules { append(...); replace(...); merge(...) }` builds one from a rule per property; given to `compile()` as `rules` or as `reducer`, the rules hold for work/update nodes too (each node reads the state from before the step) |
-| `GraphConfig<State>` | `threadId`, `checkpointer`, `interruptBefore/After` (sets), `maxIterations`, `observers` |
+| `GraphConfig<State>` | `threadId`, `checkpointer`, `interruptBefore/After` (sets), `maxIterations`, `observers`, `store` |
 | `GraphObserver` | Told when a run, a node or a step starts and ends, and when a checkpoint is saved; never gets the state. `nodeContext` adds to the coroutine context of a node |
 | `GraphResult<State>` / `GraphEvent<State>` | Outcome of `invoke`/`resume`, and events from `stream` (per node and per step) |
 | `GraphTopology` | Nodes and edges of a compiled graph, from `CompiledGraph.topology` |

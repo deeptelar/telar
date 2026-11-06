@@ -22,6 +22,13 @@ breaking changes.
   JSON file for each namespace, `SqlDelightStore` a table in any SQLite database of SQLDelight (also
   the one of `SqlDelightCheckpointer`), and `LocalStorageStore` an entry of `localStorage` for each
   item. ([#171](https://github.com/deeptelar/telar/issues/171))
+- `Store.search` returns the items that a query is about, the best first. Every store looks for the
+  words of the query; `SemanticStore` of `telar-agent` finds what the query means, with the vectors
+  of an `EmbeddingModel`, which it makes when a search first needs them and keeps in the store.
+  `recall` of `memoryTools` takes a `query`. ([#171](https://github.com/deeptelar/telar/issues/171))
+- `EmbeddingModel` is the interface for models that turn texts into vectors, and
+  `OpenAiEmbeddingModel` of `telar-openai` calls the embeddings API of OpenAI, Ollama, Gemini and
+  other servers with it. ([#171](https://github.com/deeptelar/telar/issues/171))
 
 ## [0.1.0-alpha17] - 2026-11-04
 

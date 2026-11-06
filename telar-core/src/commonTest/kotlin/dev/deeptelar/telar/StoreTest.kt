@@ -243,4 +243,47 @@ class StoreTest {
 
             assertEquals("vegan", store.get(preferences, "diet")?.value)
         }
+
+    @Test
+    fun aSearchFindsTheItemsWithTheWordsOfTheQuery() =
+        runTest {
+            val store = MemoryStore(StillClock())
+            store.put(listOf("users", "ana"), "diet", "Piscivegetarian: fish, but no meat.")
+            store.put(listOf("users", "ana"), "lunch", "Lunch is the big meal of the day.")
+            store.put(listOf("users", "ana", "trips"), "porto", "Loved the fish market in Porto.")
+            store.put(listOf("users", "joan"), "diet", "Vegan, no fish.")
+
+            // Two words of the query in "porto", one in "diet": the namespaces under it are searched too.
+            assertEquals(listOf("porto", "diet"), store.search(listOf("users", "ana"), "Fish MARKET?").map { it.key })
+            // A key counts as well, and of two items with as many words the last changed comes first.
+            assertEquals(
+                listOf(listOf("users", "joan") to "diet", listOf("users", "ana") to "diet", listOf("users", "ana", "trips") to "porto"),
+                store.search(emptyList(), "diet fish").map { it.namespace to it.key },
+            )
+            assertEquals(listOf("porto"), store.search(listOf("users", "ana"), "fish", limit = 1).map { it.key })
+            assertTrue(store.search(listOf("users", "ana"), "pizza").isEmpty())
+            // Words of one letter and signs are no words.
+            assertTrue(store.search(listOf("users", "ana"), "a ? !").isEmpty())
+            assertFailsWith<GraphValidationException> { store.search(listOf(""), "fish") }
+            assertFailsWith<GraphValidationException> { store.search(emptyList(), "fish", limit = 0) }
+        }
+
+    @Test
+    fun aViewSearchesItsPartOfTheStoreWithTheSearchOfTheStore() =
+        runTest {
+            val searched = mutableListOf<List<String>>()
+            val store =
+                object : Store by MemoryStore() {
+                    override suspend fun search(namespace: List<String>, query: String, limit: Int): List<StoreItem> {
+                        searched += namespace
+                        return list(namespace, limit)
+                    }
+                }
+            store.put(listOf("users", "ana", "memories"), "diet", "fish")
+
+            val found = store.within("users", "ana").search(listOf("memories"), "anything", limit = 3)
+
+            assertEquals(listOf(listOf("users", "ana", "memories")), searched)
+            assertEquals(listOf(StoreItem(listOf("memories"), "diet", "fish", found.single().updatedAt)), found)
+        }
 }

@@ -134,7 +134,38 @@ class MemoryToolsTest {
     fun `a namespace and a limit are checked`() {
         assertFailsWith<GraphValidationException> { memoryTools(listOf("")) }
         assertFailsWith<GraphValidationException> { memoryTools(limit = 0) }
+        assertFailsWith<GraphValidationException> { memoryTools(searchLimit = 0) }
         assertEquals(listOf("remember", "forget", "recall"), memoryTools().map { it.spec.name })
         assertNull(memoryTools().first().reconcile)
     }
+
+    @Test
+    fun `recall with a query finds the memories with its words`() =
+        runTest {
+            store.put(listOf("memories"), "diet", "Piscivegetarian: fish but no meat.")
+            store.put(listOf("memories"), "lunch", "The big meal of the day.")
+            val model =
+                ScriptedModel(
+                    calls(
+                        call("1", "recall", "query" to "fish"),
+                        call("2", "recall", "query" to "pizza"),
+                        call(
+                            "3",
+                            "recall",
+                            "query" to " ",
+                        ),
+                    ),
+                    says("Fish, then."),
+                )
+            toolAgent(model, memoryTools()).invoke(AgentState("Plan my dinner."), GraphConfig(store = store))
+
+            assertEquals(
+                listOf(
+                    "diet: Piscivegetarian: fish but no meat.",
+                    "Nothing remembered is about pizza.",
+                    "lunch: The big meal of the day.\ndiet: Piscivegetarian: fish but no meat.",
+                ),
+                results(model, 1),
+            )
+        }
 }

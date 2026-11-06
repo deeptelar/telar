@@ -31,6 +31,13 @@ abstract interface dev.deeptelar.telar.agent/AgentObserver : dev.deeptelar.telar
     open fun onToolCallStarted(dev.deeptelar.telar.agent/ObservedToolCall) // dev.deeptelar.telar.agent/AgentObserver.onToolCallStarted|onToolCallStarted(dev.deeptelar.telar.agent.ObservedToolCall){}[0]
 }
 
+abstract interface dev.deeptelar.telar.agent/EmbeddingModel { // dev.deeptelar.telar.agent/EmbeddingModel|null[0]
+    abstract val id // dev.deeptelar.telar.agent/EmbeddingModel.id|{}id[0]
+        abstract fun <get-id>(): kotlin/String // dev.deeptelar.telar.agent/EmbeddingModel.id.<get-id>|<get-id>(){}[0]
+
+    abstract suspend fun embed(kotlin.collections/List<kotlin/String>): kotlin.collections/List<kotlin/FloatArray> // dev.deeptelar.telar.agent/EmbeddingModel.embed|embed(kotlin.collections.List<kotlin.String>){}[0]
+}
+
 sealed interface dev.deeptelar.telar.agent/Answer { // dev.deeptelar.telar.agent/Answer|null[0]
     final class Choice : dev.deeptelar.telar.agent/Answer { // dev.deeptelar.telar.agent/Answer.Choice|null[0]
         constructor <init>(kotlin/String, kotlin.collections/Map<kotlin/String, kotlin/Double> = ..., kotlin/Double = ...) // dev.deeptelar.telar.agent/Answer.Choice.<init>|<init>(kotlin.String;kotlin.collections.Map<kotlin.String,kotlin.Double>;kotlin.Double){}[0]
@@ -569,6 +576,10 @@ final class dev.deeptelar.telar.agent/DecisionResponse { // dev.deeptelar.telar.
     final fun toString(): kotlin/String // dev.deeptelar.telar.agent/DecisionResponse.toString|toString(){}[0]
 }
 
+final class dev.deeptelar.telar.agent/EmbeddingModelException : dev.deeptelar.telar/TelarException { // dev.deeptelar.telar.agent/EmbeddingModelException|null[0]
+    constructor <init>(kotlin/String, kotlin/Throwable? = ...) // dev.deeptelar.telar.agent/EmbeddingModelException.<init>|<init>(kotlin.String;kotlin.Throwable?){}[0]
+}
+
 final class dev.deeptelar.telar.agent/ObservedModelCall { // dev.deeptelar.telar.agent/ObservedModelCall|null[0]
     final val model // dev.deeptelar.telar.agent/ObservedModelCall.model|{}model[0]
         final fun <get-model>(): dev.deeptelar.telar.agent/ChatModel // dev.deeptelar.telar.agent/ObservedModelCall.model.<get-model>|<get-model>(){}[0]
@@ -587,6 +598,21 @@ final class dev.deeptelar.telar.agent/ObservedToolCall { // dev.deeptelar.telar.
         final fun <get-node>(): dev.deeptelar.telar/ObservedNode // dev.deeptelar.telar.agent/ObservedToolCall.node.<get-node>|<get-node>(){}[0]
 
     final fun toString(): kotlin/String // dev.deeptelar.telar.agent/ObservedToolCall.toString|toString(){}[0]
+}
+
+final class dev.deeptelar.telar.agent/SemanticStore : dev.deeptelar.telar/Store { // dev.deeptelar.telar.agent/SemanticStore|null[0]
+    constructor <init>(dev.deeptelar.telar/Store, dev.deeptelar.telar.agent/EmbeddingModel, kotlin/Double = ..., kotlin/Int = ...) // dev.deeptelar.telar.agent/SemanticStore.<init>|<init>(dev.deeptelar.telar.Store;dev.deeptelar.telar.agent.EmbeddingModel;kotlin.Double;kotlin.Int){}[0]
+
+    final suspend fun delete(kotlin.collections/List<kotlin/String>, kotlin/String) // dev.deeptelar.telar.agent/SemanticStore.delete|delete(kotlin.collections.List<kotlin.String>;kotlin.String){}[0]
+    final suspend fun get(kotlin.collections/List<kotlin/String>, kotlin/String): dev.deeptelar.telar/StoreItem? // dev.deeptelar.telar.agent/SemanticStore.get|get(kotlin.collections.List<kotlin.String>;kotlin.String){}[0]
+    final suspend fun list(kotlin.collections/List<kotlin/String>, kotlin/Int): kotlin.collections/List<dev.deeptelar.telar/StoreItem> // dev.deeptelar.telar.agent/SemanticStore.list|list(kotlin.collections.List<kotlin.String>;kotlin.Int){}[0]
+    final suspend fun put(kotlin.collections/List<kotlin/String>, kotlin/String, kotlin/String) // dev.deeptelar.telar.agent/SemanticStore.put|put(kotlin.collections.List<kotlin.String>;kotlin.String;kotlin.String){}[0]
+    final suspend fun search(kotlin.collections/List<kotlin/String>, kotlin/String, kotlin/Int): kotlin.collections/List<dev.deeptelar.telar/StoreItem> // dev.deeptelar.telar.agent/SemanticStore.search|search(kotlin.collections.List<kotlin.String>;kotlin.String;kotlin.Int){}[0]
+
+    final object Companion { // dev.deeptelar.telar.agent/SemanticStore.Companion|null[0]
+        final const val VECTORS // dev.deeptelar.telar.agent/SemanticStore.Companion.VECTORS|{}VECTORS[0]
+            final fun <get-VECTORS>(): kotlin/String // dev.deeptelar.telar.agent/SemanticStore.Companion.VECTORS.<get-VECTORS>|<get-VECTORS>(){}[0]
+    }
 }
 
 final class dev.deeptelar.telar.agent/TeamAgent { // dev.deeptelar.telar.agent/TeamAgent|null[0]
@@ -769,7 +795,7 @@ final fun <#A: kotlin/Any?> dev.deeptelar.telar.agent/Tool(kotlin/String, kotlin
 final fun <#A: kotlin/Any?> dev.deeptelar.telar.agent/Tool(kotlin/String, kotlin/String, kotlinx.serialization/KSerializer<#A>, kotlin.coroutines/SuspendFunction1<#A, kotlin/String?>, kotlin.coroutines/SuspendFunction1<#A, kotlin/String>): dev.deeptelar.telar.agent/Tool // dev.deeptelar.telar.agent/Tool|Tool(kotlin.String;kotlin.String;kotlinx.serialization.KSerializer<0:0>;kotlin.coroutines.SuspendFunction1<0:0,kotlin.String?>;kotlin.coroutines.SuspendFunction1<0:0,kotlin.String>){0§<kotlin.Any?>}[0]
 final fun dev.deeptelar.telar.agent/handoffTeam(kotlin.collections/List<dev.deeptelar.telar.agent/TeamAgent>, kotlin/Int? = ...): dev.deeptelar.telar/CompiledGraph<dev.deeptelar.telar.agent/TeamState> // dev.deeptelar.telar.agent/handoffTeam|handoffTeam(kotlin.collections.List<dev.deeptelar.telar.agent.TeamAgent>;kotlin.Int?){}[0]
 final fun dev.deeptelar.telar.agent/keepLast(kotlin/Int): kotlin/Function1<kotlin.collections/List<dev.deeptelar.telar.agent/ChatMessage>, kotlin.collections/List<dev.deeptelar.telar.agent/ChatMessage>> // dev.deeptelar.telar.agent/keepLast|keepLast(kotlin.Int){}[0]
-final fun dev.deeptelar.telar.agent/memoryTools(kotlin.collections/List<kotlin/String> = ..., kotlin/Int = ...): kotlin.collections/List<dev.deeptelar.telar.agent/Tool> // dev.deeptelar.telar.agent/memoryTools|memoryTools(kotlin.collections.List<kotlin.String>;kotlin.Int){}[0]
+final fun dev.deeptelar.telar.agent/memoryTools(kotlin.collections/List<kotlin/String> = ..., kotlin/Int = ..., kotlin/Int = ...): kotlin.collections/List<dev.deeptelar.telar.agent/Tool> // dev.deeptelar.telar.agent/memoryTools|memoryTools(kotlin.collections.List<kotlin.String>;kotlin.Int;kotlin.Int){}[0]
 final fun dev.deeptelar.telar.agent/supervisor(dev.deeptelar.telar.agent/ChatModel, kotlin.collections/List<dev.deeptelar.telar.agent/TeamAgent>, kotlin/String? = ..., kotlin/Int? = ..., dev.deeptelar.telar/Retry? = ..., kotlin/Function1<kotlin.collections/List<dev.deeptelar.telar.agent/ChatMessage>, kotlin.collections/List<dev.deeptelar.telar.agent/ChatMessage>>? = ...): dev.deeptelar.telar/CompiledGraph<dev.deeptelar.telar.agent/TeamState> // dev.deeptelar.telar.agent/supervisor|supervisor(dev.deeptelar.telar.agent.ChatModel;kotlin.collections.List<dev.deeptelar.telar.agent.TeamAgent>;kotlin.String?;kotlin.Int?;dev.deeptelar.telar.Retry?;kotlin.Function1<kotlin.collections.List<dev.deeptelar.telar.agent.ChatMessage>,kotlin.collections.List<dev.deeptelar.telar.agent.ChatMessage>>?){}[0]
 final fun dev.deeptelar.telar.agent/toolAgent(dev.deeptelar.telar.agent/ChatModel, kotlin.collections/List<dev.deeptelar.telar.agent/Tool> = ..., kotlin/String? = ..., kotlin/Boolean = ..., kotlin/Int? = ..., dev.deeptelar.telar/Retry? = ..., kotlin/Function1<kotlin.collections/List<dev.deeptelar.telar.agent/ChatMessage>, kotlin.collections/List<dev.deeptelar.telar.agent/ChatMessage>>? = ...): dev.deeptelar.telar/CompiledGraph<dev.deeptelar.telar.agent/AgentState> // dev.deeptelar.telar.agent/toolAgent|toolAgent(dev.deeptelar.telar.agent.ChatModel;kotlin.collections.List<dev.deeptelar.telar.agent.Tool>;kotlin.String?;kotlin.Boolean;kotlin.Int?;dev.deeptelar.telar.Retry?;kotlin.Function1<kotlin.collections.List<dev.deeptelar.telar.agent.ChatMessage>,kotlin.collections.List<dev.deeptelar.telar.agent.ChatMessage>>?){}[0]
 final inline fun <#A: kotlin/Any?, #B: reified kotlin/Any?> dev.deeptelar.telar.agent/StateTool(kotlin/String, kotlin/String, noinline kotlin.coroutines/SuspendFunction2<#A, #B, dev.deeptelar.telar.agent/ToolOutcome<#A>>): dev.deeptelar.telar.agent/StateTool<#A> // dev.deeptelar.telar.agent/StateTool|StateTool(kotlin.String;kotlin.String;kotlin.coroutines.SuspendFunction2<0:0,0:1,dev.deeptelar.telar.agent.ToolOutcome<0:0>>){0§<kotlin.Any?>;1§<kotlin.Any?>}[0]

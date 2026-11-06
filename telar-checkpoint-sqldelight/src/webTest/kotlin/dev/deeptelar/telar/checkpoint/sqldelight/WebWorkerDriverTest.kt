@@ -23,6 +23,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 /** The `WebWorkerDriver` of SQLDelight, with its sql.js worker, in a new database. */
 expect fun workerDriver(): SqlDriver
@@ -181,7 +183,12 @@ class WebWorkerDriverTest {
     @Test
     fun `a store keeps lists and deletes items in the worker`() =
         runTest {
-            val store = SqlDelightStore(driver())
+            // A clock that stands still: each write is a microsecond after the one before, which the worker must keep apart.
+            val still =
+                object : Clock {
+                    override fun now(): Instant = Instant.fromEpochSeconds(1_800_000_000)
+                }
+            val store = SqlDelightStore(driver(), clock = still)
             store.put(listOf("users", "ana"), "diet", "piscivegetarian")
             store.put(listOf("users", "ana", "trips"), "last", "Porto")
             store.put(listOf("users", "anna"), "diet", "vegan")

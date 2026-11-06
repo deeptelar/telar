@@ -14,7 +14,9 @@ import kotlinx.serialization.Serializable
  *   under a name that is already used replaces what was there, so a preference that changes stays
  *   one memory.
  * - `forget` removes what is kept under a name, for a user who asks the agent to forget it.
- * - `recall` lists what is kept, the last changed first.
+ * - `recall` lists what is kept, the last changed first. With a `query`, it lists what the query is
+ *   about instead, the best first, with the `search` of the store: the words of the query in a
+ *   store of its own, or their meaning in a [SemanticStore].
  *
  * ```kotlin
  * val agent = toolAgent(model, tools = memoryTools(), system = "Remember what the traveller tells you about how they eat.")
@@ -26,15 +28,22 @@ import kotlinx.serialization.Serializable
  * effect, so a call that finished is not made again when its step runs again.
  *
  * To give the model what it remembers without a call to `recall`, read it in a node before the
- * agent, with `store().list(namespace)`, and put it in the system prompt.
+ * agent, with `store().list(namespace)` or `store().search(namespace, question)`, and put it in the
+ * first message.
  *
  * @param namespace where the memories are kept in the store of the run.
- * @param limit how many memories `recall` lists at most.
- * @throws GraphValidationException if a part of [namespace] is empty or [limit] is not positive.
+ * @param limit how many memories `recall` lists at most without a query.
+ * @param searchLimit how many memories `recall` lists at most with a query.
+ * @throws GraphValidationException if a part of [namespace] is empty or a limit is not positive.
  */
-public fun memoryTools(namespace: List<String> = listOf("memories"), limit: Int = Store.DEFAULT_LIMIT): List<Tool> {
+public fun memoryTools(
+    namespace: List<String> = listOf("memories"),
+    limit: Int = Store.DEFAULT_LIMIT,
+    searchLimit: Int = Store.DEFAULT_SEARCH_LIMIT,
+): List<Tool> {
     Store.checkNamespace(namespace)
     Store.checkLimit(limit)
+    Store.checkLimit(searchLimit)
     val remember =
         Tool<Remember>(
             "remember",
@@ -55,9 +64,18 @@ public fun memoryTools(namespace: List<String> = listOf("memories"), limit: Int 
             }
         }
     val recall =
-        Tool<Unit>("recall", "Lists what you remember from earlier conversations with this user, the last changed first.") {
-            val items = store().list(namespace, limit)
-            if (items.isEmpty()) "Nothing is remembered yet." else items.joinToString("\n") { "${it.key}: ${it.value}" }
+        Tool<Recall>(
+            "recall",
+            "Lists what you remember from earlier conversations with this user: the last changed first, " +
+                "or with a query what it is about, the best first.",
+        ) { input ->
+            val query = input.query?.takeIf { it.isNotBlank() }
+            val items = if (query == null) store().list(namespace, limit) else store().search(namespace, query, searchLimit)
+            when {
+                items.isNotEmpty() -> items.joinToString("\n") { "${it.key}: ${it.value}" }
+                query == null -> "Nothing is remembered yet."
+                else -> "Nothing remembered is about $query."
+            }
         }
     return listOf(remember, forget, recall)
 }
@@ -76,4 +94,11 @@ internal data class Remember(
 internal data class Forget(
     @Description("The name it is remembered under")
     val key: String,
+)
+
+/** The input of `recall`. */
+@Serializable
+internal data class Recall(
+    @Description("What to look for, such as \"what the user eats\". Leave it out to list everything, the last changed first")
+    val query: String? = null,
 )
