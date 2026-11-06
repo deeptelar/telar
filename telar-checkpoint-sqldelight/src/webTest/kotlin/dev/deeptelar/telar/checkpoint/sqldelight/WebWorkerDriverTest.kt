@@ -177,4 +177,19 @@ class WebWorkerDriverTest {
 
             assertFailsWith<CheckpointCorruptedException> { checkpointer.load("t") }
         }
+
+    @Test
+    fun `a store keeps lists and deletes items in the worker`() =
+        runTest {
+            val store = SqlDelightStore(driver())
+            store.put(listOf("users", "ana"), "diet", "piscivegetarian")
+            store.put(listOf("users", "ana", "trips"), "last", "Porto")
+            store.put(listOf("users", "anna"), "diet", "vegan")
+
+            assertEquals("piscivegetarian", store.get(listOf("users", "ana"), "diet")?.value)
+            assertEquals(listOf("last", "diet"), store.list(listOf("users", "ana")).map { it.key })
+            store.delete(listOf("users", "ana"), "diet")
+            assertNull(store.get(listOf("users", "ana"), "diet"))
+            assertEquals(2, store.list(emptyList()).size)
+        }
 }

@@ -3,9 +3,7 @@ package dev.deeptelar.telar.checkpoint.sqldelight
 import app.cash.sqldelight.SuspendingTransacterImpl
 import app.cash.sqldelight.db.AfterVersion
 import app.cash.sqldelight.db.QueryResult
-import app.cash.sqldelight.db.SqlCursor
 import app.cash.sqldelight.db.SqlDriver
-import app.cash.sqldelight.db.SqlPreparedStatement
 import app.cash.sqldelight.db.SqlSchema
 import dev.deeptelar.telar.Checkpoint
 import dev.deeptelar.telar.Checkpointer
@@ -90,11 +88,11 @@ public class SqlDelightCheckpointer<State>(
         val encoded = codec.encode(checkpoint)
         database {
             transacter.transaction {
-                execute("DELETE FROM $table WHERE thread_id = ? AND step >= ?") {
+                driver.runStatement("DELETE FROM $table WHERE thread_id = ? AND step >= ?") {
                     bindString(0, threadId)
                     bindLong(1, checkpoint.step.toLong())
                 }
-                execute("INSERT INTO $table (thread_id, step, checkpoint) VALUES (?, ?, ?)") {
+                driver.runStatement("INSERT INTO $table (thread_id, step, checkpoint) VALUES (?, ?, ?)") {
                     bindString(0, threadId)
                     bindLong(1, checkpoint.step.toLong())
                     bindString(2, encoded)
@@ -102,12 +100,13 @@ public class SqlDelightCheckpointer<State>(
                 if (maxHistory != Int.MAX_VALUE) {
                     // The oldest step to keep, if the thread has more than maxHistory checkpoints.
                     val oldestKept =
-                        query("SELECT step FROM $table WHERE thread_id = ? ORDER BY step DESC LIMIT 1 OFFSET ?", { getLong(0) }) {
-                            bindString(0, threadId)
-                            bindLong(1, maxHistory - 1L)
-                        }.singleOrNull()
+                        driver
+                            .query("SELECT step FROM $table WHERE thread_id = ? ORDER BY step DESC LIMIT 1 OFFSET ?", { getLong(0) }) {
+                                bindString(0, threadId)
+                                bindLong(1, maxHistory - 1L)
+                            }.singleOrNull()
                     if (oldestKept != null) {
-                        execute("DELETE FROM $table WHERE thread_id = ? AND step < ?") {
+                        driver.runStatement("DELETE FROM $table WHERE thread_id = ? AND step < ?") {
                             bindString(0, threadId)
                             bindLong(1, oldestKept)
                         }
@@ -128,7 +127,7 @@ public class SqlDelightCheckpointer<State>(
 
     override suspend fun delete(threadId: String) {
         database {
-            execute("DELETE FROM $table WHERE thread_id = ?") { bindString(0, threadId) }
+            driver.runStatement("DELETE FROM $table WHERE thread_id = ?") { bindString(0, threadId) }
         }
     }
 
@@ -146,48 +145,7 @@ public class SqlDelightCheckpointer<State>(
 
     private suspend fun checkpoints(threadId: String, sql: String): List<String> =
         // The column is NOT NULL.
-        query(sql, { checkNotNull(getString(0)) }) { bindString(0, threadId) }
-
-    private suspend fun execute(sql: String, binders: (SqlPreparedStatement.() -> Unit)? = null) {
-        driver.execute(null, sql, sql.count { it == '?' }, binders).await()
-    }
-
-    /**
-     * Returns the rows of [sql], each read with [column]. A driver that blocks has its rows read at
-     * once, while its cursor is open; an asynchronous driver is awaited for each row.
-     */
-    private suspend fun <Value> query(sql: String, column: SqlCursor.() -> Value, binders: SqlPreparedStatement.() -> Unit): List<Value> =
-        driver
-            .executeQuery(
-                null,
-                sql,
-                { cursor ->
-                    val first = cursor.next()
-                    if (first is QueryResult.Value) {
-                        QueryResult.Value(
-                            buildList {
-                                var more = first.value
-                                while (more) {
-                                    add(cursor.column())
-                                    more = cursor.next().value
-                                }
-                            },
-                        )
-                    } else {
-                        QueryResult.AsyncValue {
-                            buildList {
-                                var more = first.await()
-                                while (more) {
-                                    add(cursor.column())
-                                    more = cursor.next().await()
-                                }
-                            }
-                        }
-                    }
-                },
-                sql.count { it == '?' },
-                binders,
-            ).await()
+        driver.query(sql, { checkNotNull(getString(0)) }) { bindString(0, threadId) }
 
     /**
      * The schema of a database that only holds checkpoints, in the table of the default name, for

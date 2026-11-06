@@ -21,3 +21,21 @@ final class dev.deeptelar.telar.checkpoint.browser/LocalStorageException : dev.d
     final val threadId // dev.deeptelar.telar.checkpoint.browser/LocalStorageException.threadId|{}threadId[0]
         final fun <get-threadId>(): kotlin/String // dev.deeptelar.telar.checkpoint.browser/LocalStorageException.threadId.<get-threadId>|<get-threadId>(){}[0]
 }
+
+final class dev.deeptelar.telar.checkpoint.browser/LocalStorageStore : dev.deeptelar.telar/Store { // dev.deeptelar.telar.checkpoint.browser/LocalStorageStore|null[0]
+    constructor <init>(kotlin/String = ..., kotlin.time/Clock = ...) // dev.deeptelar.telar.checkpoint.browser/LocalStorageStore.<init>|<init>(kotlin.String;kotlin.time.Clock){}[0]
+
+    final suspend fun delete(kotlin.collections/List<kotlin/String>, kotlin/String) // dev.deeptelar.telar.checkpoint.browser/LocalStorageStore.delete|delete(kotlin.collections.List<kotlin.String>;kotlin.String){}[0]
+    final suspend fun get(kotlin.collections/List<kotlin/String>, kotlin/String): dev.deeptelar.telar/StoreItem? // dev.deeptelar.telar.checkpoint.browser/LocalStorageStore.get|get(kotlin.collections.List<kotlin.String>;kotlin.String){}[0]
+    final suspend fun list(kotlin.collections/List<kotlin/String>, kotlin/Int): kotlin.collections/List<dev.deeptelar.telar/StoreItem> // dev.deeptelar.telar.checkpoint.browser/LocalStorageStore.list|list(kotlin.collections.List<kotlin.String>;kotlin.Int){}[0]
+    final suspend fun put(kotlin.collections/List<kotlin/String>, kotlin/String, kotlin/String) // dev.deeptelar.telar.checkpoint.browser/LocalStorageStore.put|put(kotlin.collections.List<kotlin.String>;kotlin.String;kotlin.String){}[0]
+}
+
+final class dev.deeptelar.telar.checkpoint.browser/LocalStorageStoreException : dev.deeptelar.telar/TelarException { // dev.deeptelar.telar.checkpoint.browser/LocalStorageStoreException|null[0]
+    constructor <init>(kotlin.collections/List<kotlin/String>, kotlin/String?, kotlin/String, kotlin/Throwable? = ...) // dev.deeptelar.telar.checkpoint.browser/LocalStorageStoreException.<init>|<init>(kotlin.collections.List<kotlin.String>;kotlin.String?;kotlin.String;kotlin.Throwable?){}[0]
+
+    final val key // dev.deeptelar.telar.checkpoint.browser/LocalStorageStoreException.key|{}key[0]
+        final fun <get-key>(): kotlin/String? // dev.deeptelar.telar.checkpoint.browser/LocalStorageStoreException.key.<get-key>|<get-key>(){}[0]
+    final val namespace // dev.deeptelar.telar.checkpoint.browser/LocalStorageStoreException.namespace|{}namespace[0]
+        final fun <get-namespace>(): kotlin.collections/List<kotlin/String> // dev.deeptelar.telar.checkpoint.browser/LocalStorageStoreException.namespace.<get-namespace>|<get-namespace>(){}[0]
+}

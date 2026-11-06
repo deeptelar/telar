@@ -44,15 +44,15 @@ made under that name keep it. The repository is `deeptelar/telar` and the demo i
   builder, engine, checkpoint interfaces
 - **`telar-serialization`** (KMP): `KotlinxStateSerializer` for `@Serializable` states,
   `CheckpointCodec` (the shared checkpoint format, also used by `FileCheckpointer`)
-- **`telar-checkpoint-file`** (KMP): `FileCheckpointer` on kotlinx-io
-- **`telar-checkpoint-sqldelight`** (KMP): `SqlDelightCheckpointer` on a `SqlDriver` of SQLDelight
+- **`telar-checkpoint-file`** (KMP): `FileCheckpointer` and `FileStore` on kotlinx-io
+- **`telar-checkpoint-sqldelight`** (KMP): `SqlDelightCheckpointer` and `SqlDelightStore` on a `SqlDriver` of SQLDelight
   (runtime only, no Gradle plugin): a SQLite table with a row per step, created on first use. Reads
   the results of blocking and asynchronous (web worker) drivers. Tests: JDBC in `jvmTest` (with
   `AsyncDriver`, which answers like the browser's driver), the native driver in `appleTest`, and
   the real `WebWorkerDriver` with SQLDelight's sql.js worker in `webTest`, in headless Chrome
   (`karma.config.d/sqljs.js` serves `sql-wasm.wasm`; the Node.js test tasks are off)
 - **`telar-checkpoint-browser`** (JS and Wasm, browser only, code in `webMain`):
-  `LocalStorageCheckpointer` on `localStorage`. Its tests run in headless Chrome
+  `LocalStorageCheckpointer` and `LocalStorageStore` on `localStorage`. Its tests run in headless Chrome
 - **`telar-agent`** (KMP): `ChatModel` (the provider-neutral model interface), `ChatMessage`,
   `Tool` (JSON Schema built from a `@Serializable` input class in `ToolSchema.kt`), and the
   tool-calling loop: `toolLoop` adds a model node and a tools node to any graph, `toolAgent` is that

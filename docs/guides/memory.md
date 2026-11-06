@@ -22,8 +22,7 @@ agent.invoke(AgentState("Plan my lunch in Porto."), GraphConfig("plan-2", store 
 ```
 
 `MemoryStore` keeps its items in memory, for tests and for apps that remember only while they run.
-Stores that keep them in a file, in SQLite and in the browser come next
-([#171](https://github.com/deeptelar/telar/issues/171)).
+An app that remembers for longer uses one of the stores [below](#stores-that-keep-what-they-remember).
 
 ## What a store holds
 
@@ -116,6 +115,33 @@ A write goes straight to the store, and is not part of the checkpoint:
   [`effect`](side-effects.md), as it would with any other service.
 - **A step that fails and is never resumed keeps what it wrote.** Deleting a thread, and `fork`,
   leave the store as it is.
+
+## Stores that keep what they remember
+
+Each module with a checkpointer has a store too, for the same platforms:
+
+| Store | Module | Where it keeps the items |
+|---|---|---|
+| `FileStore(directory)` | `telar-checkpoint-file` | A folder for each part of a namespace, and in it one JSON file with the items of that namespace. Every platform with a file system; JS and Wasm on Node.js only |
+| `SqlDelightStore(driver)` | `telar-checkpoint-sqldelight` | A table `telar_store` with a row for each item, in any SQLite database of SQLDelight: Android, iOS, desktop, servers, and the browser, where the database of SQLDelight's worker is in memory |
+| `LocalStorageStore()` | `telar-checkpoint-browser` | An entry of the page's `localStorage` for each item, so the items survive a reload |
+
+`SqlDelightStore` creates its table when it first needs it, so one database, and one driver, can
+hold the checkpoints and the memories:
+
+```kotlin
+val driver = AndroidSqliteDriver(SqlDelightCheckpointer.Schema, context, "runs.db")
+val config = GraphConfig(
+    threadId = "plan-7",
+    checkpointer = SqlDelightCheckpointer(driver, KotlinxStateSerializer<Trip>()),
+    store = SqlDelightStore(driver).within("users", userId),
+)
+```
+
+A write of each store is atomic: a crash leaves the items as they were or with the write done. Two
+writes of one store never get the same `updatedAt`, so `list` keeps their order also with a clock
+that counts only milliseconds, as a browser's does. A store that cannot read what it finds throws a
+`StoreCorruptedException`.
 
 ## Your own store
 

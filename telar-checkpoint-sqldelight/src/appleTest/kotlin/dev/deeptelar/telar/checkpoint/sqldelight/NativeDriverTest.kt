@@ -53,4 +53,21 @@ class NativeDriverTest {
             assertEquals(GraphResult.Completed(Ticket("hello sent", approved = true)), graph.resume(config) { it.copy(approved = true) })
             driver.close()
         }
+
+    @Test
+    fun `a store keeps lists and deletes items next to the checkpoints`() =
+        runTest {
+            val driver = inMemoryDriver(SqlDelightCheckpointer.Schema)
+            val store = SqlDelightStore(driver)
+            store.put(listOf("users", "ana"), "diet", "piscivegetarian")
+            store.put(listOf("users", "ana", "trips"), "last", "Porto")
+            store.put(listOf("users", "anna"), "diet", "vegan")
+
+            assertEquals("piscivegetarian", store.get(listOf("users", "ana"), "diet")?.value)
+            assertEquals(listOf("last", "diet"), store.list(listOf("users", "ana")).map { it.key })
+            store.delete(listOf("users", "ana"), "diet")
+            assertNull(store.get(listOf("users", "ana"), "diet"))
+            assertEquals(2, store.list(emptyList()).size)
+            driver.close()
+        }
 }
