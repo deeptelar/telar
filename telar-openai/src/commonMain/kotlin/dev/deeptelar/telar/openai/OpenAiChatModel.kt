@@ -472,7 +472,7 @@ private fun extraContent(answer: JsonObject?, calls: List<Pair<String, JsonObjec
  * Returns the `error` of the body of a failed request, or `null` when [text] has none. OpenAI sends
  * an object with the error. Gemini sends a list with that object as its only item.
  */
-private fun errorIn(text: String): JsonElement? {
+internal fun errorIn(text: String): JsonElement? {
     val body =
         try {
             Json.parseToJsonElement(text)
@@ -487,7 +487,7 @@ private fun errorIn(text: String): JsonElement? {
  * Describes the `error` of a response: its type, status or code and its message, or [fallback] when
  * it has neither.
  */
-private fun describe(error: JsonElement?, fallback: String): String {
+internal fun describe(error: JsonElement?, fallback: String): String {
     val details = error as? JsonObject
     val kind = details.string("type") ?: details.string("status") ?: details.string("code") ?: "unknown"
     val message = details.string("message") ?: (error as? JsonPrimitive)?.contentOrNull ?: fallback
@@ -659,4 +659,4 @@ private fun JsonArray?.orEmpty(): List<JsonElement> = this ?: emptyList()
  * the device is offline, or the server does not take requests from the page. Every other error,
  * such as one of the virtual machine, is of a subclass and is not a failure of the request.
  */
-private fun Error.isFailedFetch(): Boolean = this::class == Error::class
+internal fun Error.isFailedFetch(): Boolean = this::class == Error::class
