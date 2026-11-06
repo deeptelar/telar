@@ -5,11 +5,12 @@ import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlCursor
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.db.SqlPreparedStatement
+import app.cash.sqldelight.driver.jdbc.JdbcCursor
 
 /**
  * A [SqlDriver] that answers like the web worker driver of a browser: every result is a
  * [QueryResult.AsyncValue], also the rows of a cursor, which are read before the mapper sees them.
- * It runs on [delegate], and reads every value as a string. Nothing suspends, because the
+ * It runs on [delegate], a JDBC driver, and reads every value as a string. Nothing suspends, because the
  * transactions of [delegate] belong to one thread.
  */
 class AsyncDriver(
@@ -26,7 +27,8 @@ class AsyncDriver(
             val rows =
                 delegate
                     .executeQuery(identifier, sql, { cursor ->
-                        QueryResult.Value(buildList { while (cursor.next().value) add(cursor.getString(0)) })
+                        val columns = (cursor as JdbcCursor).resultSet.metaData.columnCount
+                        QueryResult.Value(buildList { while (cursor.next().value) add(List(columns) { cursor.getString(it) }) })
                     }, parameters, binders)
                     .value
             mapper(RowsCursor(rows)).await()
@@ -40,7 +42,7 @@ class AsyncDriver(
     override fun newTransaction(): QueryResult<Transacter.Transaction> = QueryResult.AsyncValue { delegate.newTransaction().value }
 
     private class RowsCursor(
-        private val rows: List<String?>,
+        private val rows: List<List<String?>>,
     ) : SqlCursor {
         private var index = -1
 
@@ -49,9 +51,9 @@ class AsyncDriver(
                 ++index < rows.size
             }
 
-        override fun getString(index: Int): String? = rows[this.index]
+        override fun getString(index: Int): String? = rows[this.index][index]
 
-        override fun getLong(index: Int): Long? = rows[this.index]?.toLong()
+        override fun getLong(index: Int): Long? = rows[this.index][index]?.toLong()
 
         override fun getBytes(index: Int): ByteArray? = error("not used")
 

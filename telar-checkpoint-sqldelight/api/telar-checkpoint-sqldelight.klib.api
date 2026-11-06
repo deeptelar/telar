@@ -22,3 +22,12 @@ final class <#A: kotlin/Any?> dev.deeptelar.telar.checkpoint.sqldelight/SqlDelig
         final fun migrate(app.cash.sqldelight.db/SqlDriver, kotlin/Long, kotlin/Long, kotlin/Array<out app.cash.sqldelight.db/AfterVersion>...): app.cash.sqldelight.db/QueryResult.Value<kotlin/Unit> // dev.deeptelar.telar.checkpoint.sqldelight/SqlDelightCheckpointer.Schema.migrate|migrate(app.cash.sqldelight.db.SqlDriver;kotlin.Long;kotlin.Long;kotlin.Array<out|app.cash.sqldelight.db.AfterVersion>...){}[0]
     }
 }
+
+final class dev.deeptelar.telar.checkpoint.sqldelight/SqlDelightStore : dev.deeptelar.telar/Store { // dev.deeptelar.telar.checkpoint.sqldelight/SqlDelightStore|null[0]
+    constructor <init>(app.cash.sqldelight.db/SqlDriver, kotlin/String = ..., kotlin.time/Clock = ...) // dev.deeptelar.telar.checkpoint.sqldelight/SqlDelightStore.<init>|<init>(app.cash.sqldelight.db.SqlDriver;kotlin.String;kotlin.time.Clock){}[0]
+
+    final suspend fun delete(kotlin.collections/List<kotlin/String>, kotlin/String) // dev.deeptelar.telar.checkpoint.sqldelight/SqlDelightStore.delete|delete(kotlin.collections.List<kotlin.String>;kotlin.String){}[0]
+    final suspend fun get(kotlin.collections/List<kotlin/String>, kotlin/String): dev.deeptelar.telar/StoreItem? // dev.deeptelar.telar.checkpoint.sqldelight/SqlDelightStore.get|get(kotlin.collections.List<kotlin.String>;kotlin.String){}[0]
+    final suspend fun list(kotlin.collections/List<kotlin/String>, kotlin/Int): kotlin.collections/List<dev.deeptelar.telar/StoreItem> // dev.deeptelar.telar.checkpoint.sqldelight/SqlDelightStore.list|list(kotlin.collections.List<kotlin.String>;kotlin.Int){}[0]
+    final suspend fun put(kotlin.collections/List<kotlin/String>, kotlin/String, kotlin/String) // dev.deeptelar.telar.checkpoint.sqldelight/SqlDelightStore.put|put(kotlin.collections.List<kotlin.String>;kotlin.String;kotlin.String){}[0]
+}
