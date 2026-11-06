@@ -35,7 +35,7 @@ import kotlin.time.Instant
  *     namespace TEXT NOT NULL,   -- each part followed by '/', with '%' and '/' in a part written as %25 and %2F
  *     key TEXT NOT NULL,
  *     value TEXT NOT NULL,
- *     updated_at INTEGER NOT NULL, -- nanoseconds since 1970-01-01T00:00:00Z
+ *     updated_at INTEGER NOT NULL, -- microseconds since 1970-01-01T00:00:00Z
  *     PRIMARY KEY (namespace, key)
  * )
  * ```
@@ -47,7 +47,7 @@ import kotlin.time.Instant
  *
  * @param driver the database. Its dialect has to be SQLite.
  * @param table the name of the table, letters, digits and `_`, not starting with a digit.
- * @param clock gives [StoreItem.updatedAt]. Two writes of one store never get the same time, and a
+ * @param clock gives [StoreItem.updatedAt], to the microsecond. Two writes of one store never get the same time, and a
  * store starts after the last write it finds in its table, so `list` keeps their order also with a
  * clock that is not precise or that went back.
  * @throws GraphValidationException if [table] is not a plain name.
@@ -134,9 +134,13 @@ public class SqlDelightStore(
             }
         }
 
-    /** The time of a write, in nanoseconds: now, or just after the last write when the clock has not moved past it. */
+    /**
+     * The time of a write, in microseconds: now, or just after the last write when the clock has not moved past it.
+     * Microseconds, because the worker of the browser reads an integer as a number of JavaScript, which is exact only
+     * up to 2^53: nanoseconds since 1970 are not.
+     */
     private fun nextTime(): Long {
-        val now = clock.now().let { it.epochSeconds * NANOS_PER_SECOND + it.nanosecondsOfSecond }
+        val now = clock.now().let { it.epochSeconds * MICROS_PER_SECOND + it.nanosecondsOfSecond / NANOS_PER_MICRO }
         val last = lastWrite
         return (if (last != null && now <= last) last + 1 else now).also { lastWrite = it }
     }
@@ -147,14 +151,15 @@ public class SqlDelightStore(
         val namespace =
             decodeNamespace(encoded)
                 ?: throw StoreCorruptedException(listOf(encoded), null, "the table $table has a namespace it did not write")
-        val nanos = checkNotNull(getLong(3))
-        val updatedAt = Instant.fromEpochSeconds(nanos.floorDiv(NANOS_PER_SECOND), nanos.mod(NANOS_PER_SECOND))
+        val micros = checkNotNull(getLong(3))
+        val updatedAt = Instant.fromEpochSeconds(micros.floorDiv(MICROS_PER_SECOND), micros.mod(MICROS_PER_SECOND) * NANOS_PER_MICRO)
         return StoreItem(namespace, checkNotNull(getString(1)), checkNotNull(getString(2)), updatedAt)
     }
 
     private companion object {
         const val DEFAULT_TABLE = "telar_store"
-        const val NANOS_PER_SECOND = 1_000_000_000L
+        const val MICROS_PER_SECOND = 1_000_000L
+        const val NANOS_PER_MICRO = 1_000L
         val TABLE_NAME = Regex("[A-Za-z_][A-Za-z0-9_]*")
 
         fun createTable(table: String): String =

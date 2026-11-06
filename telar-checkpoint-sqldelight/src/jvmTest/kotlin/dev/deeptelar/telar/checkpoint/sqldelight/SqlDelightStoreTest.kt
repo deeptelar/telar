@@ -21,12 +21,12 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Clock
-import kotlin.time.Duration.Companion.nanoseconds
+import kotlin.time.Duration.Companion.microseconds
 import kotlin.time.Instant
 
 /** A clock that stands still unless it is moved, so that writes one after the other have the same time. */
 private class StillClock(
-    var now: Instant = Instant.fromEpochSeconds(1_800_000_000, 123_456_789),
+    var now: Instant = Instant.fromEpochSeconds(1_800_000_000, 123_456_000),
 ) : Clock {
     override fun now(): Instant = now
 }
@@ -52,11 +52,11 @@ class SqlDelightStoreTest {
         runTest {
             for (async in listOf(false, true)) {
                 directory.listFiles()?.forEach { it.delete() }
-                clock.now = Instant.fromEpochSeconds(1_800_000_000, 123_456_789)
+                clock.now = Instant.fromEpochSeconds(1_800_000_000, 123_456_000)
                 val driver = { if (async) AsyncDriver(onDisk()) else onDisk() }
                 val store = SqlDelightStore(driver(), clock = clock)
                 store.put(preferences, "diet", "vegetarian")
-                clock.now = Instant.fromEpochSeconds(1_900_000_000, 5)
+                clock.now = Instant.fromEpochSeconds(1_900_000_000, 5_000)
                 store.put(preferences, "diet", "piscivegetarian")
 
                 val reopened = SqlDelightStore(driver(), clock = clock)
@@ -80,7 +80,7 @@ class SqlDelightStoreTest {
         runTest {
             for (async in listOf(false, true)) {
                 directory.listFiles()?.forEach { it.delete() }
-                clock.now = Instant.fromEpochSeconds(1_800_000_000, 123_456_789)
+                clock.now = Instant.fromEpochSeconds(1_800_000_000, 123_456_000)
                 val driver = { if (async) AsyncDriver(onDisk()) else onDisk() }
                 val store = SqlDelightStore(driver(), clock = clock)
                 store.put(listOf("users", "ana", "preferences"), "diet", "piscivegetarian")
@@ -105,7 +105,7 @@ class SqlDelightStoreTest {
                 assertTrue(reopened.list(listOf("trips")).isEmpty())
                 val times = reopened.list(emptyList()).map { it.updatedAt }
                 assertEquals(times.sortedDescending(), times)
-                assertEquals(clock.now + 9.nanoseconds, times.first())
+                assertEquals(clock.now + 9.microseconds, times.first())
             }
         }
 
@@ -170,5 +170,20 @@ class SqlDelightStoreTest {
             assertFailsWith<GraphValidationException> { store.get(listOf(""), "diet") }
             assertFailsWith<GraphValidationException> { store.delete(listOf("users", ""), "diet") }
             assertFailsWith<GraphValidationException> { store.list(preferences, limit = 0) }
+        }
+
+    @Test
+    fun `a time is kept to the microsecond`() =
+        runTest {
+            clock.now = Instant.fromEpochSeconds(1_800_000_000, 123_456_789)
+            val store = SqlDelightStore(onDisk(), clock = clock)
+            store.put(preferences, "diet", "vegan")
+            store.put(preferences, "lunch", "the big meal")
+
+            val times = store.list(preferences).map { it.updatedAt }
+            assertEquals(
+                listOf(Instant.fromEpochSeconds(1_800_000_000, 123_457_000), Instant.fromEpochSeconds(1_800_000_000, 123_456_000)),
+                times,
+            )
         }
 }
