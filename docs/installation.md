@@ -28,9 +28,9 @@ dependencies {
 |---|---|---|
 | `telar-core` | JVM/Android, iOS, macOS, Linux, Windows, JS, Wasm | Graph builder, execution engine, checkpointing interfaces |
 | `telar-serialization` | same as core | `KotlinxStateSerializer` for `@Serializable` states, `CheckpointCodec` for custom checkpointers |
-| `telar-checkpoint-file` | same as core (Node.js only for JS/Wasm) | `FileCheckpointer`, one JSON file per thread |
-| `telar-checkpoint-browser` | JS and Wasm in a browser | `LocalStorageCheckpointer`, runs that survive a page reload |
-| `telar-checkpoint-sqldelight` | same as core | `SqlDelightCheckpointer`: runs in a SQLite database through SQLDelight, on Android, iOS, desktop, servers and the browser (in memory there). |
+| `telar-checkpoint-file` | same as core (Node.js only for JS/Wasm) | `FileCheckpointer`, one JSON file per thread, and `FileStore` |
+| `telar-checkpoint-browser` | JS and Wasm in a browser | `LocalStorageCheckpointer`, runs that survive a page reload, and `LocalStorageStore` |
+| `telar-checkpoint-sqldelight` | same as core | `SqlDelightCheckpointer`: runs in a SQLite database through SQLDelight, on Android, iOS, desktop, servers and the browser (in memory there), and `SqlDelightStore` |
 | `telar-agent` | same as core | `ChatModel`, `Tool`, and the tool-calling agent: `toolAgent` / `toolLoop` |
 | `telar-anthropic` | same as core | `AnthropicChatModel`, Claude through Ktor |
 | `telar-openai` | same as core | `OpenAiChatModel`: OpenAI, Ollama and other servers with the Chat Completions API, through Ktor |

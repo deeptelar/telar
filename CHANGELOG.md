@@ -18,6 +18,10 @@ breaking changes.
 - `memoryTools()` gives an agent `remember`, `forget` and `recall`, which keep a text under a name
   that the model chooses in the store of the run. A call is made once, also when its step runs again.
   ([#171](https://github.com/deeptelar/telar/issues/171))
+- Stores that keep what they remember, one in each module with a checkpointer: `FileStore` keeps a
+  JSON file for each namespace, `SqlDelightStore` a table in any SQLite database of SQLDelight (also
+  the one of `SqlDelightCheckpointer`), and `LocalStorageStore` an entry of `localStorage` for each
+  item. ([#171](https://github.com/deeptelar/telar/issues/171))
 
 ## [0.1.0-alpha17] - 2026-11-04
 
