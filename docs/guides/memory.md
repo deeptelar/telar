@@ -1,5 +1,10 @@
 # Memory across conversations
 
+::: info Not on Maven Central yet
+Stores come in `0.1.0-alpha18`, which waits for Maven Central to accept it. Until then they are
+only in `main`.
+:::
+
 A checkpoint holds one thread, and a conversation is a thread. What an agent learns about a user
 in one conversation, such as how they eat, is gone in the next one unless it is kept somewhere
 else. A `Store` is that place. It belongs to no thread, so every run that gets the same store
