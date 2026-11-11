@@ -1,9 +1,25 @@
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.KotlinMultiplatform
+import com.vanniktech.maven.publish.SourcesJar
+
 /*
  * Maven Central publishing conventions. Module-specific name and description
  * come from the `POM_NAME` / `POM_DESCRIPTION` properties in the module's `gradle.properties`.
  */
 plugins {
     id("com.vanniktech.maven.publish")
+}
+
+/*
+ * A multiplatform module publishes one artifact per target, and with Dokka applied each of them would
+ * carry the whole API reference, the same 1 MB or more ten times over. Maven Central limits what an
+ * organization publishes in a month, by file count and by size, so these artifacts get an empty
+ * javadoc jar, as kotlinx.coroutines does. The API reference is on the documentation site.
+ */
+plugins.withId("org.jetbrains.kotlin.multiplatform") {
+    mavenPublishing {
+        configure(KotlinMultiplatform(javadocJar = JavadocJar.Empty(), sourcesJar = SourcesJar.Sources()))
+    }
 }
 
 mavenPublishing {
