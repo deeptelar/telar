@@ -19,6 +19,8 @@ import dev.langchain4j.data.message.SystemMessage
 import dev.langchain4j.data.message.TextContent
 import dev.langchain4j.data.message.ToolExecutionResultMessage
 import dev.langchain4j.data.message.UserMessage
+import dev.langchain4j.model.chat.request.ChatRequestParameters
+import dev.langchain4j.model.chat.request.DefaultChatRequestParameters
 import dev.langchain4j.model.chat.request.json.JsonAnyOfSchema
 import dev.langchain4j.model.chat.request.json.JsonArraySchema
 import dev.langchain4j.model.chat.request.json.JsonBooleanSchema
@@ -101,6 +103,29 @@ class LangChain4jChatModelTest {
             .build()
 
     private fun json(text: String): JsonObject = Json.parseToJsonElement(text) as JsonObject
+
+    @Test
+    fun `the model is named by its default parameters and the answer by LangChain4j`() =
+        runTest {
+            val answer =
+                LangChain4jResponse
+                    .builder()
+                    .aiMessage(AiMessage.from("Hi"))
+                    .modelName("gpt-4o-mini-2024-07-18")
+                    .build()
+            val named =
+                object : LangChain4jModel {
+                    override fun doChat(chatRequest: LangChain4jRequest): LangChain4jResponse = answer
+
+                    override fun defaultRequestParameters(): ChatRequestParameters =
+                        DefaultChatRequestParameters.builder().modelName("gpt-4o-mini").build()
+                }
+            val model = LangChain4jChatModel(named)
+
+            assertEquals("gpt-4o-mini", model.name)
+            assertEquals("gpt-4o-mini-2024-07-18", model.chat(hello).model)
+            assertEquals(null, LangChain4jChatModel(RecordingModel(reply(AiMessage.from("Hi")))).name)
+        }
 
     @Test
     fun `a request becomes LangChain4j messages with the instructions first`() =

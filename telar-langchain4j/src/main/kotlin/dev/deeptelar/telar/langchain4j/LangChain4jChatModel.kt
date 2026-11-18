@@ -94,6 +94,9 @@ public class LangChain4jChatModel(
     private val model: dev.langchain4j.model.chat.ChatModel,
     private val streamingModel: StreamingChatModel? = null,
 ) : ChatModel {
+    /** The model name of the default request parameters of [model], when it has one. */
+    override val name: String? get() = model.defaultRequestParameters()?.modelName()
+
     /**
      * Sends [request] to the LangChain4j model and returns its answer.
      *
@@ -293,7 +296,7 @@ private fun response(response: LangChain4jResponse): ChatResponse {
             truncated = response.finishReason() == FinishReason.LENGTH,
         )
     val usage = response.tokenUsage()?.let { TokenUsage(it.inputTokenCount() ?: 0, it.outputTokenCount() ?: 0) }
-    return ChatResponse(message, usage)
+    return ChatResponse(message, usage, model = response.modelName())
 }
 
 /** Returns the input of a tool call, empty when it has no arguments, and `null` when they are not a JSON object. */

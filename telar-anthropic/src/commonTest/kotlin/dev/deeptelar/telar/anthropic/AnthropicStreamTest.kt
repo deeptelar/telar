@@ -130,6 +130,19 @@ class AnthropicStreamTest {
         }
 
     @Test
+    fun `a streamed answer names the model that answered`() =
+        runTest {
+            val usage = """{"input_tokens": 25, "output_tokens": 1}"""
+            val named = """{"type": "message_start", "message": {"model": "claude-opus-5-5-20261001", "content": [], "usage": $usage}}"""
+            val model = model(events(named, blockStart(0, textBlock), textDelta(0, "Hi"), blockStop(0), *stop("end_turn")))
+
+            val completed = model.stream(hello).toList().last() as ChatEvent.Completed
+
+            assertEquals("claude-opus-5-5-20261001", completed.response.model)
+            assertEquals("Hi", completed.response.message.text)
+        }
+
+    @Test
     fun `a refusal in a stream says why when the API does`() =
         runTest {
             val delta = """{"stop_reason": "refusal", "stop_details": {"type": "refusal", "category": "bio", "explanation": null}}"""

@@ -113,6 +113,19 @@ class AnthropicChatModelTest {
         }
 
     @Test
+    fun `the model knows its name and reads the model that answered`() =
+        runTest {
+            val model =
+                model("""{"model": "claude-opus-5-5-20261001", "stop_reason": "end_turn", "content": [{"type": "text", "text": "Hi"}]}""")
+
+            val response = model.chat(hello)
+
+            assertEquals("claude-opus-5-5", model.name)
+            assertEquals("claude-opus-5-5-20261001", response.model)
+            assertEquals(null, model(text("Hi")).chat(hello).model)
+        }
+
+    @Test
     fun `a request without instructions and tools leaves those fields out`() =
         runTest {
             model(text("Hi")).chat(hello)

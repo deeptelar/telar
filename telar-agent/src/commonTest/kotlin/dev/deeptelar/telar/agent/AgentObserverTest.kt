@@ -99,6 +99,28 @@ class AgentObserverTest {
         }
 
     @Test
+    fun `the model that answered is known when the call completes`() =
+        runTest {
+            val seen = mutableListOf<String?>()
+            val observer =
+                object : AgentObserver {
+                    override fun onModelCallStarted(call: ObservedModelCall) {
+                        seen += call.responseModel
+                    }
+
+                    override fun onModelCallCompleted(call: ObservedModelCall, usage: TokenUsage?) {
+                        seen += call.responseModel
+                    }
+                }
+            val model = ScriptedModel(says("5 minutes.").copy(model = "gpt-5-2026-08-07"))
+
+            toolAgent(model).invoke(AgentState("Where is my pizza?"), GraphConfig(observers = listOf(observer)))
+
+            assertEquals(listOf(null, "gpt-5-2026-08-07"), seen)
+            assertEquals(null, model.name)
+        }
+
+    @Test
     fun `a streamed run reports the call once and a call to an unknown tool as an error`() =
         runTest {
             val model = ScriptedModel(calls(ToolCall("call-1", "missing", noInput)), says("Sorry."))

@@ -114,6 +114,9 @@ public class AnthropicChatModel(
     // client has it, with everything else of the client it was made from, and shares its engine.
     private val client: HttpClient = if (timeout == null) client else client.config { install(HttpTimeout) }
 
+    /** The [model] this asks, as the request names it. */
+    override val name: String get() = model
+
     /**
      * Sends [request] to the Messages API and returns Claude's answer.
      *
@@ -285,7 +288,7 @@ public class AnthropicChatModel(
                 val written = usage.int("cache_creation_input_tokens")
                 TokenUsage(usage.int("input_tokens") + read + written, usage.int("output_tokens"), read, written)
             }
-        return ChatResponse(message, usage)
+        return ChatResponse(message, usage, model = body.string("model")?.takeIf { it.isNotEmpty() })
     }
 
     public companion object {
@@ -330,6 +333,7 @@ private class StreamedAnswer {
     private val usage = mutableMapOf<String, JsonElement>()
     private var stopReason: String? = null
     private var stopDetails: JsonElement? = null
+    private var model: String? = null
     private var stopped = false
 
     private class Block(
@@ -363,7 +367,11 @@ private class StreamedAnswer {
     private fun apply(event: JsonObject): String? {
         val delta = event["delta"] as? JsonObject
         when (event.string("type")) {
-            "message_start" -> (event["message"] as? JsonObject)?.let { count(it["usage"]) }
+            "message_start" ->
+                (event["message"] as? JsonObject)?.let {
+                    count(it["usage"])
+                    it.string("model")?.let { name -> model = name }
+                }
             "content_block_start" -> (event["content_block"] as? JsonObject)?.let { blocks[event.int("index")] = Block(it) }
             "content_block_delta" -> {
                 val block = blocks[event.int("index")] ?: return null
@@ -407,6 +415,7 @@ private class StreamedAnswer {
         return buildJsonObject {
             stopReason?.let { put("stop_reason", it) }
             stopDetails?.let { put("stop_details", it) }
+            model?.let { put("model", it) }
             putJsonArray("content") {
                 blocks.keys.sorted().forEach { index ->
                     val block = blocks.getValue(index)

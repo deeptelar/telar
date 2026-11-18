@@ -2,6 +2,7 @@ public final class dev/deeptelar/telar/langchain4j/LangChain4jChatModel : dev/de
 	public fun <init> (Ldev/langchain4j/model/chat/ChatModel;Ldev/langchain4j/model/chat/StreamingChatModel;)V
 	public synthetic fun <init> (Ldev/langchain4j/model/chat/ChatModel;Ldev/langchain4j/model/chat/StreamingChatModel;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun chat (Ldev/deeptelar/telar/agent/ChatRequest;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getName ()Ljava/lang/String;
 	public fun stream (Ldev/deeptelar/telar/agent/ChatRequest;)Lkotlinx/coroutines/flow/Flow;
 }
 

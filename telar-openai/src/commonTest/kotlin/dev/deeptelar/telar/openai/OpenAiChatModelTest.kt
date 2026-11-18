@@ -429,6 +429,29 @@ class OpenAiChatModelTest {
         }
 
     @Test
+    fun `the model knows its name and reads the model that answered`() =
+        runTest {
+            val body = """{"model": "gpt-4o-mini-2024-07-18", "choices": [{"message": {"content": "Hi"}, "finish_reason": "stop"}]}"""
+            val model = model(body)
+
+            val response = model.chat(ChatRequest(listOf(ChatMessage.User("Hello"))))
+
+            assertEquals("gpt-5", model.name)
+            assertEquals("gpt-4o-mini-2024-07-18", response.model)
+        }
+
+    @Test
+    fun `an answer that does not name its model has none`() =
+        runTest {
+            val response =
+                model(
+                    """{"choices": [{"message": {"content": "Hi"}, "finish_reason": "stop"}]}""",
+                ).chat(ChatRequest(listOf(ChatMessage.User("Hello"))))
+
+            assertEquals(null, response.model)
+        }
+
+    @Test
     fun `the usage says how much of the input was reused`() =
         runTest {
             val usage = """{"prompt_tokens": 40, "completion_tokens": 9, "prompt_tokens_details": {"cached_tokens": 32}}"""

@@ -120,6 +120,9 @@ public class OpenAiChatModel(
     // client has it, with everything else of the client it was made from, and shares its engine.
     private val client: HttpClient = if (timeout == null) client else client.config { install(HttpTimeout) }
 
+    /** The [model] this asks, as the request names it. */
+    override val name: String get() = model
+
     /**
      * Sends [request] to the Chat Completions API and returns the model's answer.
      *
@@ -295,7 +298,7 @@ public class OpenAiChatModel(
                     cacheReadTokens = (it["prompt_tokens_details"] as? JsonObject)?.int("cached_tokens") ?: 0,
                 )
             }
-        return ChatResponse(message, usage)
+        return ChatResponse(message, usage, model = body.string("model")?.takeIf { it.isNotEmpty() })
     }
 
     public companion object {
@@ -338,6 +341,7 @@ private class StreamedCompletion {
     /** The place in [calls] of the call that the chunks name by an index. */
     private val positions = mutableMapOf<Int, Int>()
     private var usage: JsonObject? = null
+    private var model: String? = null
     private var finishReason: String? = null
     private var extraContent: JsonElement? = null
     private var done = false
@@ -374,6 +378,7 @@ private class StreamedCompletion {
         chunk["error"]?.takeIf { it !is JsonNull }?.let { throw ChatModelException("API error ${describe(it, "no message")}") }
         // The chunk with the usage has no choices.
         (chunk["usage"] as? JsonObject)?.let { usage = it }
+        chunk.string("model")?.takeIf { it.isNotEmpty() }?.let { model = it }
         val choice = (chunk["choices"] as? JsonArray).orEmpty().firstOrNull() as? JsonObject ?: return null
         choice.string("finish_reason")?.let { finishReason = it }
         val delta = choice["delta"] as? JsonObject ?: return null
@@ -433,6 +438,7 @@ private class StreamedCompletion {
                 }
             }
             usage?.let { put("usage", it) }
+            model?.let { put("model", it) }
         }
     }
 }
