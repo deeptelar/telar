@@ -10,7 +10,11 @@ import dev.deeptelar.telar.START
 import dev.deeptelar.telar.StateGraph
 import dev.deeptelar.telar.agent.AgentState
 import dev.deeptelar.telar.agent.ChatDecisionModel
+import dev.deeptelar.telar.agent.ChatMessage
+import dev.deeptelar.telar.agent.ChatModel
 import dev.deeptelar.telar.agent.ChatModelException
+import dev.deeptelar.telar.agent.ChatRequest
+import dev.deeptelar.telar.agent.ChatResponse
 import dev.deeptelar.telar.agent.TokenUsage
 import dev.deeptelar.telar.agent.Tool
 import dev.deeptelar.telar.agent.decisionEdge
@@ -88,6 +92,25 @@ class OpenTelemetryObserverTest {
             assertEquals("order_status", tool.string("gen_ai.tool.name"))
             assertEquals("call-1", tool.string("gen_ai.tool.call.id"))
             assertEquals(StatusCode.UNSET, tool.status.statusCode)
+        }
+
+    @Test
+    fun `a call to a model that knows its name is named after it`() =
+        runTest {
+            val model =
+                object : ChatModel {
+                    override val name: String = "gpt-4o-mini"
+
+                    override suspend fun chat(request: ChatRequest): ChatResponse =
+                        ChatResponse(ChatMessage.Assistant("5 minutes."), TokenUsage(20, 3), model = "gpt-4o-mini-2024-07-18")
+                }
+
+            toolAgent(model).invoke(AgentState("Where is my pizza?"), agentConfig)
+
+            val chat = span("chat gpt-4o-mini")
+            assertEquals("chat", chat.string("gen_ai.operation.name"))
+            assertEquals("gpt-4o-mini", chat.string("gen_ai.request.model"))
+            assertEquals("gpt-4o-mini-2024-07-18", chat.string("gen_ai.response.model"))
         }
 
     @Test

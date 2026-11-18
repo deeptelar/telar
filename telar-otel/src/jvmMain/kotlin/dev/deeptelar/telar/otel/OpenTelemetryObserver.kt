@@ -62,12 +62,15 @@ import kotlin.time.Duration
  * [semantic conventions for generative AI](https://opentelemetry.io/docs/specs/semconv/gen-ai/) name
  * them:
  *
- * - **A call to a model** is a span `chat` of kind `CLIENT`, with `gen_ai.operation.name` and the
- *   tokens its provider reported: `gen_ai.usage.input_tokens` (the tokens read from a cache
- *   included) and `gen_ai.usage.output_tokens`, and `gen_ai.usage.cache_read.input_tokens` and
- *   `gen_ai.usage.cache_write.input_tokens` when they are not 0. The name of the model is not known,
- *   so the span has no `gen_ai.request.model`. A call that failed has the status `ERROR`, an
- *   `error.type` and the exception.
+ * - **A call to a model** is a span `chat <model>` of kind `CLIENT`, with `gen_ai.operation.name`,
+ *   `gen_ai.request.model` (the [name][dev.deeptelar.telar.agent.ChatModel.name] of the model),
+ *   `gen_ai.response.model` (the model that answered, when the provider says), and the tokens its
+ *   provider reported: `gen_ai.usage.input_tokens` (the tokens read from a cache included) and
+ *   `gen_ai.usage.output_tokens`, and `gen_ai.usage.cache_read.input_tokens` and
+ *   `gen_ai.usage.cache_write.input_tokens` when they are not 0. A backend prices the call with the
+ *   model and the tokens. A model whose name is not known, such as one of your own that does not
+ *   override it, gives a span `chat` without `gen_ai.request.model`. A call that failed has the
+ *   status `ERROR`, an `error.type` and the exception.
  * - **A tool call** is a span `execute_tool <name>`, with `gen_ai.tool.name` and
  *   `gen_ai.tool.call.id`. A tool that returned an error to the model has the status `ERROR` and
  *   `error.type` `tool_error`, although the run goes on. A call that ended without a result, because
@@ -204,17 +207,20 @@ public class OpenTelemetryObserver(
 
     override fun onModelCallStarted(call: ObservedModelCall) {
         val parent = contextOf(call.caller) ?: return
+        val model = call.model.name?.takeIf { it.isNotBlank() }
         calls[call] =
             tracer
-                .spanBuilder(CHAT)
+                .spanBuilder(model?.let { "$CHAT $it" } ?: CHAT)
                 .setParent(parent)
                 .setSpanKind(SpanKind.CLIENT)
                 .setAttribute(GEN_AI_OPERATION, CHAT)
+                .apply { if (model != null) setAttribute(GEN_AI_REQUEST_MODEL, model) }
                 .startSpan()
     }
 
     override fun onModelCallCompleted(call: ObservedModelCall, usage: TokenUsage?) {
         endCall(call) { span ->
+            call.responseModel?.takeIf { it.isNotBlank() }?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it) }
             if (usage != null) {
                 span.setAttribute(GEN_AI_INPUT_TOKENS, usage.inputTokens.toLong())
                 span.setAttribute(GEN_AI_OUTPUT_TOKENS, usage.outputTokens.toLong())
@@ -311,6 +317,8 @@ private val EXCEPTION_TYPE: AttributeKey<String> = AttributeKey.stringKey("excep
 private val EXCEPTION_MESSAGE: AttributeKey<String> = AttributeKey.stringKey("exception.message")
 private val ERROR_TYPE: AttributeKey<String> = AttributeKey.stringKey("error.type")
 private val GEN_AI_OPERATION: AttributeKey<String> = AttributeKey.stringKey("gen_ai.operation.name")
+private val GEN_AI_REQUEST_MODEL: AttributeKey<String> = AttributeKey.stringKey("gen_ai.request.model")
+private val GEN_AI_RESPONSE_MODEL: AttributeKey<String> = AttributeKey.stringKey("gen_ai.response.model")
 private val GEN_AI_INPUT_TOKENS: AttributeKey<Long> = AttributeKey.longKey("gen_ai.usage.input_tokens")
 private val GEN_AI_OUTPUT_TOKENS: AttributeKey<Long> = AttributeKey.longKey("gen_ai.usage.output_tokens")
 private val GEN_AI_CACHE_READ_TOKENS: AttributeKey<Long> = AttributeKey.longKey("gen_ai.usage.cache_read.input_tokens")
