@@ -16,6 +16,13 @@ breaking changes.
   `ObservedModelCall.responseModel`. The spans of `telar-otel` record them as
   `gen_ai.request.model` and `gen_ai.response.model`, so a backend such as Langfuse shows the model
   of each call and what it cost. ([#214](https://github.com/deeptelar/telar/issues/214))
+- [Supported versions and releases](https://deeptelar.github.io/telar/support), a page of the
+  documentation with the Kotlin and Java versions that Telar works with, the targets of each module,
+  what a release may change after `1.0`, how long a deprecated declaration stays (at least two minor
+  releases and three months), and how often Telar is released (at most once a month, security fixes
+  sooner). Kotlin 2.3 also works on the JVM, and Kotlin 2.2 does not.
+  ([#212](https://github.com/deeptelar/telar/issues/212), by
+  [@Golden007-prog](https://github.com/Golden007-prog) in [#213](https://github.com/deeptelar/telar/pull/213))
 
 ### Changed
 
