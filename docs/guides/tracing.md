@@ -161,19 +161,32 @@ backend that knows them shows them as calls to a model. A tool agent looks like 
 ```
 telar.run                        telar.thread_id=ticket-42
 ├─ telar.node model              telar.step=1
-│  └─ chat                       gen_ai.usage.input_tokens=812  gen_ai.usage.output_tokens=64
+│  └─ chat gpt-5                 gen_ai.request.model=gpt-5  gen_ai.usage.input_tokens=812  gen_ai.usage.output_tokens=64
 ├─ telar.node tools              telar.step=2
 │  └─ execute_tool order_status  gen_ai.tool.name=order_status  gen_ai.tool.call.id=toolu_01...
 └─ telar.node model              telar.step=3
-   └─ chat                       gen_ai.usage.input_tokens=901  gen_ai.usage.output_tokens=38
+   └─ chat gpt-5                 gen_ai.request.model=gpt-5  gen_ai.usage.input_tokens=901  gen_ai.usage.output_tokens=38
 ```
 
-- **A call to a model** is a span named `chat`, of kind `CLIENT`, with `gen_ai.operation.name`
-  and the tokens its provider reported: `gen_ai.usage.input_tokens`, which counts the tokens read
-  from a cache too, and `gen_ai.usage.output_tokens`. `gen_ai.usage.cache_read.input_tokens` and
-  `gen_ai.usage.cache_write.input_tokens` are there when they are not 0. A `ChatModel` does not say
-  which model it calls, so the span has no `gen_ai.request.model`. A call that failed has the status
-  `ERROR` and an `error.type`, the name of the exception's class.
+- **A call to a model** is a span named `chat <model>`, of kind `CLIENT`, with
+  `gen_ai.operation.name`, the model and the tokens its provider reported. `gen_ai.request.model` is
+  the `name` of the `ChatModel`, the model it was built with, and `gen_ai.response.model` is the
+  model that answered, as the provider names it in its answer (for example `gpt-4o-mini-2024-07-18`
+  for `gpt-4o-mini`). With the model and the tokens, a backend such as Langfuse shows what each call
+  cost. `gen_ai.usage.input_tokens` counts the tokens read from a cache too, and
+  `gen_ai.usage.output_tokens` the tokens the model wrote. `gen_ai.usage.cache_read.input_tokens`
+  and `gen_ai.usage.cache_write.input_tokens` are there when they are not 0. A call that failed has
+  the status `ERROR` and an `error.type`, the name of the exception's class.
+
+  The model classes of Telar know their model. A `ChatModel` of your own has no `name` unless it
+  overrides it, and its span is then named `chat`, without `gen_ai.request.model`:
+
+  ```kotlin
+  class MyModel : ChatModel {
+      override val name: String = "my-model-v2"
+      override suspend fun chat(request: ChatRequest): ChatResponse = ...
+  }
+  ```
 - **A tool call** is a span named `execute_tool <name>`, with `gen_ai.tool.name` and
   `gen_ai.tool.call.id`. A tool that returned an error to the model has the status `ERROR` and the
   `error.type` `tool_error`, although the run goes on, because the model is told about the error. A

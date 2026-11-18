@@ -7,6 +7,23 @@ breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- Each call to a model says which model it was. `ChatModel.name` is the model that is asked (`null`
+  unless a model sets it), and `OpenAiChatModel`, `AnthropicChatModel` and `LangChain4jChatModel`
+  set it to the model they were built with. `ChatResponse.model` is the model that answered, as the
+  provider names it, also at the end of a stream, and an `AgentObserver` reads it as
+  `ObservedModelCall.responseModel`. The spans of `telar-otel` record them as
+  `gen_ai.request.model` and `gen_ai.response.model`, so a backend such as Langfuse shows the model
+  of each call and what it cost. ([#214](https://github.com/deeptelar/telar/issues/214))
+
+### Changed
+
+- The span of a call to a model that knows its name is named `chat <model>`, such as
+  `chat gpt-5`, as the OpenTelemetry conventions for generative AI name it. A query or a dashboard
+  that looks for spans named `chat` matches `gen_ai.operation.name` instead, which is still `chat`.
+  ([#214](https://github.com/deeptelar/telar/issues/214))
+
 ## [0.1.0-alpha19] - 2026-11-17
 
 It also brings everything of

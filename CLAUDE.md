@@ -60,7 +60,8 @@ made under that name keep it. The repository is `deeptelar/telar` and the demo i
   and each test gets a fresh database (`Database.fresh()`)
 - **`telar-checkpoint-browser`** (JS and Wasm, browser only, code in `webMain`):
   `LocalStorageCheckpointer` and `LocalStorageStore` on `localStorage`. Its tests run in headless Chrome
-- **`telar-agent`** (KMP): `ChatModel` (the provider-neutral model interface), `ChatMessage`,
+- **`telar-agent`** (KMP): `ChatModel` (the provider-neutral model interface; its `name` and
+  `ChatResponse.model` say which model was asked and which answered), `ChatMessage`,
   `Tool` (JSON Schema built from a `@Serializable` input class in `ToolSchema.kt`), and the
   tool-calling loop: `toolLoop` adds a model node and a tools node to any graph, `toolAgent` is that
   loop as a graph over `AgentState`. Also `DecisionModel` (see `telar-typesafe`) and
