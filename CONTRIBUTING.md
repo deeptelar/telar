@@ -147,6 +147,8 @@ for understanding and testing what you submit. Agent-specific instructions live 
 
 ## Releasing (maintainers)
 
+See [Supported versions and releases](docs/support.md) for the compatibility and release policy.
+
 One-time setup:
 
 - Register and verify the `dev.deeptelar` namespace at <https://central.sonatype.com>.

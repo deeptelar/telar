@@ -71,6 +71,7 @@ export default withMermaid(
             { text: 'Why Telar', link: '/why-telar' },
             { text: 'Quick start', link: '/quick-start' },
             { text: 'Installation', link: '/installation' },
+            { text: 'Supported versions and releases', link: '/support' },
           ],
         },
         {

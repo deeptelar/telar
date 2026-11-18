@@ -61,8 +61,12 @@ it in `<dependencyManagement>` with `<scope>import</scope>` and leave the versio
 | `telar-bom` | none: a bill of materials | The version of every module above, for `platform(...)` |
 | `telar-test` | same as core | `ScriptedChatModel`, `ScriptedDecisionModel`, `record()`, and `graph.test { }` / `graph.replay { }` for the path of a run, for [tests](guides/testing.md) of a graph. |
 
-Requires Kotlin 2.x. JVM artifacts target Java 11, except `telar-langchain4j`, which needs
-Java 17 because LangChain4j does.
+Telar is built with Kotlin 2.4. On the JVM, Kotlin 2.3 also works, verified with 2.3.21 for
+`telar-core` in `0.1.0-alpha19`. For Native, JS and Wasm, use the Kotlin version used to build
+the release. JVM artifacts target Java 11, except `telar-langchain4j`, which needs Java 17
+because LangChain4j does.
+
+See [Supported versions and releases](support.md) for the compiler, runtime and release rules.
 
 ## Status
 

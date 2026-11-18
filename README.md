@@ -147,8 +147,10 @@ dependencies {
 }
 ```
 
-The artifacts are on Maven Central and need Kotlin 2.x. There are more modules, for saving runs to
-files or in a browser, for LangChain4j models and for decision models:
+The artifacts are on Maven Central. Telar is built with Kotlin 2.4. On the JVM, Kotlin 2.3
+also works, verified with 2.3.21 for `telar-core` in `0.1.0-alpha19`. For Native, JS and Wasm,
+use the Kotlin version used to build the release. There are more modules for saving runs to
+files or in a browser, for LangChain4j models and for decision models.
 [Installation](https://deeptelar.github.io/telar/installation) lists every module and its targets.
 
 Telar is in alpha. `0.1.0-alpha19` is the latest release. The API may still change before `1.0`; the
