@@ -25,6 +25,14 @@ import kotlinx.serialization.Serializable
  */
 public fun interface ChatModel {
     /**
+     * The model that is asked, such as `gpt-5` or `claude-opus-5-5`, or `null` when it is not known.
+     * Traces show it and price each call with it: the spans of `telar-otel` record it as
+     * `gen_ai.request.model`. The model classes of Telar set it to the model they were built with; a
+     * model of your own overrides it when it knows one.
+     */
+    public val name: String? get() = null
+
+    /**
      * Returns the model's next message for [request].
      *
      * @throws ChatModelException when the call fails or the model declines to answer.
@@ -182,10 +190,14 @@ public data class ChatRequest(
  * @property message the model's message. Add it to the conversation before the next request. Its
  * [ChatMessage.Assistant.truncated] tells whether the model reached its output limit.
  * @property usage the tokens the call used, when the provider reports them.
+ * @property model the model that answered, as the provider names it in its answer, when it does. It
+ * can be more exact than the [ChatModel.name] that was asked, such as `gpt-4o-mini-2024-07-18` for
+ * `gpt-4o-mini`.
  */
 public data class ChatResponse(
     val message: ChatMessage.Assistant,
     val usage: TokenUsage? = null,
+    val model: String? = null,
 )
 
 /**

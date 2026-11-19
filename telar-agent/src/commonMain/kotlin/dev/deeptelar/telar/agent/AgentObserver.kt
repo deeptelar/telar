@@ -66,12 +66,20 @@ public interface AgentObserver : GraphObserver {
  *
  * @property caller what makes the call: an [ObservedNode], or an [ObservedEdge] whose condition
  * makes it, such as that of a [decisionEdge].
- * @property model the model that is called.
+ * @property model the model that is called. Its [name][ChatModel.name] is the model that was asked.
  */
 public class ObservedModelCall internal constructor(
     public val caller: ObservedCaller,
     public val model: ChatModel,
 ) {
+    /**
+     * The model that answered, as the provider names it in its answer ([ChatResponse.model]). It is
+     * known from [AgentObserver.onModelCallCompleted] on, and `null` before, or when the provider
+     * does not say.
+     */
+    public var responseModel: String? = null
+        internal set
+
     override fun toString(): String = "model call in $caller"
 }
 
@@ -104,6 +112,7 @@ internal suspend fun observeModelCall(model: ChatModel, block: suspend () -> Cha
             observers.forEach { it.onModelCallFailed(call, failure) }
             throw failure
         }
+    call.responseModel = response.model
     observers.forEach { it.onModelCallCompleted(call, response.usage) }
     return response
 }

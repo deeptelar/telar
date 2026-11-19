@@ -5,6 +5,7 @@ public final class dev/deeptelar/telar/openai/OpenAiChatModel : dev/deeptelar/te
 	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Ljava/util/Map;Ljava/lang/String;Lkotlin/time/Duration;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Ljava/util/Map;Ljava/lang/String;Lkotlin/time/Duration;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun chat (Ldev/deeptelar/telar/agent/ChatRequest;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getName ()Ljava/lang/String;
 	public fun stream (Ldev/deeptelar/telar/agent/ChatRequest;)Lkotlinx/coroutines/flow/Flow;
 }
 

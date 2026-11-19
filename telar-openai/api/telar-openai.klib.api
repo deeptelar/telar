@@ -9,6 +9,9 @@
 final class dev.deeptelar.telar.openai/OpenAiChatModel : dev.deeptelar.telar.agent/ChatModel { // dev.deeptelar.telar.openai/OpenAiChatModel|null[0]
     constructor <init>(io.ktor.client/HttpClient, kotlin/String?, kotlin/String, kotlinx.serialization.json/JsonObject = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin/String = ..., kotlin.time/Duration? = ...) // dev.deeptelar.telar.openai/OpenAiChatModel.<init>|<init>(io.ktor.client.HttpClient;kotlin.String?;kotlin.String;kotlinx.serialization.json.JsonObject;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.String;kotlin.time.Duration?){}[0]
 
+    final val name // dev.deeptelar.telar.openai/OpenAiChatModel.name|{}name[0]
+        final fun <get-name>(): kotlin/String // dev.deeptelar.telar.openai/OpenAiChatModel.name.<get-name>|<get-name>(){}[0]
+
     final fun stream(dev.deeptelar.telar.agent/ChatRequest): kotlinx.coroutines.flow/Flow<dev.deeptelar.telar.agent/ChatEvent> // dev.deeptelar.telar.openai/OpenAiChatModel.stream|stream(dev.deeptelar.telar.agent.ChatRequest){}[0]
     final suspend fun chat(dev.deeptelar.telar.agent/ChatRequest): dev.deeptelar.telar.agent/ChatResponse // dev.deeptelar.telar.openai/OpenAiChatModel.chat|chat(dev.deeptelar.telar.agent.ChatRequest){}[0]
 

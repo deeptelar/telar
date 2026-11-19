@@ -74,19 +74,22 @@ import kotlin.time.TimeSource
  * ```
  * telar.run                        telar.thread_id=ticket-42
  * ├─ telar.node model              telar.step=1
- * │  └─ chat                       gen_ai.usage.input_tokens=812  gen_ai.usage.output_tokens=64
+ * │  └─ chat gpt-5                 gen_ai.request.model=gpt-5  gen_ai.usage.input_tokens=812
  * ├─ telar.node tools              telar.step=2
  * │  └─ execute_tool order_status  gen_ai.tool.call.id=toolu_01...
  * └─ telar.node model              telar.step=3
- *    └─ chat                       gen_ai.usage.input_tokens=901  gen_ai.usage.output_tokens=38
+ *    └─ chat gpt-5                 gen_ai.request.model=gpt-5  gen_ai.usage.input_tokens=901
  * ```
  *
- * - **A call to a model** is a span `chat` of kind `CLIENT`, with `gen_ai.operation.name` and the
- *   tokens its provider reported: `gen_ai.usage.input_tokens` (the tokens read from a cache
- *   included) and `gen_ai.usage.output_tokens`, and `gen_ai.usage.cache_read.input_tokens` and
- *   `gen_ai.usage.cache_write.input_tokens` when they are not 0. The name of the model is not known,
- *   so the span has no `gen_ai.request.model`. A call that failed has the status `ERROR`, an
- *   `error.type` and an event `exception`.
+ * - **A call to a model** is a span `chat <model>` of kind `CLIENT`, with `gen_ai.operation.name`,
+ *   `gen_ai.request.model` (the [name][dev.deeptelar.telar.agent.ChatModel.name] of the model),
+ *   `gen_ai.response.model` (the model that answered, when the provider says), and the tokens its
+ *   provider reported: `gen_ai.usage.input_tokens` (the tokens read from a cache included) and
+ *   `gen_ai.usage.output_tokens`, and `gen_ai.usage.cache_read.input_tokens` and
+ *   `gen_ai.usage.cache_write.input_tokens` when they are not 0. A backend prices the call with the
+ *   model and the tokens. A model whose name is not known, such as one of your own that does not
+ *   override it, gives a span `chat` without `gen_ai.request.model`. A call that failed has the
+ *   status `ERROR`, an `error.type` and an event `exception`.
  * - **A tool call** is a span `execute_tool <name>`, with `gen_ai.tool.name` and
  *   `gen_ai.tool.call.id`. A tool that returned an error to the model has the status `ERROR` and
  *   `error.type` `tool_error`, although the run goes on. A call that ended without a result, because
@@ -297,17 +300,26 @@ public class OtlpObserver(
 
     override fun onModelCallStarted(call: ObservedModelCall) {
         val parent = open.load()[call.caller] ?: return
+        val model = call.model.name?.takeIf { it.isNotBlank() }
         start(
             call,
-            name = CHAT,
+            name = model?.let { "$CHAT $it" } ?: CHAT,
             parent = parent.context,
-            attributes = listOf(Attribute(GEN_AI_OPERATION, AttributeValue.Text(CHAT))),
+            attributes =
+                listOfNotNull(
+                    Attribute(GEN_AI_OPERATION, AttributeValue.Text(CHAT)),
+                    model?.let { Attribute(GEN_AI_REQUEST_MODEL, AttributeValue.Text(it)) },
+                ),
             kind = SpanKind.CLIENT,
         )
     }
 
     override fun onModelCallCompleted(call: ObservedModelCall, usage: TokenUsage?) {
-        end(call) { span -> usage?.let { span.withUsage(it) } ?: span }
+        end(call) { span ->
+            val answered = call.responseModel?.takeIf { it.isNotBlank() }
+            val named = answered?.let { span.with(Attribute(GEN_AI_RESPONSE_MODEL, AttributeValue.Text(it))) } ?: span
+            usage?.let { named.withUsage(it) } ?: named
+        }
     }
 
     override fun onModelCallFailed(call: ObservedModelCall, cause: Throwable) {
@@ -543,6 +555,8 @@ private const val TOOL_ERROR = "tool_error"
 private const val CHAT = "chat"
 private const val EXECUTE_TOOL = "execute_tool"
 private const val GEN_AI_OPERATION = "gen_ai.operation.name"
+private const val GEN_AI_REQUEST_MODEL = "gen_ai.request.model"
+private const val GEN_AI_RESPONSE_MODEL = "gen_ai.response.model"
 private const val GEN_AI_INPUT_TOKENS = "gen_ai.usage.input_tokens"
 private const val GEN_AI_OUTPUT_TOKENS = "gen_ai.usage.output_tokens"
 private const val GEN_AI_CACHE_READ_TOKENS = "gen_ai.usage.cache_read.input_tokens"

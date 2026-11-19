@@ -131,6 +131,18 @@ class OpenAiStreamTest {
         }
 
     @Test
+    fun `a streamed answer names the model that answered`() =
+        runTest {
+            val named = """{"model": "gpt-5-2026-08-07", "choices": [{"index": 0, "delta": {"content": "Hi"}, "finish_reason": null}]}"""
+            val model = model(chunks(role, named, finish("stop"), done))
+
+            val completed = model.stream(hello).toList().last() as ChatEvent.Completed
+
+            assertEquals("gpt-5-2026-08-07", completed.response.model)
+            assertEquals("Hi", completed.response.message.text)
+        }
+
+    @Test
     fun `streamed tool calls have the input that arrived in pieces`() =
         runTest {
             val model =

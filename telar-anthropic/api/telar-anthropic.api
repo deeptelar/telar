@@ -4,6 +4,7 @@ public final class dev/deeptelar/telar/anthropic/AnthropicChatModel : dev/deepte
 	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/lang/String;ILkotlinx/serialization/json/JsonObject;Ljava/util/Map;Ljava/lang/String;Lkotlin/time/Duration;Ldev/deeptelar/telar/anthropic/PromptCache;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/lang/String;ILkotlinx/serialization/json/JsonObject;Ljava/util/Map;Ljava/lang/String;Lkotlin/time/Duration;Ldev/deeptelar/telar/anthropic/PromptCache;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun chat (Ldev/deeptelar/telar/agent/ChatRequest;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getName ()Ljava/lang/String;
 	public fun stream (Ldev/deeptelar/telar/agent/ChatRequest;)Lkotlinx/coroutines/flow/Flow;
 }
 

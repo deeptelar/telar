@@ -69,6 +69,7 @@ public final class dev/deeptelar/telar/test/RunRecordKt {
 public final class dev/deeptelar/telar/test/ScriptedChatModel : dev/deeptelar/telar/agent/ChatModel {
 	public fun <init> (Lkotlin/jvm/functions/Function1;)V
 	public fun chat (Ldev/deeptelar/telar/agent/ChatRequest;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getName ()Ljava/lang/String;
 	public final fun getRemaining ()I
 	public final fun getRequests ()Ljava/util/List;
 	public fun stream (Ldev/deeptelar/telar/agent/ChatRequest;)Lkotlinx/coroutines/flow/Flow;
