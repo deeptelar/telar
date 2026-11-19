@@ -6,6 +6,9 @@ else. A `Store` is that place. It belongs to no thread, so every run that gets t
 reads what the others wrote.
 
 ```kotlin
+import dev.deeptelar.telar.*
+import dev.deeptelar.telar.agent.*
+
 val store = MemoryStore()
 
 val agent = toolAgent(
