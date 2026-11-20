@@ -140,10 +140,26 @@ LangGraph4j and LangChain4j.
 
 ```kotlin
 dependencies {
-    implementation("dev.deeptelar:telar-core:0.1.0-alpha19")      // the graph builder and the engine
-    implementation("dev.deeptelar:telar-agent:0.1.0-alpha19")     // chat models, tools and the tool-calling agent
-    implementation("dev.deeptelar:telar-anthropic:0.1.0-alpha19") // Claude
-    implementation("dev.deeptelar:telar-openai:0.1.0-alpha19")    // OpenAI, Gemini, Ollama and compatible servers
+    implementation(platform("dev.deeptelar:telar-bom:0.1.0-alpha19")) // one version for every module
+    implementation("dev.deeptelar:telar-core")      // the graph builder and the engine
+    implementation("dev.deeptelar:telar-agent")     // chat models, tools and the tool-calling agent
+    implementation("dev.deeptelar:telar-anthropic") // Claude
+    implementation("dev.deeptelar:telar-openai")    // OpenAI, Gemini, Ollama and compatible servers
+}
+```
+
+`telar-bom` names the version of every module, so you write it once. In a Kotlin Multiplatform
+project, add it to a source set with `project.dependencies.platform(...)`:
+
+```kotlin
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            implementation(project.dependencies.platform("dev.deeptelar:telar-bom:0.1.0-alpha19"))
+            implementation("dev.deeptelar:telar-core")
+            implementation("dev.deeptelar:telar-agent")
+        }
+    }
 }
 ```
 
