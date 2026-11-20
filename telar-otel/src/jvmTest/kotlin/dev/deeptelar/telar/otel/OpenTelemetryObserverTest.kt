@@ -3,12 +3,14 @@ package dev.deeptelar.telar.otel
 import dev.deeptelar.telar.END
 import dev.deeptelar.telar.EdgeConditionException
 import dev.deeptelar.telar.GraphConfig
+import dev.deeptelar.telar.GraphValidationException
 import dev.deeptelar.telar.MemoryCheckpointer
 import dev.deeptelar.telar.NodeExecutionException
 import dev.deeptelar.telar.Retry
 import dev.deeptelar.telar.START
 import dev.deeptelar.telar.StateGraph
 import dev.deeptelar.telar.agent.AgentState
+import dev.deeptelar.telar.agent.Attachment
 import dev.deeptelar.telar.agent.ChatDecisionModel
 import dev.deeptelar.telar.agent.ChatMessage
 import dev.deeptelar.telar.agent.ChatModel
@@ -17,6 +19,7 @@ import dev.deeptelar.telar.agent.ChatRequest
 import dev.deeptelar.telar.agent.ChatResponse
 import dev.deeptelar.telar.agent.TokenUsage
 import dev.deeptelar.telar.agent.Tool
+import dev.deeptelar.telar.agent.ToolCall
 import dev.deeptelar.telar.agent.decisionEdge
 import dev.deeptelar.telar.agent.toolAgent
 import dev.deeptelar.telar.interrupt
@@ -35,10 +38,15 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonArray
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class OpenTelemetryObserverTest {
     private val exporter = InMemorySpanExporter.create()
@@ -370,5 +378,92 @@ class OpenTelemetryObserverTest {
             graph.invoke(Ticket(), GraphConfig(observers = listOf(OpenTelemetryObserver())))
 
             assertEquals(emptyList(), spans)
+        }
+
+    private val recording = OpenTelemetryObserver(openTelemetry, recordContent = true)
+
+    private val orderStatus = Tool<Unit>("order_status", "Returns where the order is.") { "The driver is 5 minutes away." }
+
+    @Test
+    fun `the conversation is not recorded unless it is asked for`() =
+        runTest {
+            val model =
+                ScriptedChatModel {
+                    calls(call("order_status"))
+                    says("5 minutes.")
+                }
+
+            toolAgent(model, listOf(orderStatus), system = "Be brief.").invoke(AgentState("Where is my pizza?"), agentConfig)
+
+            val content =
+                listOf(
+                    "gen_ai.system_instructions",
+                    "gen_ai.input.messages",
+                    "gen_ai.output.messages",
+                    "gen_ai.tool.call.arguments",
+                    "gen_ai.tool.call.result",
+                )
+            assertEquals(emptyList(), spans.flatMap { span -> content.filter { span.string(it) != null } })
+        }
+
+    @Test
+    fun `with recordContent the spans of the calls have the conversation`() =
+        runTest {
+            val model =
+                ScriptedChatModel {
+                    calls(ToolCall("call-1", "order_status", JsonObject(emptyMap()), invalidInput = "{order: 42"))
+                    says("Sorry.")
+                }
+
+            toolAgent(model, listOf(orderStatus), system = "Be brief.")
+                .invoke(AgentState("Where is my pizza?"), GraphConfig(observers = listOf(recording)))
+
+            val (first, second) = spans.filter { it.name == "chat" }.sortedBy { it.startEpochNanos }
+            assertEquals("""[{"type":"text","content":"Be brief."}]""", first.string("gen_ai.system_instructions"))
+            assertEquals(
+                """[{"role":"user","parts":[{"type":"text","content":"Where is my pizza?"}]}]""",
+                first.string("gen_ai.input.messages"),
+            )
+            assertEquals(
+                """[{"role":"assistant","parts":[{"type":"tool_call","id":"call-1","name":"order_status","arguments":"{order: 42"}],""" +
+                    """"finish_reason":"tool_call"}]""",
+                first.string("gen_ai.output.messages"),
+            )
+            assertEquals(3, Json.parseToJsonElement(second.string("gen_ai.input.messages")!!).jsonArray.size)
+            val tool = span("execute_tool order_status")
+            assertEquals("{order: 42", tool.string("gen_ai.tool.call.arguments"))
+            assertEquals("The input is not a JSON object: {order: 42", tool.string("gen_ai.tool.call.result"))
+        }
+
+    @Test
+    fun `an attachment is recorded without its bytes and a long text is cut`() =
+        runTest {
+            val photo = "iVBORw0K".repeat(200_000)
+            val question = ChatMessage.User("Is this pizza burnt? ".repeat(10), listOf(Attachment.Data(photo, "image/jpeg")))
+            val cutting = OpenTelemetryObserver(openTelemetry, recordContent = true, maxContentLength = 20)
+
+            toolAgent(
+                ScriptedChatModel { says("A little.") },
+            ).invoke(AgentState(listOf(question)), GraphConfig(observers = listOf(cutting)))
+
+            assertEquals(
+                """[{"role":"user","parts":[{"type":"text","content":"Is this pizza burnt?… [cut, 210 characters in all]"},""" +
+                    """{"type":"text","content":"[image/jpeg, 1.1 MB]"}]}]""",
+                span("chat").string("gen_ai.input.messages"),
+            )
+        }
+
+    @Test
+    fun `a call to a model that fails keeps what it sent`() =
+        runTest {
+            val model = ScriptedChatModel { fails("API error 529: Overloaded") }
+
+            assertFailsWith<NodeExecutionException> {
+                toolAgent(model).invoke(AgentState("Where is my pizza?"), GraphConfig(observers = listOf(recording)))
+            }
+
+            assertTrue(span("chat").string("gen_ai.input.messages")!!.contains("Where is my pizza?"))
+            assertNull(span("chat").string("gen_ai.output.messages"))
+            assertFailsWith<GraphValidationException> { OpenTelemetryObserver(openTelemetry, maxContentLength = 0) }
         }
 }

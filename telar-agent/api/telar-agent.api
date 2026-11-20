@@ -435,6 +435,43 @@ public final class dev/deeptelar/telar/agent/ChatResponse {
 	public fun toString ()Ljava/lang/String;
 }
 
+public abstract interface class dev/deeptelar/telar/agent/ConversationObserver : dev/deeptelar/telar/agent/AgentObserver {
+	public fun onModelCallRequest (Ldev/deeptelar/telar/agent/ObservedModelCall;Ldev/deeptelar/telar/agent/ChatRequest;)V
+	public fun onModelCallResponse (Ldev/deeptelar/telar/agent/ObservedModelCall;Ldev/deeptelar/telar/agent/ChatResponse;)V
+	public fun onToolCallInput (Ldev/deeptelar/telar/agent/ObservedToolCall;Ldev/deeptelar/telar/agent/ToolCall;)V
+	public fun onToolCallResult (Ldev/deeptelar/telar/agent/ObservedToolCall;Ldev/deeptelar/telar/agent/ChatMessage$ToolResult;)V
+}
+
+public final class dev/deeptelar/telar/agent/ConversationObserver$DefaultImpls {
+	public static fun edgeContext (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/ObservedEdge;)Lkotlin/coroutines/CoroutineContext;
+	public static fun nodeContext (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/ObservedNode;)Lkotlin/coroutines/CoroutineContext;
+	public static fun onCheckpointSaved (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/ObservedRun;ILjava/util/List;)V
+	public static fun onEdgeCompleted (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/ObservedEdge;Ljava/util/List;)V
+	public static fun onEdgeFailed (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/ObservedEdge;Ljava/lang/Throwable;)V
+	public static fun onEdgeStarted (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/ObservedEdge;)V
+	public static fun onModelCallCompleted (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/agent/ObservedModelCall;Ldev/deeptelar/telar/agent/TokenUsage;)V
+	public static fun onModelCallFailed (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/agent/ObservedModelCall;Ljava/lang/Throwable;)V
+	public static fun onModelCallRequest (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/agent/ObservedModelCall;Ldev/deeptelar/telar/agent/ChatRequest;)V
+	public static fun onModelCallResponse (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/agent/ObservedModelCall;Ldev/deeptelar/telar/agent/ChatResponse;)V
+	public static fun onModelCallStarted (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/agent/ObservedModelCall;)V
+	public static fun onNodeCompleted (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/ObservedNode;)V
+	public static fun onNodeFailed (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/ObservedNode;Ljava/lang/Throwable;)V
+	public static fun onNodeInterrupted (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/ObservedNode;)V
+	public static fun onNodeProgress (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/ObservedNode;Ljava/lang/Object;)V
+	public static fun onNodeRetry-Wn2Vu4Y (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/ObservedNode;ILjava/lang/Throwable;J)V
+	public static fun onNodeStarted (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/ObservedNode;)V
+	public static fun onRunCompleted (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/ObservedRun;)V
+	public static fun onRunFailed (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/ObservedRun;Ljava/lang/Throwable;)V
+	public static fun onRunInterrupted (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/ObservedRun;Ljava/util/List;)V
+	public static fun onRunStarted (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/ObservedRun;)V
+	public static fun onStepCompleted (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/ObservedRun;ILjava/util/List;Ljava/util/List;)V
+	public static fun onToolCallCompleted (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/agent/ObservedToolCall;Z)V
+	public static fun onToolCallFailed (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/agent/ObservedToolCall;Ljava/lang/Throwable;)V
+	public static fun onToolCallInput (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/agent/ObservedToolCall;Ldev/deeptelar/telar/agent/ToolCall;)V
+	public static fun onToolCallResult (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/agent/ObservedToolCall;Ldev/deeptelar/telar/agent/ChatMessage$ToolResult;)V
+	public static fun onToolCallStarted (Ldev/deeptelar/telar/agent/ConversationObserver;Ldev/deeptelar/telar/agent/ObservedToolCall;)V
+}
+
 public final class dev/deeptelar/telar/agent/DecisionEdgeKt {
 	public static final fun decisionEdge (Ldev/deeptelar/telar/StateGraph;Ldev/deeptelar/telar/NodeRef;Ldev/deeptelar/telar/agent/DecisionModel;Ljava/lang/String;Ljava/util/Map;DLdev/deeptelar/telar/NodeRef;Lkotlin/jvm/functions/Function2;)V
 	public static final fun decisionEdge (Ldev/deeptelar/telar/StateGraph;Ljava/lang/String;Ldev/deeptelar/telar/agent/DecisionModel;Ljava/lang/String;Ljava/util/Map;DLdev/deeptelar/telar/NodeRef;Lkotlin/jvm/functions/Function2;)V

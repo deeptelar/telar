@@ -104,7 +104,7 @@ public sealed interface ChatEvent {
  * @throws ChatModelException when the call fails or the model declines to answer.
  */
 public suspend fun ChatModel.chatWithProgress(request: ChatRequest): ChatResponse =
-    observeModelCall(this) {
+    observeModelCall(this, request) {
         if (!isProgressCollected()) return@observeModelCall chat(request)
         var response: ChatResponse? = null
         stream(request).collect { event ->

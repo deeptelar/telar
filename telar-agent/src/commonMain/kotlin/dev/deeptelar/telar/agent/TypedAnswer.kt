@@ -86,7 +86,8 @@ public suspend fun <Answer> ChatModel.ask(serializer: KSerializer<Answer>, reque
     var usage: TokenUsage? = null
     var problem = ""
     repeat(attempts) {
-        val response = observeModelCall(this) { chat(request.copy(messages = messages, system = system)) }
+        val sent = request.copy(messages = messages, system = system)
+        val response = observeModelCall(this, sent) { chat(sent) }
         usage = usage + response.usage
         if (response.message.truncated) {
             throw ChatModelException("The model reached its output limit before it finished its answer. Raise the limit.")

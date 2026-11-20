@@ -2,15 +2,20 @@ package dev.deeptelar.telar.otel
 
 import dev.deeptelar.telar.EdgeConditionException
 import dev.deeptelar.telar.GraphConfig
+import dev.deeptelar.telar.GraphValidationException
 import dev.deeptelar.telar.NodeExecutionException
 import dev.deeptelar.telar.ObservedCaller
 import dev.deeptelar.telar.ObservedEdge
 import dev.deeptelar.telar.ObservedNode
 import dev.deeptelar.telar.ObservedRun
-import dev.deeptelar.telar.agent.AgentObserver
+import dev.deeptelar.telar.agent.ChatMessage
+import dev.deeptelar.telar.agent.ChatRequest
+import dev.deeptelar.telar.agent.ChatResponse
+import dev.deeptelar.telar.agent.ConversationObserver
 import dev.deeptelar.telar.agent.ObservedModelCall
 import dev.deeptelar.telar.agent.ObservedToolCall
 import dev.deeptelar.telar.agent.TokenUsage
+import dev.deeptelar.telar.agent.ToolCall
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.api.common.AttributeKey
@@ -80,14 +85,33 @@ import kotlin.time.Duration
  * of the HTTP request of a model is inside the span of the node, next to the span `chat`.
  *
  * The state of the run is never recorded, nor what a node reports with `reportProgress`: both can
- * hold personal data. Nor are the messages, the input of a tool or its result.
+ * hold personal data.
+ *
+ * **The conversation**, with [recordContent]: the span of a model call gets what it sent
+ * (`gen_ai.system_instructions` and `gen_ai.input.messages`) and the answer
+ * (`gen_ai.output.messages`), and the span of a tool call its input (`gen_ai.tool.call.arguments`)
+ * and result (`gen_ai.tool.call.result`), as JSON in strings, as the conventions write them. A
+ * backend such as Langfuse shows them as the input and output of the call. Each text is cut at
+ * [maxContentLength] characters, with a note of how long it was. An image or a PDF becomes a note of
+ * its type and size, such as `[image/png, 47 KB]`: its bytes are never recorded. Nor is the
+ * `providerContent` of a message, such as the thinking of Claude, nor the tools the model was offered.
+ * The conversation can hold personal data, such as what the users of the app wrote, so it is off
+ * by default: turn it on only when you know who can read the traces.
  *
  * @param openTelemetry where the spans go. The default is the instance that the OpenTelemetry Java
  * agent or `GlobalOpenTelemetry.set` registered, which records nothing when there is none.
+ * @param recordContent records the messages of each model call and the input and result of each
+ * tool call. Off by default, because they can hold personal data.
+ * @param maxContentLength the most characters of each text that [recordContent] records.
+ * @throws GraphValidationException if [maxContentLength] is less than 1.
  */
 public class OpenTelemetryObserver(
     openTelemetry: OpenTelemetry = GlobalOpenTelemetry.get(),
-) : AgentObserver {
+    private val recordContent: Boolean = false,
+    maxContentLength: Int = ConversationAttributes.DEFAULT_MAX_LENGTH,
+) : ConversationObserver {
+    private val content = ConversationAttributes(maxContentLength)
+
     private val tracer: Tracer = openTelemetry.getTracer(INSTRUMENTATION_SCOPE)
 
     /** The context of each running run, which holds its span. */
@@ -218,6 +242,14 @@ public class OpenTelemetryObserver(
                 .startSpan()
     }
 
+    override fun onModelCallRequest(call: ObservedModelCall, request: ChatRequest) {
+        if (recordContent) addContent(call, content.request(request))
+    }
+
+    override fun onModelCallResponse(call: ObservedModelCall, response: ChatResponse) {
+        if (recordContent) addContent(call, content.response(response))
+    }
+
     override fun onModelCallCompleted(call: ObservedModelCall, usage: TokenUsage?) {
         endCall(call) { span ->
             call.responseModel?.takeIf { it.isNotBlank() }?.let { span.setAttribute(GEN_AI_RESPONSE_MODEL, it) }
@@ -253,6 +285,14 @@ public class OpenTelemetryObserver(
         calls[call] = builder.startSpan()
     }
 
+    override fun onToolCallInput(call: ObservedToolCall, toolCall: ToolCall) {
+        if (recordContent) addContent(call, content.toolInput(toolCall))
+    }
+
+    override fun onToolCallResult(call: ObservedToolCall, result: ChatMessage.ToolResult) {
+        if (recordContent) addContent(call, content.toolResult(result))
+    }
+
     override fun onToolCallCompleted(call: ObservedToolCall, isError: Boolean) {
         endCall(call) { span ->
             if (isError) {
@@ -265,6 +305,11 @@ public class OpenTelemetryObserver(
     override fun onToolCallFailed(call: ObservedToolCall, cause: Throwable) {
         // Cancelled, paused with `interrupt`, or an error that ends the run: the span of the node says which.
         endCall(call) {}
+    }
+
+    private fun addContent(call: Any, attributes: Map<String, String>) {
+        val span = calls[call] ?: return
+        attributes.forEach { (key, value) -> span.setAttribute(key, value) }
     }
 
     private inline fun endCall(call: Any, finish: (Span) -> Unit) {

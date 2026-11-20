@@ -26,7 +26,8 @@ import dev.deeptelar.telar.forEachObserver
  *
  * The rules of [GraphObserver] hold:
  * - **No conversation.** An observer learns which model and which tool were called, the tokens and
- *   whether a tool returned an error, but not the messages, the input of a tool or its result.
+ *   whether a tool returned an error, but not the messages, the input of a tool or its result. Only
+ *   a [ConversationObserver] is told those. No observer gets the state of the graph.
  * - **Every start has one end.** A model call that started ends with exactly one of
  *   [onModelCallCompleted] and [onModelCallFailed], and a tool call with exactly one of
  *   [onToolCallCompleted] and [onToolCallFailed], also when the run is cancelled.
@@ -58,6 +59,45 @@ public interface AgentObserver : GraphObserver {
      * it threw an error that ends the run, such as an `OutOfMemoryError`.
      */
     public fun onToolCallFailed(call: ObservedToolCall, cause: Throwable) {}
+}
+
+/**
+ * An [AgentObserver] that is also told what the calls send and get back: the request a model is
+ * sent, its answer, the input of a tool and its result. Use it to record the conversation in a
+ * trace, as `OtlpObserver` and `OpenTelemetryObserver` of telar-otel do with `recordContent = true`:
+ *
+ * ```kotlin
+ * val log = object : ConversationObserver {
+ *     override fun onModelCallResponse(call: ObservedModelCall, response: ChatResponse) {
+ *         println("${call.caller}: ${response.message.text}")
+ *     }
+ * }
+ * ```
+ *
+ * The conversation can hold personal data, such as what the users of an app wrote, so only an
+ * observer that implements this interface gets it. The rules of [AgentObserver] hold, and:
+ * - **The request is the one the model is sent:** the part of the conversation that `shorten`
+ *   keeps, the prompt that [ask] adds to ask again, and the prompt that a [ChatDecisionModel] builds.
+ * - **In the order of the call:** [onModelCallRequest] right after [onModelCallStarted], and
+ *   [onModelCallResponse] right before [onModelCallCompleted]. A call that fails has its request
+ *   but no response. A tool call is the same with [onToolCallInput] and [onToolCallResult].
+ * - **A streamed answer** arrives whole in [onModelCallResponse], when the stream has ended.
+ */
+public interface ConversationObserver : AgentObserver {
+    /** The model of [call] is sent [request]. Called right after [onModelCallStarted]. */
+    public fun onModelCallRequest(call: ObservedModelCall, request: ChatRequest) {}
+
+    /** The model of [call] answered with [response]. Called right before [onModelCallCompleted]. */
+    public fun onModelCallResponse(call: ObservedModelCall, response: ChatResponse) {}
+
+    /**
+     * The model's [toolCall] is what the tool of [call] runs on. An input that is not JSON is in
+     * [ToolCall.invalidInput]. Called right after [onToolCallStarted].
+     */
+    public fun onToolCallInput(call: ObservedToolCall, toolCall: ToolCall) {}
+
+    /** The tool of [call] returned [result] for the model. Called right before [onToolCallCompleted]. */
+    public fun onToolCallResult(call: ObservedToolCall, result: ChatMessage.ToolResult) {}
 }
 
 /**
@@ -100,11 +140,14 @@ public class ObservedToolCall internal constructor(
     override fun toString(): String = "call of tool '$name' in $caller"
 }
 
-/** Runs [block], which calls [model], and tells the agent observers of the run about it. */
-internal suspend fun observeModelCall(model: ChatModel, block: suspend () -> ChatResponse): ChatResponse {
+/** Runs [block], which sends [request] to [model], and tells the agent observers of the run about it. */
+internal suspend fun observeModelCall(model: ChatModel, request: ChatRequest, block: suspend () -> ChatResponse): ChatResponse {
     val (caller, observers) = agentObservers() ?: return block()
     val call = ObservedModelCall(caller, model)
-    observers.forEach { it.onModelCallStarted(call) }
+    observers.forEach {
+        it.onModelCallStarted(call)
+        if (it is ConversationObserver) it.onModelCallRequest(call, request)
+    }
     val response =
         try {
             block()
@@ -113,7 +156,10 @@ internal suspend fun observeModelCall(model: ChatModel, block: suspend () -> Cha
             throw failure
         }
     call.responseModel = response.model
-    observers.forEach { it.onModelCallCompleted(call, response.usage) }
+    observers.forEach {
+        if (it is ConversationObserver) it.onModelCallResponse(call, response)
+        it.onModelCallCompleted(call, response.usage)
+    }
     return response
 }
 
@@ -121,7 +167,10 @@ internal suspend fun observeModelCall(model: ChatModel, block: suspend () -> Cha
 internal suspend fun observeToolCall(toolCall: ToolCall, block: suspend () -> ChatMessage.ToolResult): ChatMessage.ToolResult {
     val (caller, observers) = agentObservers() ?: return block()
     val call = ObservedToolCall(caller, toolCall.name, toolCall.id)
-    observers.forEach { it.onToolCallStarted(call) }
+    observers.forEach {
+        it.onToolCallStarted(call)
+        if (it is ConversationObserver) it.onToolCallInput(call, toolCall)
+    }
     val result =
         try {
             block()
@@ -129,7 +178,10 @@ internal suspend fun observeToolCall(toolCall: ToolCall, block: suspend () -> Ch
             observers.forEach { it.onToolCallFailed(call, failure) }
             throw failure
         }
-    observers.forEach { it.onToolCallCompleted(call, result.isError) }
+    observers.forEach {
+        if (it is ConversationObserver) it.onToolCallResult(call, result)
+        it.onToolCallCompleted(call, result.isError)
+    }
     return result
 }
 

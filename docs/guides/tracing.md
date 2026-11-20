@@ -200,11 +200,60 @@ the `Traceparent` plugin, is inside the span of the node, next to `chat`.
 `exception.type` is the name of the class with its package, except on Kotlin/JS, which only knows
 the name of the class.
 
+## Recording the conversation
+
+The spans of the calls say which model and which tool ran, but not what was said. To see that, the
+messages the model was sent, its answer, and the input and result of each tool, turn on
+`recordContent`:
+
+```kotlin
+val tracing = OtlpObserver(httpClient, appScope, endpoint = collector, recordContent = true)
+
+// or, on the JVM
+val tracing = OpenTelemetryObserver(openTelemetry, recordContent = true)
+```
+
+The spans then get the attributes of the
+[conventions for generative AI](https://opentelemetry.io/docs/specs/semconv/gen-ai/), each one JSON
+in a string:
+
+| Span | Attribute | What it holds |
+|---|---|---|
+| `chat <model>` | `gen_ai.system_instructions` | The system prompt |
+| | `gen_ai.input.messages` | The messages the model was sent: `user`, `assistant` with its tool calls, and `tool` with the results |
+| | `gen_ai.output.messages` | The answer, with its tool calls and a `finish_reason`: `stop`, `tool_call`, or `length` when it was cut off |
+| `execute_tool <name>` | `gen_ai.tool.call.arguments` | The input the model wrote for the tool |
+| | `gen_ai.tool.call.result` | What the tool returned to the model |
+
+Langfuse shows them as the input and output of each generation and each tool, with the system prompt
+as the first message of the input. The messages are the ones the model was really sent: the part of
+the conversation that `shorten` keeps, the prompt that `ask` adds when it asks again, and the prompt
+that a `ChatDecisionModel` builds. A call that failed keeps what it sent, which is often why you
+open the trace.
+
+To keep the spans a sensible size:
+
+- **Each text is cut** at `maxContentLength` characters, 8,192 unless you give another, with a note
+  of how long it was: `Where is m… [cut, 18 characters in all]`. Each `chat` span repeats the whole
+  conversation the model was sent, so a long one adds up.
+- **An image or a PDF** is a note of its type and size, such as `[image/png, 47 KB]`. Its bytes are
+  never recorded. A file sent by its address keeps the address.
+- **What a provider adds to a message**, such as the thinking of Claude, and **the tools** the model
+  was offered are left out.
+
+::: warning Personal data
+The conversation holds what the users of your app wrote and what your tools found, which can be
+personal data. That is why `recordContent` is off by default. Turn it on only when you know who can
+read the traces and how long they are kept, for example in development, or with the consent of the
+people whose conversations they are.
+:::
+
 ## What is never recorded
 
 The state of a run is not recorded, and neither is what a node reports with `reportProgress`, such
-as the text a model writes, nor the messages of a call to a model, the input of a tool or its result.
-They can hold personal data. An observer is not even given the state.
+as the text a model writes. The messages of a call to a model, the input of a tool and its result are
+recorded only with [`recordContent`](#recording-the-conversation). They can hold personal data. An
+observer is not even given the state.
 To see what a step wrote, read the [history](human-in-the-loop.md) of the thread or
 [stream](streaming.md) the run.
 
@@ -307,8 +356,32 @@ when (val caller = call.caller) {
 }
 ```
 
-As for the rest of an observer, the conversation is never given: not the messages, the input of a
-tool or its result.
+An `AgentObserver` is not given the conversation: not the messages, the input of a tool or its
+result. An observer that needs them implements `ConversationObserver`, an `AgentObserver` that is
+also told what each call sends and gets back:
+
+```kotlin
+val transcript =
+    object : ConversationObserver {
+        override fun onModelCallResponse(call: ObservedModelCall, response: ChatResponse) {
+            log.debug("${call.caller}: ${response.message.text}")
+        }
+
+        override fun onToolCallResult(call: ObservedToolCall, result: ChatMessage.ToolResult) {
+            log.debug("${call.name} returned ${result.text}")
+        }
+    }
+```
+
+| Function | When |
+|---|---|
+| `onModelCallRequest` | Right after `onModelCallStarted`, with the `ChatRequest` the model is sent |
+| `onModelCallResponse` | Right before `onModelCallCompleted`, with the `ChatResponse`. A streamed answer arrives whole |
+| `onToolCallInput` | Right after `onToolCallStarted`, with the model's `ToolCall`. An input that is not JSON is in `invalidInput` |
+| `onToolCallResult` | Right before `onToolCallCompleted`, with the `ToolResult` the model gets |
+
+A call that fails has its request but no response, and a tool call that ends without a result has
+its input but no result.
 
 The observers of `telar-otel` are agent observers: they record each call as a span inside its node
 or edge (see [The spans](#the-spans)).

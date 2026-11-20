@@ -61,6 +61,49 @@ private class CallRecorder : AgentObserver {
     }
 }
 
+/** Writes down what the calls send and get back, one line per callback. */
+private class ConversationRecorder : ConversationObserver {
+    val log = mutableListOf<String>()
+    val requests = mutableListOf<ChatRequest>()
+
+    override fun onModelCallStarted(call: ObservedModelCall) {
+        log += "started"
+    }
+
+    override fun onModelCallRequest(call: ObservedModelCall, request: ChatRequest) {
+        requests += request
+        log += "request: " + request.messages.joinToString(" | ") { it.text }
+    }
+
+    override fun onModelCallResponse(call: ObservedModelCall, response: ChatResponse) {
+        log += "response: " + response.message.text + response.message.toolCalls.joinToString("") { " ${it.name}()" }
+    }
+
+    override fun onModelCallCompleted(call: ObservedModelCall, usage: TokenUsage?) {
+        log += "completed"
+    }
+
+    override fun onModelCallFailed(call: ObservedModelCall, cause: Throwable) {
+        log += "failed"
+    }
+
+    override fun onToolCallStarted(call: ObservedToolCall) {
+        log += "${call.name} started"
+    }
+
+    override fun onToolCallInput(call: ObservedToolCall, toolCall: ToolCall) {
+        log += "${call.name} input: ${toolCall.invalidInput ?: toolCall.input}"
+    }
+
+    override fun onToolCallResult(call: ObservedToolCall, result: ChatMessage.ToolResult) {
+        log += "${call.name} result: ${result.text}"
+    }
+
+    override fun onToolCallCompleted(call: ObservedToolCall, isError: Boolean) {
+        log += "${call.name} completed"
+    }
+}
+
 class AgentObserverTest {
     private val recorder = CallRecorder()
     private val config = GraphConfig<AgentState>(observers = listOf(recorder))
@@ -286,5 +329,119 @@ class AgentObserverTest {
 
             assertEquals(emptyList(), recorder.log)
             assertEquals(2, model.requests.size)
+        }
+
+    @Test
+    fun `a conversation observer is told what each call sends and gets back in the order of the call`() =
+        runTest {
+            val conversation = ConversationRecorder()
+            val model = ScriptedModel(calls(ToolCall("call-1", "order_status", noInput)), says("5 minutes."))
+
+            toolAgent(model, listOf(orderStatus))
+                .invoke(AgentState("Where is my pizza?"), GraphConfig(observers = listOf(recorder, conversation)))
+
+            assertEquals(
+                listOf(
+                    "started",
+                    "request: Where is my pizza?",
+                    "response:  order_status()",
+                    "completed",
+                    "order_status started",
+                    "order_status input: {}",
+                    "order_status result: The driver is 5 minutes away.",
+                    "order_status completed",
+                    "started",
+                    "request: Where is my pizza? |  | The driver is 5 minutes away.",
+                    "response: 5 minutes.",
+                    "completed",
+                ),
+                conversation.log,
+            )
+            // An agent observer in the same run is told what it was told before, and no more.
+            assertEquals(
+                listOf(
+                    "model@1 started",
+                    "model@1 asks the model",
+                    "model@1 got an answer, no tokens",
+                    "tools@2 started",
+                    "tools@2 runs order_status (call-1)",
+                    "tools@2 order_status returned",
+                    "model@3 started",
+                    "model@3 asks the model",
+                    "model@3 got an answer, no tokens",
+                ),
+                recorder.log,
+            )
+        }
+
+    @Test
+    fun `the request is the part of the conversation that shorten keeps`() =
+        runTest {
+            val conversation = ConversationRecorder()
+            val model = ScriptedModel(calls(ToolCall("call-1", "order_status", noInput)), says("5 minutes."))
+
+            toolAgent(model, listOf(orderStatus), shorten = { it.takeLast(1) })
+                .invoke(AgentState("Where is my pizza?"), GraphConfig(observers = listOf(conversation)))
+
+            val last = conversation.requests.last()
+            assertEquals(listOf("The driver is 5 minutes away."), last.messages.map { it.text })
+            assertEquals(true, last.shortened)
+            assertEquals(model.requests.last(), last)
+        }
+
+    @Test
+    fun `a call that fails has its request and no response`() =
+        runTest {
+            val conversation = ConversationRecorder()
+            val model = ChatModel { throw ChatModelException("Overloaded") }
+
+            assertFailsWith<NodeExecutionException> {
+                toolAgent(model).invoke(AgentState("Hi"), GraphConfig(observers = listOf(conversation)))
+            }
+
+            assertEquals(listOf("started", "request: Hi", "failed"), conversation.log)
+        }
+
+    @Test
+    fun `an input that is not JSON reaches the observer as the model wrote it`() =
+        runTest {
+            val conversation = ConversationRecorder()
+            val model = ScriptedModel(calls(ToolCall("call-1", "order_status", noInput, invalidInput = "{order: 42")), says("Sorry."))
+
+            toolAgent(model, listOf(orderStatus)).invoke(AgentState("Hi"), GraphConfig(observers = listOf(conversation)))
+
+            assertEquals(
+                listOf(
+                    "order_status started",
+                    "order_status input: {order: 42",
+                    "order_status result: The input is not a JSON object: {order: 42",
+                    "order_status completed",
+                ),
+                conversation.log.filter { it.startsWith("order_status") },
+            )
+        }
+
+    @Test
+    fun `the requests of a typed answer and of a chat decision model are the prompts they send`() =
+        runTest {
+            val conversation = ConversationRecorder()
+            val model = ScriptedModel(says("Nine stars"), says("""{"stars": 4}"""))
+            val chat = ScriptedModel(says("""{"decision": {"yes": 0.8, "no": 0.2}}"""))
+            val graph =
+                StateGraph<AgentState> {
+                    val rate =
+                        node("rate") { state ->
+                            state.also {
+                                model.ask<Rating>("How was the pizza?")
+                                ChatDecisionModel(chat).isYes("It is late again!", "Is the customer angry?")
+                            }
+                        }
+                    START then rate
+                }.compile()
+
+            graph.invoke(AgentState("Hi"), GraphConfig(observers = listOf(conversation)))
+
+            assertEquals(model.requests + chat.requests, conversation.requests)
+            assertEquals(3, conversation.requests[1].messages.size)
         }
 }

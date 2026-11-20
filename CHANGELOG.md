@@ -9,6 +9,17 @@ breaking changes.
 
 ### Added
 
+- The conversation can be recorded in a trace. `OtlpObserver` and `OpenTelemetryObserver` take
+  `recordContent = true`, and then the span of a model call has the messages it sent and the answer
+  (`gen_ai.input.messages`, `gen_ai.output.messages`, `gen_ai.system_instructions`), and the span of
+  a tool call its input and result (`gen_ai.tool.call.arguments`, `gen_ai.tool.call.result`), as the
+  OpenTelemetry conventions for generative AI write them. Langfuse shows them as the input and output
+  of each generation and tool. It is off by default, because the conversation can hold personal data.
+  Each text is cut at `maxContentLength` characters (8,192), and an image or a PDF is recorded as its
+  type and size, never its bytes. The content reaches an observer that implements
+  `ConversationObserver`, a new `AgentObserver` that is told the request, the answer, and the input
+  and result of each tool; an `AgentObserver` is still told none of it.
+  ([#215](https://github.com/deeptelar/telar/issues/215))
 - Each call to a model says which model it was. `ChatModel.name` is the model that is asked (`null`
   unless a model sets it), and `OpenAiChatModel`, `AnthropicChatModel` and `LangChain4jChatModel`
   set it to the model they were built with. `ChatResponse.model` is the model that answered, as the

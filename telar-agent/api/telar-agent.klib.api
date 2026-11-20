@@ -34,6 +34,13 @@ abstract interface dev.deeptelar.telar.agent/AgentObserver : dev.deeptelar.telar
     open fun onToolCallStarted(dev.deeptelar.telar.agent/ObservedToolCall) // dev.deeptelar.telar.agent/AgentObserver.onToolCallStarted|onToolCallStarted(dev.deeptelar.telar.agent.ObservedToolCall){}[0]
 }
 
+abstract interface dev.deeptelar.telar.agent/ConversationObserver : dev.deeptelar.telar.agent/AgentObserver { // dev.deeptelar.telar.agent/ConversationObserver|null[0]
+    open fun onModelCallRequest(dev.deeptelar.telar.agent/ObservedModelCall, dev.deeptelar.telar.agent/ChatRequest) // dev.deeptelar.telar.agent/ConversationObserver.onModelCallRequest|onModelCallRequest(dev.deeptelar.telar.agent.ObservedModelCall;dev.deeptelar.telar.agent.ChatRequest){}[0]
+    open fun onModelCallResponse(dev.deeptelar.telar.agent/ObservedModelCall, dev.deeptelar.telar.agent/ChatResponse) // dev.deeptelar.telar.agent/ConversationObserver.onModelCallResponse|onModelCallResponse(dev.deeptelar.telar.agent.ObservedModelCall;dev.deeptelar.telar.agent.ChatResponse){}[0]
+    open fun onToolCallInput(dev.deeptelar.telar.agent/ObservedToolCall, dev.deeptelar.telar.agent/ToolCall) // dev.deeptelar.telar.agent/ConversationObserver.onToolCallInput|onToolCallInput(dev.deeptelar.telar.agent.ObservedToolCall;dev.deeptelar.telar.agent.ToolCall){}[0]
+    open fun onToolCallResult(dev.deeptelar.telar.agent/ObservedToolCall, dev.deeptelar.telar.agent/ChatMessage.ToolResult) // dev.deeptelar.telar.agent/ConversationObserver.onToolCallResult|onToolCallResult(dev.deeptelar.telar.agent.ObservedToolCall;dev.deeptelar.telar.agent.ChatMessage.ToolResult){}[0]
+}
+
 abstract interface dev.deeptelar.telar.agent/EmbeddingModel { // dev.deeptelar.telar.agent/EmbeddingModel|null[0]
     abstract val id // dev.deeptelar.telar.agent/EmbeddingModel.id|{}id[0]
         abstract fun <get-id>(): kotlin/String // dev.deeptelar.telar.agent/EmbeddingModel.id.<get-id>|<get-id>(){}[0]
