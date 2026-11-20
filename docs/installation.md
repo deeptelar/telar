@@ -37,6 +37,23 @@ dependencies {
 }
 ```
 
+In a Kotlin Multiplatform project, the `dependencies` of a source set have no `platform`. Use the
+one of the project:
+
+```kotlin
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            implementation(project.dependencies.platform("dev.deeptelar:telar-bom:0.1.0-alpha19"))
+            implementation("dev.deeptelar:telar-core")
+            implementation("dev.deeptelar:telar-agent")
+        }
+    }
+}
+```
+
+The BOM then holds for every target of the project.
+
 It also names the artifact of each platform, such as `telar-core-jvm`, so a Maven build can import
 it in `<dependencyManagement>` with `<scope>import</scope>` and leave the versions out too.
 
