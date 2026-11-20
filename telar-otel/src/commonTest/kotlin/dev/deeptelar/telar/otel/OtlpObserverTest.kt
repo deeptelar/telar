@@ -10,6 +10,7 @@ import dev.deeptelar.telar.Retry
 import dev.deeptelar.telar.START
 import dev.deeptelar.telar.StateGraph
 import dev.deeptelar.telar.agent.AgentState
+import dev.deeptelar.telar.agent.Attachment
 import dev.deeptelar.telar.agent.ChatDecisionModel
 import dev.deeptelar.telar.agent.ChatMessage
 import dev.deeptelar.telar.agent.ChatModel
@@ -17,6 +18,7 @@ import dev.deeptelar.telar.agent.ChatRequest
 import dev.deeptelar.telar.agent.ChatResponse
 import dev.deeptelar.telar.agent.TokenUsage
 import dev.deeptelar.telar.agent.Tool
+import dev.deeptelar.telar.agent.ToolCall
 import dev.deeptelar.telar.agent.decisionEdge
 import dev.deeptelar.telar.agent.toolAgent
 import dev.deeptelar.telar.interrupt
@@ -38,10 +40,13 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -108,8 +113,15 @@ class OtlpObserverTest {
 
     private val failures = mutableListOf<OtlpExportException>()
 
-    private fun TestScope.tracing(scope: CoroutineScope = backgroundScope) =
-        OtlpObserver(client, scope, endpoint = "https://collector.test/v1/traces", onExportFailed = { failures += it })
+    private fun TestScope.tracing(scope: CoroutineScope = backgroundScope, recordContent: Boolean = false, maxContentLength: Int = 8192) =
+        OtlpObserver(
+            client,
+            scope,
+            endpoint = "https://collector.test/v1/traces",
+            recordContent = recordContent,
+            maxContentLength = maxContentLength,
+            onExportFailed = { failures += it },
+        )
 
     private fun config(tracing: OtlpObserver, checkpointer: MemoryCheckpointer<Ticket>? = null) =
         GraphConfig(threadId = "ticket-7", checkpointer = checkpointer, observers = listOf(tracing))
@@ -700,5 +712,175 @@ class OtlpObserverTest {
         runTest {
             assertFailsWith<GraphValidationException> { OtlpObserver(client, backgroundScope, endpoint = " ") }
             assertFailsWith<GraphValidationException> { OtlpObserver(client, backgroundScope, exportDelay = (-1).seconds) }
+            assertFailsWith<GraphValidationException> { OtlpObserver(client, backgroundScope, maxContentLength = 0) }
+        }
+
+    private fun Sent.json(key: String): JsonElement? = string(key)?.let(Json::parseToJsonElement)
+
+    /** The parts of the only message in the attribute [key]. */
+    private fun Sent.parts(key: String): List<JsonObject> =
+        json(key)!!
+            .jsonArray
+            .single()
+            .jsonObject["parts"]!!
+            .jsonArray
+            .map { it.jsonObject }
+
+    private fun order(id: Any): JsonObject = buildJsonObject { if (id is Int) put("order", id) else put("order", id.toString()) }
+
+    private val contentKeys =
+        listOf(
+            "gen_ai.system_instructions",
+            "gen_ai.input.messages",
+            "gen_ai.output.messages",
+            "gen_ai.tool.call.arguments",
+            "gen_ai.tool.call.result",
+        )
+
+    @Test
+    fun `the conversation is not recorded unless it is asked for`() =
+        runTest {
+            val tracing = tracing()
+            val model =
+                ScriptedChatModel {
+                    calls(call("order_status"))
+                    says("5 minutes.")
+                }
+
+            toolAgent(model, listOf(orderStatus), system = "Be brief.")
+                .invoke(AgentState("Where is my pizza?"), GraphConfig(observers = listOf(tracing)))
+
+            assertEquals(emptyList(), tracing.sent().flatMap { span -> contentKeys.filter { it in span.attributes } })
+        }
+
+    @Test
+    fun `with recordContent the spans of the calls have the conversation`() =
+        runTest {
+            val tracing = tracing(recordContent = true)
+            val model =
+                ScriptedChatModel {
+                    calls(ToolCall("call-1", "order_status", order(42)), text = "Let me look.")
+                    says("5 minutes.")
+                }
+
+            toolAgent(model, listOf(orderStatus), system = "Be brief.")
+                .invoke(AgentState("Where is my pizza?"), GraphConfig(observers = listOf(tracing)))
+            val spans = tracing.sent()
+
+            val (first, second) = spans.filter { it.name == "chat" }
+            assertEquals(Json.parseToJsonElement("""[{"type":"text","content":"Be brief."}]"""), first.json("gen_ai.system_instructions"))
+            assertEquals(
+                Json.parseToJsonElement("""[{"role":"user","parts":[{"type":"text","content":"Where is my pizza?"}]}]"""),
+                first.json("gen_ai.input.messages"),
+            )
+            val call = """{"type":"tool_call","id":"call-1","name":"order_status","arguments":{"order":42}}"""
+            assertEquals(
+                Json.parseToJsonElement(
+                    """[{"role":"assistant","parts":[{"type":"text","content":"Let me look."},$call],"finish_reason":"tool_call"}]""",
+                ),
+                first.json("gen_ai.output.messages"),
+            )
+            assertEquals(
+                Json.parseToJsonElement(
+                    """[
+                        {"role":"user","parts":[{"type":"text","content":"Where is my pizza?"}]},
+                        {"role":"assistant","parts":[{"type":"text","content":"Let me look."},$call]},
+                        {"role":"tool","parts":[{"type":"tool_call_response","id":"call-1","response":"The driver is 5 minutes away."}]}
+                    ]""",
+                ),
+                second.json("gen_ai.input.messages"),
+            )
+            assertEquals(
+                Json.parseToJsonElement(
+                    """[{"role":"assistant","parts":[{"type":"text","content":"5 minutes."}],"finish_reason":"stop"}]""",
+                ),
+                second.json("gen_ai.output.messages"),
+            )
+
+            val tool = spans.span("execute_tool order_status")
+            assertEquals("""{"order":42}""", tool.string("gen_ai.tool.call.arguments"))
+            assertEquals("The driver is 5 minutes away.", tool.string("gen_ai.tool.call.result"))
+        }
+
+    @Test
+    fun `an attachment is recorded as its type and size and never as its bytes`() =
+        runTest {
+            val tracing = tracing(recordContent = true)
+            val photo = "iVBORw0K".repeat(8000)
+            val question =
+                ChatMessage.User(
+                    "Is this pizza burnt?",
+                    listOf(Attachment.Data(photo, "image/png"), Attachment.Url("https://example.com/menu.pdf", "application/pdf")),
+                )
+
+            toolAgent(
+                ScriptedChatModel { says("A little.") },
+            ).invoke(AgentState(listOf(question)), GraphConfig(observers = listOf(tracing)))
+            val chat = tracing.sent().span("chat")
+
+            assertEquals(
+                listOf("Is this pizza burnt?", "[image/png, 47 KB]", "[application/pdf: https://example.com/menu.pdf]"),
+                chat.parts("gen_ai.input.messages").map { it.text("content") },
+            )
+            assertTrue(photo.take(16) !in chat.string("gen_ai.input.messages")!!)
+        }
+
+    @Test
+    fun `an input that is not JSON is recorded as the model wrote it`() =
+        runTest {
+            val tracing = tracing(recordContent = true)
+            val model =
+                ScriptedChatModel {
+                    calls(ToolCall("call-1", "order_status", JsonObject(emptyMap()), invalidInput = "{order: 42"))
+                    says("Sorry.")
+                }
+
+            toolAgent(model, listOf(orderStatus)).invoke(AgentState("Where is my pizza?"), GraphConfig(observers = listOf(tracing)))
+            val spans = tracing.sent()
+
+            val tool = spans.span("execute_tool order_status")
+            assertEquals("{order: 42", tool.string("gen_ai.tool.call.arguments"))
+            assertEquals("The input is not a JSON object: {order: 42", tool.string("gen_ai.tool.call.result"))
+            val part = spans.first { it.name == "chat" }.parts("gen_ai.output.messages").single()
+            assertEquals("{order: 42", part.text("arguments"))
+        }
+
+    @Test
+    fun `a long text is cut and says how long it was`() =
+        runTest {
+            val tracing = tracing(recordContent = true, maxContentLength = 10)
+            val model =
+                ScriptedChatModel {
+                    calls(ToolCall("call-1", "order_status", order("1234567890")))
+                    says("5 minutes.")
+                }
+
+            toolAgent(model, listOf(orderStatus)).invoke(AgentState("Where is my pizza?"), GraphConfig(observers = listOf(tracing)))
+            val spans = tracing.sent()
+
+            val (first, second) = spans.filter { it.name == "chat" }
+            assertEquals("Where is m… [cut, 18 characters in all]", first.parts("gen_ai.input.messages").single().text("content"))
+            val tool = spans.span("execute_tool order_status")
+            assertEquals("""{"order":"… [cut, 22 characters in all]""", tool.string("gen_ai.tool.call.arguments"))
+            assertEquals("The driver… [cut, 29 characters in all]", tool.string("gen_ai.tool.call.result"))
+            assertEquals("5 minutes.", second.parts("gen_ai.output.messages").single().text("content"))
+        }
+
+    @Test
+    fun `a call to a model that fails keeps what it sent`() =
+        runTest {
+            val tracing = tracing(recordContent = true)
+            val model = ScriptedChatModel { fails("API error 529: Overloaded") }
+
+            assertFailsWith<NodeExecutionException> {
+                toolAgent(model).invoke(AgentState("Where is my pizza?"), GraphConfig(observers = listOf(tracing)))
+            }
+            val chat = tracing.sent().span("chat")
+
+            assertEquals(
+                Json.parseToJsonElement("""[{"role":"user","parts":[{"type":"text","content":"Where is my pizza?"}]}]"""),
+                chat.json("gen_ai.input.messages"),
+            )
+            assertNull(chat.string("gen_ai.output.messages"))
         }
 }

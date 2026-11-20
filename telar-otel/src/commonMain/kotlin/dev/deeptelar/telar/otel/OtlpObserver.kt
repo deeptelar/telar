@@ -8,10 +8,14 @@ import dev.deeptelar.telar.ObservedEdge
 import dev.deeptelar.telar.ObservedNode
 import dev.deeptelar.telar.ObservedRun
 import dev.deeptelar.telar.TelarException
-import dev.deeptelar.telar.agent.AgentObserver
+import dev.deeptelar.telar.agent.ChatMessage
+import dev.deeptelar.telar.agent.ChatRequest
+import dev.deeptelar.telar.agent.ChatResponse
+import dev.deeptelar.telar.agent.ConversationObserver
 import dev.deeptelar.telar.agent.ObservedModelCall
 import dev.deeptelar.telar.agent.ObservedToolCall
 import dev.deeptelar.telar.agent.TokenUsage
+import dev.deeptelar.telar.agent.ToolCall
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -99,7 +103,18 @@ import kotlin.time.TimeSource
  * HTTP request of a model is inside the span of the node, next to the span `chat`.
  *
  * The state of the run is never recorded, nor what a node reports with `reportProgress`: both can
- * hold personal data. Nor are the messages, the input of a tool or its result.
+ * hold personal data.
+ *
+ * **The conversation**, with [recordContent]: the span of a model call gets what it sent
+ * (`gen_ai.system_instructions` and `gen_ai.input.messages`) and the answer
+ * (`gen_ai.output.messages`), and the span of a tool call its input (`gen_ai.tool.call.arguments`)
+ * and result (`gen_ai.tool.call.result`), as JSON in strings, as the conventions write them. A
+ * backend such as Langfuse shows them as the input and output of the call. Each text is cut at
+ * [maxContentLength] characters, with a note of how long it was. An image or a PDF becomes a note of
+ * its type and size, such as `[image/png, 47 KB]`: its bytes are never recorded. Nor is the
+ * `providerContent` of a message, such as the thinking of Claude, nor the tools the model was offered.
+ * The conversation can hold personal data, such as what the users of the app wrote, so it is off
+ * by default: turn it on only when you know who can read the traces.
  *
  * **Sending.** A span is sent when it ends, together with the others that end within [exportDelay],
  * as OTLP/HTTP with JSON, in a coroutine of [scope]. The app creates the [client], with the engine of
@@ -130,8 +145,12 @@ import kotlin.time.TimeSource
  * @param resource more attributes of the app, such as `service.version` or `deployment.environment`.
  * @param headers sent with each request, for example the key of a backend that receives OTLP itself.
  * @param exportDelay how long a span that ended waits for others before they are sent together.
+ * @param recordContent records the messages of each model call and the input and result of each
+ * tool call. Off by default, because they can hold personal data.
+ * @param maxContentLength the most characters of each text that [recordContent] records.
  * @param onExportFailed told when spans could not be sent. It must not throw.
- * @throws GraphValidationException if [endpoint] is blank or [exportDelay] is negative.
+ * @throws GraphValidationException if [endpoint] is blank, [exportDelay] is negative or
+ * [maxContentLength] is less than 1.
  */
 @OptIn(ExperimentalAtomicApi::class)
 public class OtlpObserver(
@@ -142,8 +161,12 @@ public class OtlpObserver(
     resource: Map<String, String> = emptyMap(),
     headers: Map<String, String> = emptyMap(),
     private val exportDelay: Duration = 1.seconds,
+    private val recordContent: Boolean = false,
+    maxContentLength: Int = ConversationAttributes.DEFAULT_MAX_LENGTH,
     private val onExportFailed: (OtlpExportException) -> Unit = {},
-) : AgentObserver {
+) : ConversationObserver {
+    private val content = ConversationAttributes(maxContentLength)
+
     private val resourceAttributes: List<Attribute> =
         (mapOf("service.name" to serviceName) + resource).map { (key, value) -> Attribute(key, AttributeValue.Text(value)) }
 
@@ -314,6 +337,14 @@ public class OtlpObserver(
         )
     }
 
+    override fun onModelCallRequest(call: ObservedModelCall, request: ChatRequest) {
+        if (recordContent) addContent(call, content.request(request))
+    }
+
+    override fun onModelCallResponse(call: ObservedModelCall, response: ChatResponse) {
+        if (recordContent) addContent(call, content.response(response))
+    }
+
     override fun onModelCallCompleted(call: ObservedModelCall, usage: TokenUsage?) {
         end(call) { span ->
             val answered = call.responseModel?.takeIf { it.isNotBlank() }
@@ -338,6 +369,14 @@ public class OtlpObserver(
         start(call, name = "$EXECUTE_TOOL ${call.name}", parent = parent.context, attributes = attributes)
     }
 
+    override fun onToolCallInput(call: ObservedToolCall, toolCall: ToolCall) {
+        if (recordContent) addContent(call, content.toolInput(toolCall))
+    }
+
+    override fun onToolCallResult(call: ObservedToolCall, result: ChatMessage.ToolResult) {
+        if (recordContent) addContent(call, content.toolResult(result))
+    }
+
     override fun onToolCallCompleted(call: ObservedToolCall, isError: Boolean) {
         end(call) { if (isError) it.with(ERROR_TYPE, TOOL_ERROR).copy(error = "The tool returned an error to the model.") else it }
     }
@@ -345,6 +384,10 @@ public class OtlpObserver(
     override fun onToolCallFailed(call: ObservedToolCall, cause: Throwable) {
         // Cancelled, paused with `interrupt`, or an error that ends the run: the span of the node says which.
         end(call) { it }
+    }
+
+    private fun addContent(call: Any, attributes: Map<String, String>) {
+        update(call) { span -> attributes.entries.fold(span) { it, (key, value) -> it.with(key, value) } }
     }
 
     private fun start(key: Any, name: String, parent: TraceContext?, attributes: List<Attribute>, kind: SpanKind = SpanKind.INTERNAL) {

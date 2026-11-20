@@ -71,6 +71,8 @@ made under that name keep it. The repository is `deeptelar/telar` and the demo i
   tool calls into notes and removes `providerContent`. `AgentObserver` is a `GraphObserver` that is also
   told about the calls to models and tools in a node or an edge's condition (`call.caller` is an `ObservedNode` or an
   `ObservedEdge`); it reaches the run's observers with `forEachObserver` of core.
+  `ConversationObserver` is an `AgentObserver` that is also given the content of each call: the
+  request the model is sent, its answer, a tool's input and result.
   `memoryTools` (`remember`, `forget`, `recall`) work on the `Store` of the run (`store()` of core);
   `SemanticStore` wraps any `Store` and makes its `search` find by meaning with an `EmbeddingModel`,
   keeping the vectors in the store under `SemanticStore.VECTORS`
@@ -96,7 +98,9 @@ made under that name keep it. The repository is `deeptelar/telar` and the demo i
   plugin `Traceparent` sends it on. A run started in a `TraceContext` (read from
   `ObservedRun.context`) is inside that span. `OpenTelemetryObserver` in `jvmMain` records the same
   spans through the OpenTelemetry API of Java and makes the span of a node current while it runs.
-  Neither records the state. Its JS and Wasm tests also run in headless Chrome, with Ktor's `Js` engine
+  Neither records the state. With `recordContent = true` both record the conversation of each call
+  (`gen_ai.input.messages` and the rest) as a `ConversationObserver`, texts cut at `maxContentLength`,
+  attachments as notes, never their bytes. Its JS and Wasm tests also run in headless Chrome, with Ktor's `Js` engine
 - **`telar-test`** (KMP, no test framework): helpers for the tests of an app. `ScriptedChatModel`
   and `ScriptedDecisionModel` give the answers of a script in order and keep their requests; a
   script that is too short throws an `AssertionError`, which the engine passes on. `record()`
