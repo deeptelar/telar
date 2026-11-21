@@ -14,6 +14,9 @@ dokka {
         customAssets.from(layout.projectDirectory.file("docs/brand/dokka/logo-icon.svg"))
         // A custom style sheet named logo-styles.css sets the size of that logo.
         customStyleSheets.from(layout.projectDirectory.file("docs/brand/dokka/logo-styles.css"))
+
+        // Links the header to the documentation site.
+        homepageLink.set("https://deeptelar.github.io/telar/")
     }
 }
 
