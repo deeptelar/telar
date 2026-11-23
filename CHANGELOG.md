@@ -34,6 +34,8 @@ breaking changes.
   sooner). Kotlin 2.3 also works on the JVM, and Kotlin 2.2 does not.
   ([#212](https://github.com/deeptelar/telar/issues/212), by
   [@Golden007-prog](https://github.com/Golden007-prog) in [#213](https://github.com/deeptelar/telar/pull/213))
+- The API reference links back to the documentation site from the header of every page.
+  ([#77](https://github.com/deeptelar/telar/issues/77))
 
 ### Changed
 
