@@ -17,3 +17,10 @@ kover {
         }
     }
 }
+
+dokka {
+    pluginsConfiguration.html {
+        // The header of each page of this module links to the documentation site.
+        homepageLink.set("https://deeptelar.github.io/telar/")
+    }
+}
