@@ -43,9 +43,32 @@ months. Each deprecation names a replacement or migration path, using Kotlin's
 `ReplaceWith` where an automatic replacement is suitable. Removal of a stable public
 declaration belongs in a major release.
 
-The planned [`@ExperimentalTelarApi` opt-in](https://github.com/deeptelar/telar/issues/209) marks
-declarations that may change in a minor release. An app opts in with Kotlin's `@OptIn`. Code
-that relies on an experimental declaration should check the changelog when upgrading.
+### Experimental API
+
+A declaration marked `@ExperimentalTelarApi` may still change after 1.0. A minor release can
+change its name, its parameters or its behavior, or remove it, without the deprecation window of
+stable API, and the changelog says each change. A patch release does not change it. When it is
+stable, the mark is removed, and the changelog says so.
+
+Using a marked declaration gives a compiler warning until the app opts in, where it uses it:
+
+```kotlin
+@OptIn(ExperimentalTelarApi::class)
+fun remember() { /* ... */ }
+```
+
+or for a whole module, in its `build.gradle.kts`:
+
+```kotlin
+kotlin {
+    compilerOptions {
+        optIn.add("dev.deeptelar.telar.ExperimentalTelarApi")
+    }
+}
+```
+
+Code that relies on an experimental declaration should read the changelog when it upgrades.
+Before 1.0, every API may change; the mark says which parts will still be able to change after it.
 
 ## Release cadence and security fixes
 

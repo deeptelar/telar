@@ -6,6 +6,10 @@
 // - Show declarations: true
 
 // Library unique name: <telar:telar-core>
+open annotation class dev.deeptelar.telar/ExperimentalTelarApi : kotlin/Annotation { // dev.deeptelar.telar/ExperimentalTelarApi|null[0]
+    constructor <init>() // dev.deeptelar.telar/ExperimentalTelarApi.<init>|<init>(){}[0]
+}
+
 abstract fun interface <#A: kotlin/Any?> dev.deeptelar.telar/Reducer { // dev.deeptelar.telar/Reducer|null[0]
     abstract suspend fun reduce(#A, kotlin.collections/List<#A>): #A // dev.deeptelar.telar/Reducer.reduce|reduce(1:0;kotlin.collections.List<1:0>){}[0]
 }

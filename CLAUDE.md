@@ -177,7 +177,9 @@ active nodes. A checkpoint is saved after every step when a checkpointer is conf
    `withContext(Dispatchers.IO)`. Never swallow `CancellationException`.
 3. **Small, type-safe API.** Explicit API mode is on: public declarations need `public`, explicit
    types and KDoc. Keep internals `internal`. Validate in `compile()` rather than at run time, and
-   throw `TelarException` subclasses.
+   throw `TelarException` subclasses. API that may still change after `1.0` is marked
+   `@ExperimentalTelarApi` (see CONTRIBUTING.md); tests and samples opt in per module, the main code
+   of a library opts in or marks where it uses it.
 4. **Core stays common.** No platform or third-party dependencies in `telar-core`.
 
 ### Testing

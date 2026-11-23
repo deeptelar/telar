@@ -12,7 +12,7 @@ what is already released.
 To ask for a feature or to move one up, add a 👍 to its issue or
 [start a discussion](https://github.com/deeptelar/telar/discussions).
 
-Last updated: 2026-11-17.
+Last updated: 2026-11-23.
 
 ## Where the project is
 
@@ -105,7 +105,9 @@ of this table, and someone who needs one sooner can build it at any time.
 - **API review.** Every public declaration is checked once more: its name, its defaults, and whether
   it can be `internal`. `apiCheck` already fails a build that changes the public API by accident.
 - **A marker for experimental API.** An opt-in annotation, so that a feature can be added after
-  `1.0` without being frozen on its first day.
+  `1.0` without being frozen on its first day. Done: `@ExperimentalTelarApi`
+  ([#209](https://github.com/deeptelar/telar/issues/209)). The API review marks what is not ready
+  to freeze.
 - **A checkpoint format you can rely on.** A checkpoint written by one version can be read by every
   later `1.x` version, and a guide explains how to change a state class when saved runs exist.
 - **Tests in a real browser.** The JS and Wasm tests of the agent and model modules run on Node.js

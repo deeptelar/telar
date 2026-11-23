@@ -9,6 +9,13 @@ breaking changes.
 
 ### Added
 
+- `@ExperimentalTelarApi`, the mark of API that may still change after `1.0`: a minor release can
+  change or remove a marked declaration without the deprecation window of stable API, and the
+  changelog says so. Using one gives a compiler warning until the app opts in with
+  `@OptIn(ExperimentalTelarApi::class)`, or for a whole module with
+  `optIn.add("dev.deeptelar.telar.ExperimentalTelarApi")`. Nothing is marked yet: the review of the
+  public API before the beta ([#210](https://github.com/deeptelar/telar/issues/210)) decides what
+  is. ([#209](https://github.com/deeptelar/telar/issues/209))
 - The conversation can be recorded in a trace. `OtlpObserver` and `OpenTelemetryObserver` take
   `recordContent = true`, and then the span of a model call has the messages it sent and the answer
   (`gen_ai.input.messages`, `gen_ai.output.messages`, `gen_ai.system_instructions`), and the span of

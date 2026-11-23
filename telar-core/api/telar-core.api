@@ -84,6 +84,9 @@ public final class dev/deeptelar/telar/EffectKt {
 	public static final fun effectId (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
+public abstract interface annotation class dev/deeptelar/telar/ExperimentalTelarApi : java/lang/annotation/Annotation {
+}
+
 public final class dev/deeptelar/telar/GraphAlreadyCompletedException : dev/deeptelar/telar/TelarException {
 	public fun <init> (Ljava/lang/String;)V
 	public final fun getThreadId ()Ljava/lang/String;
