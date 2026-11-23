@@ -16,6 +16,9 @@ kotlin {
         jvmTarget.set(JvmTarget.JVM_11)
         allWarningsAsErrors.set(true)
     }
+
+    // Tests use experimental API freely; the main code opts in where it uses it.
+    sourceSets.named("test") { languageSettings.optIn(EXPERIMENTAL_TELAR_API) }
 }
 
 java {

@@ -12,6 +12,8 @@ kotlin {
     jvmToolchain(17)
     compilerOptions {
         allWarningsAsErrors.set(true)
+        // Samples use experimental API of Telar freely.
+        optIn.add("dev.deeptelar.telar.ExperimentalTelarApi")
     }
 }
 

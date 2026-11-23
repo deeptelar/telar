@@ -98,6 +98,21 @@ Chrome. Install Chrome or Chromium, and set `CHROME_BIN` to its path if it is no
   `TelarException` subclass rather than a generic exception.
 - Core must stay in `commonMain` and depend only on kotlinx-coroutines. Platform- or
   library-specific code belongs in its own module.
+- API that may still change after `1.0` is marked `@ExperimentalTelarApi`. Before the beta,
+  nothing is marked; the review of the public API
+  ([#210](https://github.com/deeptelar/telar/issues/210)) marks what is not ready to freeze. From
+  the beta on, the public declarations of a new feature that may still change get the mark, and so
+  does a new interface that apps implement and that may still gain members
+  (`@SubclassOptInRequired(ExperimentalTelarApi::class)`). A small addition to stable API, such as
+  a property with a default or an overload, does not. Kotlin does not allow the mark on a
+  parameter, so a new parameter that may still change comes with a marked overload.
+- Tests and samples opt in to `ExperimentalTelarApi` for the whole module. The main code of a
+  library module does not: where it uses a marked declaration, it either marks the declaration
+  that uses it, when that one may change too, or writes `@OptIn(ExperimentalTelarApi::class)`,
+  when the use is a detail behind stable API.
+- A changelog entry for a marked declaration says that it is experimental, and removing the mark
+  gets its own entry. `apiCheck` does not see the mark, because the `.api` files do not list
+  annotations, so review checks it.
 
 ## Making a change
 

@@ -38,4 +38,9 @@ kotlin {
     compilerOptions {
         allWarningsAsErrors.set(true)
     }
+
+    // Tests use experimental API freely; the main code opts in where it uses it.
+    sourceSets.configureEach {
+        if (name.endsWith("Test")) languageSettings.optIn(EXPERIMENTAL_TELAR_API)
+    }
 }
