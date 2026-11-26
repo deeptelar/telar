@@ -14,7 +14,7 @@ kotlinx-browser = "0.5.0"
 opentelemetry = "1.68.0"
 # The tests of telar-checkpoint-postgres start a real PostgreSQL from these binaries, without Docker.
 postgresql-jdbc = "42.7.14"
-embedded-postgres = "2.2.2"
+embedded-postgres = "2.2.3"
 embedded-postgres-binaries = "18.7.0"
 dokka = "2.3.0"
 kover = "0.9.11"
